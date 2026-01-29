@@ -37,141 +37,138 @@ export default function DiscoverPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen py-12">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Discover{' '}
-              <span className="gradient-text">New Favorites</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Explore recommendations from people with similar taste and find your next obsession.
-            </p>
-          </motion.div>
+      <div className="min-h-screen py-8 md:py-12 max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="font-display text-4xl md:text-6xl font-bold mb-4 tracking-tight">
+            Discover{' '}
+            <span className="gradient-text">New Favorites</span>
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Explore recommendations from people with similar taste and find your next obsession.
+          </p>
+        </motion.div>
 
-          {/* Search Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="max-w-2xl mx-auto mb-8"
-          >
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search movies, songs, books, places..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-12 h-14 text-lg rounded-2xl border-2 focus:border-primary"
-              />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2">
-                <Filter className="w-5 h-5" />
-              </Button>
-            </div>
-          </motion.div>
-
-          {/* Categories */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center gap-3 overflow-x-auto pb-4 mb-8 scrollbar-hide"
-          >
-            <CategoryChip
-              category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
-              isSelected={selectedCategory === null}
-              onClick={() => setSelectedCategory(null)}
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="max-w-2xl mx-auto mb-10"
+        >
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input
+              placeholder="Search movies, songs, books, places..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-14 pr-14 h-16 text-lg rounded-full border-2 bg-card/50 backdrop-blur-xl focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-lg"
             />
-            {categories.map((category) => (
-              <CategoryChip
-                key={category.id}
-                category={category}
-                isSelected={selectedCategory === category.id}
-                onClick={() => setSelectedCategory(category.id)}
-              />
-            ))}
-          </motion.div>
+            <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-primary/10 hover:text-primary rounded-full w-10 h-10">
+              <Filter className="w-5 h-5" />
+            </Button>
+          </div>
+        </motion.div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="trending" className="space-y-8">
-            <TabsList className="mx-auto grid w-full max-w-lg grid-cols-3">
-              <TabsTrigger value="trending" className="gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Trending
-              </TabsTrigger>
-              <TabsTrigger value="people" className="gap-2">
-                <Users className="w-4 h-4" />
-                People
-              </TabsTrigger>
-              <TabsTrigger value="collections" className="gap-2">
-                <Bookmark className="w-4 h-4" />
-                Collections
-              </TabsTrigger>
-            </TabsList>
+        {/* Categories */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center justify-center gap-3 overflow-x-auto pb-4 mb-10 scrollbar-hide px-4"
+        >
+          <CategoryChip
+            category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
+            isSelected={selectedCategory === null}
+            onClick={() => setSelectedCategory(null)}
+          />
+          {categories.map((category) => (
+            <CategoryChip
+              key={category.id}
+              category={category}
+              isSelected={selectedCategory === category.id}
+              onClick={() => setSelectedCategory(category.id)}
+            />
+          ))}
+        </motion.div>
 
-            {/* Trending Tab */}
-            <TabsContent value="trending">
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              >
-                {filteredFavorites.map((favorite) => (
-                  <motion.div key={favorite.id} variants={itemVariants}>
-                    <FavoriteCard favorite={favorite} />
-                  </motion.div>
-                ))}
-              </motion.div>
+        {/* Tabs */}
+        <Tabs defaultValue="trending" className="space-y-8">
+          <TabsList className="mx-auto grid w-full max-w-md grid-cols-3 bg-secondary/10 p-1 rounded-full border border-white/5">
+            <TabsTrigger value="trending" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Trending
+            </TabsTrigger>
+            <TabsTrigger value="people" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              People
+            </TabsTrigger>
+            <TabsTrigger value="collections" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Collections
+            </TabsTrigger>
+          </TabsList>
 
-              {filteredFavorites.length === 0 && (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <Search className="w-10 h-10 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold mb-2">No results found</h3>
-                  <p className="text-muted-foreground">
-                    Try adjusting your search or filters
-                  </p>
+          {/* Trending Tab - WIDER GRID */}
+          <TabsContent value="trending">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredFavorites.map((favorite) => (
+                <motion.div key={favorite.id} variants={itemVariants}>
+                  <FavoriteCard favorite={favorite} />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {filteredFavorites.length === 0 && (
+              <div className="text-center py-20">
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-card flex items-center justify-center border border-white/5 animate-pulse">
+                  <Search className="w-10 h-10 text-muted-foreground" />
                 </div>
-              )}
-            </TabsContent>
-
-            {/* People Tab */}
-            <TabsContent value="people">
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-              >
-                {allUsers.filter(u => u.id !== user.id).map((u) => (
-                  <motion.div key={u.id} variants={itemVariants}>
-                    <UserCard user={u} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </TabsContent>
-
-            {/* Collections Tab */}
-            <TabsContent value="collections">
-              <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <Bookmark className="w-10 h-10 text-muted-foreground" />
-                </div>
-                <h3 className="font-display text-xl font-semibold mb-2">Community Collections</h3>
-                <p className="text-muted-foreground mb-4">
-                  Curated collections from the community coming soon!
+                <h3 className="font-display text-2xl font-bold mb-2">No results found</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or filters to explore the cosmos.
                 </p>
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+          </TabsContent>
+
+          {/* People Tab */}
+          <TabsContent value="people">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {allUsers.filter(u => u.id !== user.id).map((u) => (
+                <motion.div key={u.id} variants={itemVariants}>
+                  <UserCard user={u} />
+                </motion.div>
+              ))}
+            </motion.div>
+          </TabsContent>
+
+          {/* Collections Tab */}
+          <TabsContent value="collections">
+            <div className="text-center py-20 bg-card/30 rounded-3xl border border-white/5 border-dashed">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bookmark className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-semibold mb-2">Curated Collections</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                Explore hand-picked collections from our top tastemakers. Coming soon to a galaxy near you.
+              </p>
+              <Button variant="outline">Notify Me</Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

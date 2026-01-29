@@ -1,8 +1,10 @@
-import { motion } from 'framer-motion';
 import { Favorite } from '@/types/wishbook';
-import { Star, Clock, Heart } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { moodOptions } from '@/data/mockData';
+import { useWishbook } from '@/contexts/WishbookContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
 
 interface FavoriteCardProps {
   favorite: Favorite;
@@ -10,69 +12,102 @@ interface FavoriteCardProps {
 }
 
 export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
-  const getMoodEmoji = (moodId: string) => {
-    return moodOptions.find(m => m.id === moodId)?.emoji || '✨';
+  const { allUsers } = useWishbook();
+  const author = allUsers.find(u => u.id === favorite.userId) || {
+    name: 'Unknown User',
+    username: 'unknown',
+    avatar: '',
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="elevated-card overflow-hidden cursor-pointer group"
-      onClick={onClick}
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 mb-4 hover:border-primary/20 transition-colors"
     >
-      {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden">
-        <img
-          src={favorite.image}
-          alt={favorite.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent" />
-        
-        {/* Rating Badge */}
-        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-background/90 backdrop-blur-sm">
-          <Star className="w-3.5 h-3.5 text-secondary fill-secondary" />
-          <span className="text-sm font-semibold">{favorite.rating}</span>
-        </div>
-
-        {/* Content Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="font-display text-lg font-semibold text-primary-foreground mb-2 line-clamp-2">
-            {favorite.title}
-          </h3>
-          
-          {/* Mood Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {favorite.mood.slice(0, 3).map((mood) => (
-              <span 
-                key={mood} 
-                className="text-xs px-2 py-0.5 rounded-full bg-primary-foreground/20 backdrop-blur-sm text-primary-foreground"
-              >
-                {getMoodEmoji(mood)} {mood}
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10 ring-2 ring-primary/20 cursor-pointer">
+            <AvatarImage src={author.avatar} />
+            <AvatarFallback>{author.name[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground hover:underline cursor-pointer">
+                {author.name}
               </span>
-            ))}
+              <span className="text-muted-foreground text-sm">
+                @{author.username}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                • {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
+              </span>
+            </div>
+            {favorite.timePeriod && (
+               <p className="text-xs text-primary/80 flex items-center gap-1">
+                 <Star className="w-3 h-3 fill-current" /> 
+                 {favorite.title} • {favorite.rating}/10
+               </p>
+            )}
           </div>
         </div>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
       </div>
 
-      {/* Bottom Section */}
-      <div className="p-4 space-y-3">
-        <p className="text-sm text-muted-foreground line-clamp-2">
+      {/* Content */}
+      <div className="" onClick={onClick}>
+        <h3 className="text-lg font-display font-semibold mb-2">{favorite.title}</h3>
+        <p className="text-foreground/90 mb-3 whitespace-pre-wrap leading-relaxed">
           {favorite.whyILike}
         </p>
-        
-        <div className="flex items-center justify-between">
-          {favorite.timePeriod && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{favorite.timePeriod}</span>
-            </div>
-          )}
-          
-          <button className="p-1.5 rounded-full hover:bg-accent transition-colors">
-            <Heart className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
-          </button>
+
+        {/* Media */}
+        {favorite.image && (
+          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/20 relative group cursor-pointer">
+            <img 
+              src={favorite.image} 
+              alt={favorite.title} 
+              className="w-full max-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          </div>
+        )}
+
+        {/* Tags/Moods */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {favorite.mood.map((m) => (
+            <span key={m} className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              #{m}
+            </span>
+          ))}
+          {favorite.tags.map((t) => (
+            <span key={t} className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+              #{t}
+            </span>
+          ))}
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+          <div className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 px-2 rounded-full group">
+              <Heart className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="text-xs">24</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 px-2 rounded-full group">
+              <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span className="text-xs">8</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-green-500 hover:bg-green-500/10 px-2 rounded-full group">
+              <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:text-primary px-2">
+             <Bookmark className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </motion.div>

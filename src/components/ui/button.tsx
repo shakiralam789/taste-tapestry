@@ -45,7 +45,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button";
     
     const gradientStyle = variant === 'gradient' ? {
-      background: 'var(--gradient-sunset)',
+      background: 'var(--gradient-cyber)',
       ...style
     } : style;
     

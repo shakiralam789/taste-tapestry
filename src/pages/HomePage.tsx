@@ -1,82 +1,62 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { FavoriteCard } from '@/components/favorites/FavoriteCard';
 import { CategoryChip } from '@/components/categories/CategoryChip';
-import { TimeCapsuleCard } from '@/components/capsules/TimeCapsuleCard';
-import { UserCard } from '@/components/users/UserCard';
-import { Button } from '@/components/ui/button';
 import { useWishbook } from '@/contexts/WishbookContext';
-import { Plus, Sparkles, TrendingUp, Heart, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PenSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function HomePage() {
-  const { user, categories, favorites, timeCapsules, allUsers } = useWishbook();
+  const { favorites, categories } = useWishbook();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [feedType, setFeedType] = useState<'foryou' | 'following'>('foryou');
 
   const filteredFavorites = selectedCategory 
     ? favorites.filter(f => f.categoryId === selectedCategory)
     : favorites;
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
   return (
-    <Layout>
-      <div className="min-h-screen">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden py-16 md:py-24">
-          <div className="absolute inset-0" style={{ background: 'var(--gradient-sunset)', opacity: 0.08 }} />
-          <div className="absolute top-10 right-10 w-96 h-96 rounded-full blur-3xl opacity-20" style={{ background: 'var(--gradient-sunset)' }} />
-          
-          <div className="container mx-auto px-4 relative">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-3xl"
-            >
-              <h1 className="font-display text-4xl md:text-6xl font-bold mb-4">
-                Welcome back,{' '}
-                <span className="gradient-text">{user.name.split(' ')[0]}</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground mb-8">
-                Curate your world. Share your story. Discover kindred spirits.
-              </p>
-              
-              <div className="flex flex-wrap gap-3">
-                <Link to="/add-favorite">
-                  <Button variant="gradient" size="lg">
-                    <Plus className="w-5 h-5" />
-                    Add Favorite
-                  </Button>
-                </Link>
-                <Link to="/mood">
-                  <Button variant="outline" size="lg">
-                    <Sparkles className="w-5 h-5" />
-                    Discover by Mood
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
+    <Layout className="max-w-2xl mx-auto">
+      <div className="min-h-screen pt-4 sm:pt-6">
+        
+        {/* Header / Tabs */}
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-white/5 px-4 mb-4 -mx-4 md:rounded-xl md:mx-0 md:top-4">
+          <div className="flex items-center justify-between pb-3 pt-3">
+             <div className="flex gap-6">
+                <button 
+                  onClick={() => setFeedType('foryou')}
+                  className={`text-sm font-bold relative pb-2 transition-colors ${feedType === 'foryou' ? 'text-foreground' : 'text-muted-foreground'}`}
+                >
+                  For You
+                  {feedType === 'foryou' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />
+                  )}
+                </button>
+                <button 
+                  onClick={() => setFeedType('following')}
+                  className={`text-sm font-bold relative pb-2 transition-colors ${feedType === 'following' ? 'text-foreground' : 'text-muted-foreground'}`}
+                >
+                  Following
+                  {feedType === 'following' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />
+                  )}
+                </button>
+             </div>
+             
+             {/* Mobile Create Post (Visible only on very small screens if needed, otherwise FAB or in nav) */}
+             <div className="md:hidden">
+              <Link to="/add-favorite">
+                <Button size="icon" variant="ghost">
+                  <PenSquare className="w-5 h-5" />
+                </Button>
+              </Link>
+             </div>
           </div>
-        </section>
 
-        {/* Categories */}
-        <section className="py-8 border-b border-border">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              <CategoryChip
+          {/* Categories Filter */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+             <CategoryChip
                 category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
                 isSelected={selectedCategory === null}
                 onClick={() => setSelectedCategory(null)}
@@ -90,108 +70,35 @@ export default function HomePage() {
                   count={favorites.filter(f => f.categoryId === category.id).length}
                 />
               ))}
-            </div>
           </div>
-        </section>
+        </header>
 
-        {/* Main Content Grid */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <Heart className="w-6 h-6 text-primary" />
-                <h2 className="font-display text-2xl font-semibold">Your Favorites</h2>
-              </div>
-              <Link to="/favorites">
-                <Button variant="ghost" size="sm">View All →</Button>
-              </Link>
+        {/* Create Post Input (Desktop) */}
+        <div className="hidden md:block mb-6 relative group">
+           <Link to="/add-favorite">
+             <div className="flex gap-4 p-4 bg-card/30 rounded-xl border border-white/5 cursor-text hover:bg-card/50 transition-colors">
+               <div className="w-10 h-10 rounded-full bg-gradient-cyber" />
+               <div className="flex-1 text-muted-foreground pt-2">
+                 Share your taste with the universe...
+               </div>
+               <Button size="sm" className="absolute right-4 bottom-4">Post</Button>
+             </div>
+           </Link>
+        </div>
+
+        {/* Feed */}
+        <div className="space-y-4 px-4 md:px-0">
+          {filteredFavorites.length > 0 ? (
+            filteredFavorites.map((favorite) => (
+              <FavoriteCard key={favorite.id} favorite={favorite} />
+            ))
+          ) : (
+            <div className="text-center py-20 text-muted-foreground">
+              <p>No favorites found in this category.</p>
+              <Link to="/add-favorite" className="text-primary hover:underline">Create a post</Link>
             </div>
-
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-              {filteredFavorites.slice(0, 4).map((favorite) => (
-                <motion.div key={favorite.id} variants={itemVariants}>
-                  <FavoriteCard favorite={favorite} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Time Capsules */}
-        <section className="py-12 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <Clock className="w-6 h-6 text-primary" />
-                <h2 className="font-display text-2xl font-semibold">Time Capsules</h2>
-              </div>
-              <Link to="/capsules">
-                <Button variant="ghost" size="sm">View All →</Button>
-              </Link>
-            </div>
-
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {timeCapsules.map((capsule) => (
-                <motion.div key={capsule.id} variants={itemVariants}>
-                  <TimeCapsuleCard capsule={capsule} />
-                </motion.div>
-              ))}
-              
-              {/* Add New Capsule Card */}
-              <motion.div variants={itemVariants}>
-                <Link to="/create-capsule">
-                  <div className="elevated-card p-8 h-full min-h-[280px] flex flex-col items-center justify-center text-center border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                      <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                    <h3 className="font-semibold text-foreground mb-2">Create Time Capsule</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Capture a moment in time with your favorites
-                    </p>
-                  </div>
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Discover People */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-6 h-6 text-primary" />
-                <h2 className="font-display text-2xl font-semibold">People You May Like</h2>
-              </div>
-              <Link to="/discover">
-                <Button variant="ghost" size="sm">Discover More →</Button>
-              </Link>
-            </div>
-
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            >
-              {allUsers.filter(u => u.id !== user.id).slice(0, 4).map((u) => (
-                <motion.div key={u.id} variants={itemVariants}>
-                  <UserCard user={u} />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
+          )}
+        </div>
       </div>
     </Layout>
   );
