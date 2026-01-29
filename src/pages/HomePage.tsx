@@ -55,7 +55,7 @@ export default function HomePage() {
           </div>
 
           {/* Categories Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 py-1">
              <CategoryChip
                 category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
                 isSelected={selectedCategory === null}

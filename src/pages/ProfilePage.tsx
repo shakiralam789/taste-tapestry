@@ -41,7 +41,7 @@ export default function ProfilePage() {
     <Layout>
       <div className="min-h-screen pb-12">
         {/* Immersive Cyber Banner */}
-        <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-b-[3rem] shadow-neon">
+        <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-lg border shadow-sm">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 mix-blend-overlay" />
