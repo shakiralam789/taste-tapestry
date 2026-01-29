@@ -40,10 +40,10 @@ export function Sidebar() {
             <Link key={item.path} to={item.path}>
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
-                className={`w-full justify-start gap-3 text-lg font-medium h-12 mb-1 ${
+                className={`w-full justify-start gap-3 text-base font-medium h-12 mb-1 ${
                   isActive 
                     ? 'bg-primary/10 text-primary hover:bg-primary/20 shadow-[0_0_15px_-5px_hsl(var(--primary)/0.3)]' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    : 'text-foreground hover:text-foreground hover:bg-white/5'
                 }`}
               >
                 <item.icon className={`w-6 h-6 ${isActive ? 'text-primary' : ''}`} />

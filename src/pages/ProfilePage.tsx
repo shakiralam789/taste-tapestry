@@ -15,7 +15,8 @@ import {
   Share2,
   Sparkles,
   Plus,
-  Rocket
+  Rocket,
+  Users
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';

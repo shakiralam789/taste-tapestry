@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Futuristic / Cyberpunk Palette */
-    --background: 240 25% 4%; /* #08080d */
+    --background: 240 2% 11%; /* #08080d */
     --foreground: 210 20% 98%;
 
     --card: 240 22% 8%;
@@ -55,7 +55,7 @@
     --shadow-glow: 0 0 20px -5px hsl(190 100% 50% / 0.4);
     --shadow-neon: 0 0 10px hsl(190 100% 50% / 0.5), 0 0 20px hsl(190 100% 50% / 0.3);
     
-    --sidebar-background: 240 25% 5%;
+    --sidebar-background: 240 2% 11%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 190 100% 50%;
     --sidebar-primary-foreground: 240 25% 4%;
