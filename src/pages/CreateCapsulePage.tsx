@@ -109,7 +109,7 @@ export default function CreateCapsulePage() {
             className="space-y-6"
           >
             {/* Cover Image */}
-            <div className="elevated-card p-6">
+            <div className="elevated-card">
               <Label className="text-base font-medium mb-3 block">Cover Image</Label>
               <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function CreateCapsulePage() {
             </div>
 
             {/* Basic Info */}
-            <div className="elevated-card p-6 space-y-4">
+            <div className="elevated-card space-y-4">
               <div>
                 <Label htmlFor="title" className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary" />
@@ -165,7 +165,7 @@ export default function CreateCapsulePage() {
             </div>
 
             {/* Select Favorites */}
-            <div className="elevated-card p-6">
+            <div className="elevated-card">
               <Label className="text-base font-medium mb-4 block">
                 Select Favorites to Include
               </Label>
@@ -210,7 +210,7 @@ export default function CreateCapsulePage() {
             </div>
 
             {/* Emotions */}
-            <div className="elevated-card p-6">
+            <div className="elevated-card">
               <Label className="text-base font-medium mb-4 block">
                 Emotions & Feelings
               </Label>
@@ -261,7 +261,7 @@ export default function CreateCapsulePage() {
             </div>
 
             {/* Story */}
-            <div className="elevated-card p-6">
+            <div className="elevated-card">
               <Label htmlFor="story" className="text-base font-medium flex items-center gap-2 mb-3">
                 <Sparkles className="w-5 h-5 text-primary" />
                 Your Story (Optional)

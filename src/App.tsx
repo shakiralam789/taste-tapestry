@@ -10,6 +10,7 @@ import MoodPage from "./pages/MoodPage";
 import CapsulesPage from "./pages/CapsulesPage";
 import MatchesPage from "./pages/MatchesPage";
 import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import AddFavoritePage from "./pages/AddFavoritePage";
 import CreateCapsulePage from "./pages/CreateCapsulePage";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/capsules" element={<CapsulesPage />} />
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/users/:id" element={<UserProfilePage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/add-favorite" element={<AddFavoritePage />} />
             <Route path="/create-capsule" element={<CreateCapsulePage />} />

@@ -14,7 +14,7 @@ export function UserCard({ user, onClick }: UserCardProps) {
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
-      className="elevated-card p-5 cursor-pointer"
+      className="elevated-card p-5 cursor-pointer border rounded-lg"
       onClick={onClick}
     >
       <div className="flex flex-col items-center text-center">

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface FavoriteCardProps {
   favorite: Favorite;
@@ -13,10 +14,19 @@ interface FavoriteCardProps {
 
 export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
   const { allUsers } = useWishbook();
+  const navigate = useNavigate();
+
   const author = allUsers.find(u => u.id === favorite.userId) || {
     name: 'Unknown User',
     username: 'unknown',
     avatar: '',
+  };
+
+  const handleAuthorClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (favorite.userId) {
+      navigate(`/users/${favorite.userId}`);
+    }
   };
 
   return (
@@ -29,18 +39,24 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10 ring-2 ring-primary/20 cursor-pointer">
+          <Avatar 
+            className="w-10 h-10 ring-2 ring-primary/20 cursor-pointer"
+            onClick={handleAuthorClick}
+          >
             <AvatarImage src={author.avatar} />
             <AvatarFallback>{author.name[0]}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground hover:underline cursor-pointer">
+              <span
+                className="font-bold text-foreground hover:underline cursor-pointer"
+                onClick={handleAuthorClick}
+              >
                 {author.name}
               </span>
-              <span className="text-muted-foreground text-sm">
+              {/* <span className="text-muted-foreground text-sm">
                 @{author.username}
-              </span>
+              </span> */}
               <span className="text-muted-foreground text-xs">
                 • {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
               </span>

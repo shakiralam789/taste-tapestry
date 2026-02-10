@@ -157,7 +157,7 @@ export default function MoodPage() {
             >
               <div className="elevated-card p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'var(--gradient-sunset)' }}>
-                  <Shuffle className="w-8 h-8 text-primary-foreground" />
+                  <Shuffle className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="font-display text-xl font-semibold mb-2">
                   Blind Recommendation Roulette
