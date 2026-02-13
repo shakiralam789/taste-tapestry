@@ -20,7 +20,8 @@ import {
   Plus
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { Favorite, Mood } from '@/types/wishbook';
+import { EmotionalJourneyEditor } from '@/components/favorites/EmotionalJourneyEditor';
+import { Favorite, Mood, EmotionalCurvePoint } from '@/types/wishbook';
 
 export default function AddFavoritePage() {
   const navigate = useNavigate();
@@ -41,6 +42,8 @@ export default function AddFavoritePage() {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [recommendedTimes, setRecommendedTimes] = useState<string[]>([]);
+  const [totalDurationSeconds, setTotalDurationSeconds] = useState(0);
+  const [emotionalCurve, setEmotionalCurve] = useState<EmotionalCurvePoint[]>([]);
 
   const timeOptions = [
     { id: 'night', label: '🌙 Night' },
@@ -96,6 +99,8 @@ export default function AddFavoritePage() {
         genre: formData.genre.split(',').map(g => g.trim()),
         releaseYear: parseInt(formData.releaseYear) || new Date().getFullYear(),
         plotSummary: formData.plotSummary,
+        totalDurationSeconds: totalDurationSeconds || undefined,
+        emotionalCurve: emotionalCurve.length > 0 ? emotionalCurve : undefined,
       },
     };
 
@@ -268,6 +273,17 @@ export default function AddFavoritePage() {
                 placeholder="e.g., College Years, Summer 2023, First Job"
                 value={formData.timePeriod}
                 onChange={(e) => setFormData(prev => ({ ...prev, timePeriod: e.target.value }))}
+              />
+            </div>
+
+            {/* Emotional journey graph + moment pins */}
+            <div className="elevated-card p-6">
+              <EmotionalJourneyEditor
+                categoryId={selectedCategory}
+                totalDurationSeconds={totalDurationSeconds}
+                onTotalDurationSecondsChange={setTotalDurationSeconds}
+                curvePoints={emotionalCurve}
+                onCurveChange={setEmotionalCurve}
               />
             </div>
 

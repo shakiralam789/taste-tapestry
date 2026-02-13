@@ -53,6 +53,31 @@ export interface CustomField {
 }
 
 // Favorite Types
+/** One point on the emotional curve: x = time in seconds, y = intensity 0–10. Optional image & note per point. */
+export interface EmotionalCurvePoint {
+  id: string;
+  /** Time position in seconds (depends on movie/song/episode duration) */
+  x: number;
+  /** Intensity / how you felt: 0 (low) to 10 (high) */
+  y: number;
+  image?: string;
+  note?: string;
+}
+
+/** A moment pin: a specific point in the experience with optional image and note. For series/anime, use season + episode. */
+export interface MomentPin {
+  id: string;
+  positionPercent: number;
+  note: string;
+  image?: string;
+  /** Series/Anime: season number (1-based) */
+  season?: number;
+  /** Series/Anime: episode number (1-based) */
+  episode?: number;
+  /** Series/Anime: position within the episode (0-100) */
+  positionInEpisodePercent?: number;
+}
+
 export interface Favorite {
   id: string;
   userId: string;

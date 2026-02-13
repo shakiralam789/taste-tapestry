@@ -1,5 +1,6 @@
 import { Favorite } from '@/types/wishbook';
 import { useWishbook } from '@/contexts/WishbookContext';
+import { EmotionalJourneyView } from '@/components/favorites/EmotionalJourneyView';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star } from 'lucide-react';
@@ -88,6 +89,21 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
               src={favorite.image} 
               alt={favorite.title} 
               className="w-full max-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          </div>
+        )}
+
+        {/* Emotional journey (read-only) when present */}
+        {((favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
+          (favorite.fields?.emotionalCurve?.length >= 2 && favorite.fields?.emotionalCurve?.some((p: { id?: string }) => p.id)) ||
+          (favorite.fields?.emotionalCurve?.length >= 5) ||
+          (favorite.fields?.momentPins?.length ?? 0) > 0) && (
+          <div className="mb-4 p-4 rounded-xl bg-card/30 border border-white/5">
+            <EmotionalJourneyView
+              categoryId={favorite.categoryId}
+              totalDurationSeconds={favorite.fields?.totalDurationSeconds}
+              curvePoints={Array.isArray(favorite.fields.emotionalCurve) ? favorite.fields.emotionalCurve : []}
+              momentPins={Array.isArray(favorite.fields.momentPins) ? favorite.fields.momentPins : []}
             />
           </div>
         )}
