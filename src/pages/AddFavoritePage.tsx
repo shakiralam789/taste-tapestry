@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -9,24 +9,43 @@ import { Label } from '@/components/ui/label';
 import { CategoryChip } from '@/components/categories/CategoryChip';
 import { useWishbook } from '@/contexts/WishbookContext';
 import { moodOptions } from '@/data/mockData';
-import { 
-  ArrowLeft, 
-  Upload, 
-  Star, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Upload,
+  Star,
   Sparkles,
   Clock,
   Tag,
   X,
-  Plus
+  Plus,
+  Check,
+  Film,
+  Heart,
+  TrendingUp,
+  Palette,
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { EmotionalJourneyEditor } from '@/components/favorites/EmotionalJourneyEditor';
 import { Favorite, Mood, EmotionalCurvePoint } from '@/types/wishbook';
 
+const TOTAL_STEPS = 4;
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop';
+
+const timeOptions = [
+  { id: 'night', label: '🌙 Night' },
+  { id: 'morning', label: '☀️ Morning' },
+  { id: 'rainy-day', label: '🌧️ Rainy Day' },
+  { id: 'alone', label: '🧘 Alone' },
+  { id: 'with-friends', label: '👥 With Friends' },
+  { id: 'weekend', label: '📅 Weekend' },
+];
+
 export default function AddFavoritePage() {
   const navigate = useNavigate();
   const { categories, addFavorite } = useWishbook();
-  
+
+  const [step, setStep] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string>('movies');
   const [formData, setFormData] = useState({
     title: '',
@@ -45,40 +64,27 @@ export default function AddFavoritePage() {
   const [totalDurationSeconds, setTotalDurationSeconds] = useState(0);
   const [emotionalCurve, setEmotionalCurve] = useState<EmotionalCurvePoint[]>([]);
 
-  const timeOptions = [
-    { id: 'night', label: '🌙 Night' },
-    { id: 'morning', label: '☀️ Morning' },
-    { id: 'rainy-day', label: '🌧️ Rainy Day' },
-    { id: 'alone', label: '🧘 Alone' },
-    { id: 'with-friends', label: '👥 With Friends' },
-    { id: 'weekend', label: '📅 Weekend' },
-  ];
-
   const toggleMood = (mood: Mood) => {
-    setSelectedMoods(prev => 
-      prev.includes(mood) 
-        ? prev.filter(m => m !== mood)
-        : [...prev, mood]
+    setSelectedMoods((prev) =>
+      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]
     );
   };
 
   const toggleTime = (time: string) => {
-    setRecommendedTimes(prev =>
-      prev.includes(time)
-        ? prev.filter(t => t !== time)
-        : [...prev, time]
+    setRecommendedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
     );
   };
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags(prev => [...prev, newTag.trim()]);
+      setTags((prev) => [...prev, newTag.trim()]);
       setNewTag('');
     }
   };
 
   const removeTag = (tag: string) => {
-    setTags(prev => prev.filter(t => t !== tag));
+    setTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const handleSubmit = () => {
@@ -87,7 +93,7 @@ export default function AddFavoritePage() {
       userId: '1',
       categoryId: selectedCategory,
       title: formData.title,
-      image: formData.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop',
+      image: formData.image || DEFAULT_IMAGE,
       rating: formData.rating,
       mood: selectedMoods,
       whyILike: formData.whyILike,
@@ -96,282 +102,458 @@ export default function AddFavoritePage() {
       tags,
       createdAt: new Date(),
       fields: {
-        genre: formData.genre.split(',').map(g => g.trim()),
+        genre: formData.genre.split(',').map((g) => g.trim()),
         releaseYear: parseInt(formData.releaseYear) || new Date().getFullYear(),
         plotSummary: formData.plotSummary,
         totalDurationSeconds: totalDurationSeconds || undefined,
         emotionalCurve: emotionalCurve.length > 0 ? emotionalCurve : undefined,
       },
     };
-
     addFavorite(newFavorite);
     navigate('/profile');
   };
 
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  const isInitialMount = useRef(true);
+
+  const goNext = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+  const goBack = () => setStep((s) => Math.max(1, s - 1));
+
+  // When step changes (Next or Back), scroll so the current section is at the top (smooth). Skip on first load.
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const el = sectionRefs.current[step - 1];
+    if (el) {
+      const timer = requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return () => cancelAnimationFrame(timer);
+    }
+  }, [step]);
+
+  const sectionBlur = (sectionIndex: number) =>
+    step > sectionIndex + 1 ? 'blur-[2px] opacity-50 pointer-events-none select-none' : '';
+
+  const sectionTransitionClass =
+    'transition-[filter,opacity] duration-500 ease-out';
+
   return (
     <Layout>
-      <div className="min-h-screen py-12">
-        <div className="container mx-auto px-4 max-w-3xl">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(-1)}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4" />
+      <div className="min-h-screen py-8 pb-16">
+        <div className="container mx-auto px-4">
+          {/* Header + progress */}
+          <div className="mb-8">
+            <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-2">
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="font-display text-3xl font-bold">
-              Add New <span className="gradient-text">Favorite</span>
-            </h1>
-            <p className="text-muted-foreground">
-              Share something you love with the world
-            </p>
-          </motion.div>
-
-          {/* Category Selection */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
-            <Label className="text-base font-medium mb-3 block">Category</Label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <CategoryChip
-                  key={category.id}
-                  category={category}
-                  isSelected={selectedCategory === category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                />
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
-            {/* Image Upload */}
-            <div className="elevated-card p-6">
-              <Label className="text-base font-medium mb-3 block">Cover Image</Label>
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Drag and drop or click to upload
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="font-display text-2xl sm:text-3xl font-bold">
+                  Add New <span className="gradient-text">Favorite</span>
+                </h1>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Step {step} of {TOTAL_STEPS}
                 </p>
-                <Input
-                  placeholder="Or paste an image URL"
-                  value={formData.image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                  className="max-w-md mx-auto"
-                />
               </div>
-            </div>
-
-            {/* Basic Info */}
-            <div className="elevated-card p-6 space-y-4">
-              <div>
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Eternal Sunshine of the Spotless Mind"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="genre">Genre</Label>
-                  <Input
-                    id="genre"
-                    placeholder="e.g., Romance, Drama"
-                    value={formData.genre}
-                    onChange={(e) => setFormData(prev => ({ ...prev, genre: e.target.value }))}
+              <div className="flex items-center gap-2">
+                {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setStep(i + 1)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i + 1 === step
+                        ? 'w-8 bg-primary'
+                        : i + 1 < step
+                          ? 'w-2 bg-primary/60'
+                          : 'w-2 bg-muted'
+                    }`}
+                    aria-label={`Go to step ${i + 1}`}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="year">Release Year</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    placeholder="e.g., 2004"
-                    value={formData.releaseYear}
-                    onChange={(e) => setFormData(prev => ({ ...prev, releaseYear: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="plot">Plot Summary</Label>
-                <Textarea
-                  id="plot"
-                  placeholder="Brief description..."
-                  value={formData.plotSummary}
-                  onChange={(e) => setFormData(prev => ({ ...prev, plotSummary: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            {/* Rating */}
-            <div className="elevated-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <Star className="w-5 h-5 text-secondary" />
-                  Your Rating
-                </Label>
-                <span className="text-2xl font-display font-bold gradient-text">
-                  {formData.rating}/10
-                </span>
-              </div>
-              <Slider
-                value={[formData.rating]}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, rating: value[0] }))}
-                max={10}
-                min={1}
-                step={0.5}
-                className="w-full"
-              />
-            </div>
-
-            {/* Why I Like */}
-            <div className="elevated-card p-6">
-              <Label htmlFor="why" className="text-base font-medium flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-primary" />
-                Why I Love This *
-              </Label>
-              <Textarea
-                id="why"
-                placeholder="What makes this special to you? Share your personal connection..."
-                value={formData.whyILike}
-                onChange={(e) => setFormData(prev => ({ ...prev, whyILike: e.target.value }))}
-                rows={4}
-              />
-            </div>
-
-            {/* Time Period */}
-            <div className="elevated-card p-6">
-              <Label htmlFor="period" className="text-base font-medium flex items-center gap-2 mb-3">
-                <Clock className="w-5 h-5 text-primary" />
-                Time Period of Your Life
-              </Label>
-              <Input
-                id="period"
-                placeholder="e.g., College Years, Summer 2023, First Job"
-                value={formData.timePeriod}
-                onChange={(e) => setFormData(prev => ({ ...prev, timePeriod: e.target.value }))}
-              />
-            </div>
-
-            {/* Emotional journey graph + moment pins */}
-            <div className="elevated-card p-6">
-              <EmotionalJourneyEditor
-                categoryId={selectedCategory}
-                totalDurationSeconds={totalDurationSeconds}
-                onTotalDurationSecondsChange={setTotalDurationSeconds}
-                curvePoints={emotionalCurve}
-                onCurveChange={setEmotionalCurve}
-              />
-            </div>
-
-            {/* Mood Selection */}
-            <div className="elevated-card p-6">
-              <Label className="text-base font-medium mb-4 block">Mood Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {moodOptions.map((mood) => (
-                  <Button
-                    key={mood.id}
-                    variant={selectedMoods.includes(mood.id) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleMood(mood.id)}
-                    className="gap-1"
-                  >
-                    {mood.emoji} {mood.name}
-                  </Button>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Recommended Time */}
-            <div className="elevated-card p-6">
-              <Label className="text-base font-medium mb-4 block">Best Time to Experience</Label>
-              <div className="flex flex-wrap gap-2">
-                {timeOptions.map((time) => (
-                  <Button
-                    key={time.id}
-                    variant={recommendedTimes.includes(time.id) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleTime(time.id)}
-                  >
-                    {time.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="elevated-card p-6">
-              <Label className="text-base font-medium flex items-center gap-2 mb-4">
-                <Tag className="w-5 h-5 text-primary" />
-                Custom Tags
-              </Label>
-              <div className="flex gap-2 mb-3">
-                <Input
-                  placeholder="Add a tag..."
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                />
-                <Button onClick={addTag} variant="outline">
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent text-sm"
-                    >
-                      {tag}
-                      <button onClick={() => removeTag(tag)}>
-                        <X className="w-3 h-3" />
-                      </button>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+            {/* Left: Form sections — only show sections up to current step */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Section 1: Category + Cover + Basic info (visible from step 1) */}
+              {step > 0 && (
+              <motion.section
+                ref={(el) => { sectionRefs.current[0] = el; }}
+                layout
+                transition={{ type: 'spring', damping: 25 }}
+                className={`elevated-card p-6 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Film className="w-5 h-5 text-primary" />
+                  <h2 className="font-display text-lg font-semibold">Basics</h2>
+                  {step > 1 && (
+                    <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Done
                     </span>
-                  ))}
+                  )}
                 </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block">Category</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => (
+                        <CategoryChip
+                          key={cat.id}
+                          category={cat}
+                          isSelected={selectedCategory === cat.id}
+                          onClick={() => setSelectedCategory(cat.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block">Cover Image</Label>
+                    <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                      <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                      <Input
+                        placeholder="Paste image URL"
+                        value={formData.image}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
+                        className="max-w-sm mx-auto bg-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="title">Title *</Label>
+                    <Input
+                      id="title"
+                      placeholder="e.g., Eternal Sunshine of the Spotless Mind"
+                      value={formData.title}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="genre">Genre</Label>
+                      <Input
+                        id="genre"
+                        placeholder="Romance, Drama"
+                        value={formData.genre}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, genre: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="year">Year</Label>
+                      <Input
+                        id="year"
+                        type="number"
+                        placeholder="2004"
+                        value={formData.releaseYear}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, releaseYear: e.target.value }))}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="plot">Plot Summary</Label>
+                    <Textarea
+                      id="plot"
+                      placeholder="Brief description..."
+                      value={formData.plotSummary}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, plotSummary: e.target.value }))}
+                      rows={2}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                {step === 1 && (
+                  <div className="mt-6 flex justify-end">
+                    <Button onClick={goNext} className="gap-2">
+                      Next <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </motion.section>
+              )}
+
+              {/* Section 2: Rating + Why + Time period (appears after step 1 complete) */}
+              {step > 1 && (
+              <motion.section
+                ref={(el) => { sectionRefs.current[1] = el; }}
+                layout
+                transition={{ type: 'spring', damping: 25 }}
+                className={`elevated-card p-6 rounded-2xl ${sectionTransitionClass} ${sectionBlur(1)}`}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Heart className="w-5 h-5 text-primary" />
+                  <h2 className="font-display text-lg font-semibold">Why you love it</h2>
+                  {step > 2 && (
+                    <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Done
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Your Rating</Label>
+                      <span className="text-xl font-display font-bold gradient-text">{formData.rating}/10</span>
+                    </div>
+                    <Slider
+                      value={[formData.rating]}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, rating: v[0] }))}
+                      max={10}
+                      min={1}
+                      step={0.5}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="why">Why I Love This *</Label>
+                    <Textarea
+                      id="why"
+                      placeholder="What makes this special to you?"
+                      value={formData.whyILike}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, whyILike: e.target.value }))}
+                      rows={4}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="period">Time Period of Your Life</Label>
+                    <Input
+                      id="period"
+                      placeholder="e.g., College Years, Summer 2023"
+                      value={formData.timePeriod}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, timePeriod: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                {step === 2 && (
+                  <div className="mt-6 flex justify-between">
+                    <Button variant="outline" onClick={goBack}>
+                      Back
+                    </Button>
+                    <Button onClick={goNext} className="gap-2">
+                      Next <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </motion.section>
+              )}
+
+              {/* Section 3: Emotional journey (appears after step 2 complete) */}
+              {step > 2 && (
+              <motion.section
+                ref={(el) => { sectionRefs.current[2] = el; }}
+                layout
+                transition={{ type: 'spring', damping: 25 }}
+                className={`elevated-card p-6 rounded-2xl ${sectionTransitionClass} ${sectionBlur(2)}`}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  {/* <TrendingUp className="w-5 h-5 text-primary" /> */}
+                  {/* <h2 className="font-display text-lg font-semibold">Emotional journey</h2> */}
+                  {step > 3 && (
+                    <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Done
+                    </span>
+                  )}
+                </div>
+                <EmotionalJourneyEditor
+                  categoryId={selectedCategory}
+                  totalDurationSeconds={totalDurationSeconds}
+                  onTotalDurationSecondsChange={setTotalDurationSeconds}
+                  curvePoints={emotionalCurve}
+                  onCurveChange={setEmotionalCurve}
+                />
+                {step === 3 && (
+                  <div className="mt-6 flex justify-between">
+                    <Button variant="outline" onClick={goBack}>
+                      Back
+                    </Button>
+                    <Button onClick={goNext} className="gap-2">
+                      Next <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </motion.section>
+              )}
+
+              {/* Section 4: Moods + Times + Tags + Submit (appears after step 3 complete) */}
+              {step > 3 && (
+              <motion.section
+                ref={(el) => { sectionRefs.current[3] = el; }}
+                layout
+                transition={{ type: 'spring', damping: 25 }}
+                className={`elevated-card p-6 rounded-2xl ${sectionTransitionClass} ${sectionBlur(3)}`}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Palette className="w-5 h-5 text-primary" />
+                  <h2 className="font-display text-lg font-semibold">Moods & tags</h2>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block">Mood Tags</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {moodOptions.map((mood) => (
+                        <Button
+                          key={mood.id}
+                          variant={selectedMoods.includes(mood.id) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleMood(mood.id)}
+                          className="gap-1"
+                        >
+                          {mood.emoji} {mood.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block">Best Time to Experience</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {timeOptions.map((time) => (
+                        <Button
+                          key={time.id}
+                          variant={recommendedTimes.includes(time.id) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleTime(time.id)}
+                        >
+                          {time.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-2 flex items-center gap-2">
+                      <Tag className="w-4 h-4" />
+                      Custom Tags
+                    </Label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Add a tag..."
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                      />
+                      <Button onClick={addTag} variant="outline" size="icon">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map((t) => (
+                          <span
+                            key={t}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-sm"
+                          >
+                            {t}
+                            <button type="button" onClick={() => removeTag(t)} className="hover:opacity-80">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {step === 4 && (
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-between">
+                    <Button variant="outline" onClick={goBack}>
+                      Back
+                    </Button>
+                    <Button
+                      variant="gradient"
+                      className="gap-2"
+                      onClick={handleSubmit}
+                      disabled={!formData.title || !formData.whyILike}
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Add to Favorites
+                    </Button>
+                  </div>
+                )}
+              </motion.section>
               )}
             </div>
 
-            {/* Submit */}
-            <div className="flex gap-4 pt-4">
-              <Button variant="outline" className="flex-1" onClick={() => navigate(-1)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="gradient" 
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={!formData.title || !formData.whyILike}
-              >
-                <Sparkles className="w-5 h-5" />
-                Add to Favorites
-              </Button>
+            {/* Right: Sticky preview */}
+            <div className="lg:col-span-5">
+              <div className="lg:sticky lg:top-24">
+                <div className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-sm overflow-hidden">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
+                    Live preview
+                  </p>
+                  <div className="p-4">
+                    <div className="aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-white/5 mb-4">
+                      {formData.image ? (
+                        <img
+                          src={formData.image}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                          <Upload className="w-12 h-12 mb-2 opacity-50" />
+                          <span className="text-sm">Cover image</span>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-display font-semibold text-lg truncate">
+                      {formData.title || 'Your title'}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                      <Star className="w-4 h-4 text-secondary fill-secondary/50" />
+                      <span className="font-medium text-foreground">{formData.rating}/10</span>
+                      {formData.genre && <span>· {formData.genre.split(',')[0]}</span>}
+                    </div>
+                    {formData.whyILike && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{formData.whyILike}</p>
+                    )}
+                    {(selectedMoods.length > 0 || tags.length > 0) && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {selectedMoods.slice(0, 3).map((m) => {
+                          const opt = moodOptions.find((o) => o.id === m);
+                          return (
+                            <span key={m} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                              {opt?.emoji} {opt?.name}
+                            </span>
+                          );
+                        })}
+                        {tags.slice(0, 4).map((t) => (
+                          <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-secondary/10 text-secondary">
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {emotionalCurve.length >= 2 && (
+                      <div className="mt-3 pt-3 border-t border-white/5">
+                        <p className="text-xs text-muted-foreground mb-1">Emotional journey</p>
+                        <div className="h-12 rounded-lg bg-muted/50 flex items-end gap-0.5 overflow-hidden">
+                          {[...emotionalCurve]
+                            .sort((a, b) => a.x - b.x)
+                            .map((p, i) => (
+                              <div
+                                key={p.id}
+                                className="flex-1 min-w-[2px] bg-primary/60 rounded-t"
+                                style={{ height: `${(p.y / 10) * 100}%` }}
+                              />
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </Layout>

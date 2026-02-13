@@ -480,7 +480,7 @@ export function EmotionalJourneyEditor({
                 <Textarea
                   placeholder="e.g., The twist / Best part / Made me cry"
                   value={selectedPoint.note ?? ''}
-                  onChange={(e) => updatePoint(selectedPoint.id, { note: e.target.value.trim() || undefined })}
+                  onChange={(e) => updatePoint(selectedPoint.id, { note: e.target.value || undefined })}
                   rows={2}
                   className="mt-1"
                 />
