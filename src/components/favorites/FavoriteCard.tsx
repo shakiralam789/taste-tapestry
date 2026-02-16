@@ -94,7 +94,8 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
         )}
 
         {/* Emotional journey (read-only) when present */}
-        {((favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
+        {((favorite.fields?.emotionalSegments?.length > 0) ||
+          (favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
           (favorite.fields?.emotionalCurve?.length >= 2 && favorite.fields?.emotionalCurve?.some((p: { id?: string }) => p.id)) ||
           (favorite.fields?.emotionalCurve?.length >= 5) ||
           (favorite.fields?.momentPins?.length ?? 0) > 0) && (
@@ -103,6 +104,7 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
               categoryId={favorite.categoryId}
               totalDurationSeconds={favorite.fields?.totalDurationSeconds}
               curvePoints={Array.isArray(favorite.fields.emotionalCurve) ? favorite.fields.emotionalCurve : []}
+              emotionalSegments={Array.isArray(favorite.fields.emotionalSegments) ? favorite.fields.emotionalSegments : []}
               momentPins={Array.isArray(favorite.fields.momentPins) ? favorite.fields.momentPins : []}
             />
           </div>

@@ -64,6 +64,34 @@ export interface EmotionalCurvePoint {
   note?: string;
 }
 
+/** Preset emotion colors for segment bars (happy, sad, angry, etc.). */
+export type EmotionColorKey =
+  | 'happy'
+  | 'sad'
+  | 'angry'
+  | 'scary'
+  | 'funny'
+  | 'peaceful'
+  | 'excited'
+  | 'nostalgic'
+  | 'mix'
+  | 'neutral';
+
+/** A time range segment on the emotional journey (video-editor style): bar from start to end with one intensity. */
+export interface EmotionalSegment {
+  id: string;
+  /** Start time in seconds */
+  startSeconds: number;
+  /** End time in seconds */
+  endSeconds: number;
+  /** Intensity 0–10 for this segment */
+  intensity: number;
+  /** Optional emotion color preset for this segment */
+  emotionColor?: EmotionColorKey;
+  image?: string;
+  note?: string;
+}
+
 /** A moment pin: a specific point in the experience with optional image and note. For series/anime, use season + episode. */
 export interface MomentPin {
   id: string;

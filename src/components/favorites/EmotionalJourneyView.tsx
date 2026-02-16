@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { EmotionalCurvePoint } from '@/types/wishbook';
+import type { EmotionalCurvePoint, EmotionalSegment } from '@/types/wishbook';
+import { getEmotionFill } from '@/data/emotionColors';
 import { TrendingUp, MapPin } from 'lucide-react';
 
 const GRAPH_HEIGHT = 180;
@@ -36,19 +37,20 @@ function buildPathNew(
 
 interface EmotionalJourneyViewProps {
   categoryId?: string;
-  /** New format: total duration in seconds. When set, curve uses time (x in seconds) and Y 0-10. */
   totalDurationSeconds?: number;
-  curvePoints: EmotionalCurvePoint[];
-  /** Legacy: no longer used in new format (points have image/note on curve). Kept for old data. */
+  /** Legacy: points on a curve (x in seconds, y 0-10) */
+  curvePoints?: EmotionalCurvePoint[];
+  /** New: time-range segments (video-editor style bars). When set, drawn as bars. */
+  emotionalSegments?: EmotionalSegment[];
   momentPins?: { id: string; positionPercent: number; note: string; image?: string }[];
   className?: string;
-  /** Show X-axis in seconds (zoomed) instead of minutes */
   xAxisInSeconds?: boolean;
 }
 
 export function EmotionalJourneyView({
   totalDurationSeconds = 0,
-  curvePoints,
+  curvePoints = [],
+  emotionalSegments = [],
   momentPins = [],
   className = '',
   xAxisInSeconds = false,
@@ -67,37 +69,53 @@ export function EmotionalJourneyView({
     return () => ro.disconnect();
   }, []);
 
-  const isNewFormat = totalDurationSeconds > 0 && curvePoints.length >= 2 && curvePoints.every((p) => 'id' in p);
+  const useSegments = emotionalSegments.length > 0 && totalDurationSeconds > 0;
+  const isNewFormat =
+    !useSegments && totalDurationSeconds > 0 && curvePoints.length >= 2 && curvePoints.every((p) => 'id' in p);
   const totalSec = totalDurationSeconds || 1;
   const width = graphWidth;
   const height = GRAPH_HEIGHT;
   const chartW = width - PADDING.left - PADDING.right;
   const chartH = height - PADDING.top - PADDING.bottom;
-  const scaleX = chartW / (isNewFormat ? totalSec : 100);
-  const scaleY = chartH / (isNewFormat ? Y_MAX - Y_MIN : 100);
-  const yMax = isNewFormat ? Y_MAX : 100;
-  const yMin = isNewFormat ? Y_MIN : 0;
+  const scaleX = chartW / (useSegments || isNewFormat ? totalSec : 100);
+  const scaleY = chartH / (Y_MAX - Y_MIN);
+  const yMax = Y_MAX;
+  const yMin = Y_MIN;
 
   const sortedPoints = useMemo(
     () => [...curvePoints].sort((a, b) => a.x - b.x),
     [curvePoints]
   );
+  const sortedSegments = useMemo(
+    () => [...emotionalSegments].sort((a, b) => a.startSeconds - b.startSeconds),
+    [emotionalSegments]
+  );
 
   const svgX = (x: number) => PADDING.left + x * scaleX;
   const svgY = (y: number) => PADDING.top + (yMax - y) * scaleY;
 
-  const pathD = isNewFormat
-    ? buildPathNew(sortedPoints, totalSec, width, height)
-    : sortedPoints.length >= 2
-      ? (() => {
-          let d = `M ${svgX(sortedPoints[0].x)} ${svgY(sortedPoints[0].y)}`;
-          for (let i = 1; i < sortedPoints.length; i++)
-            d += ` L ${svgX(sortedPoints[i].x)} ${svgY(sortedPoints[i].y)}`;
-          return d;
-        })()
-      : '';
+  const pathD = useSegments
+    ? (() => {
+        if (sortedSegments.length === 0) return '';
+        let d = `M ${svgX(sortedSegments[0].startSeconds)} ${svgY(sortedSegments[0].intensity)}`;
+        for (const s of sortedSegments) {
+          d += ` L ${svgX(s.endSeconds)} ${svgY(s.intensity)}`;
+        }
+        return d;
+      })()
+    : isNewFormat
+      ? buildPathNew(sortedPoints, totalSec, width, height)
+      : sortedPoints.length >= 2
+        ? (() => {
+            let d = `M ${svgX(sortedPoints[0].x)} ${svgY(sortedPoints[0].y)}`;
+            for (let i = 1; i < sortedPoints.length; i++)
+              d += ` L ${svgX(sortedPoints[i].x)} ${svgY(sortedPoints[i].y)}`;
+            return d;
+          })()
+        : '';
 
   const pointsWithNotes = sortedPoints.filter((p) => p.note || p.image);
+  const segmentsWithNotes = sortedSegments.filter((s) => s.note || s.image);
 
   return (
     <div className={className} ref={containerRef}>
@@ -123,7 +141,7 @@ export function EmotionalJourneyView({
             </linearGradient>
           </defs>
           {/* Y grid */}
-          {(isNewFormat ? [0, 2, 4, 6, 8, 10] : [0, 25, 50, 75, 100]).map((v) => (
+          {(useSegments || isNewFormat ? [0, 2, 4, 6, 8, 10] : [0, 25, 50, 75, 100]).map((v) => (
             <line
               key={`h-${v}`}
               x1={PADDING.left}
@@ -135,7 +153,29 @@ export function EmotionalJourneyView({
               strokeOpacity={0.4}
             />
           ))}
-          {pathD && (
+          {useSegments && sortedSegments.map((seg) => {
+            const x1 = svgX(seg.startSeconds);
+            const x2 = svgX(seg.endSeconds);
+            const yTop = svgY(seg.intensity);
+            const yBottom = height - PADDING.bottom;
+            const fillColor = getEmotionFill(seg.emotionColor) || 'url(#curveGradientView)';
+            return (
+              <rect
+                key={seg.id}
+                x={x1}
+                y={yTop}
+                width={x2 - x1}
+                height={yBottom - yTop}
+                fill={fillColor}
+                fillOpacity={0.45}
+                stroke="hsl(var(--primary))"
+                strokeWidth={1}
+                strokeOpacity={0.6}
+                rx={2}
+              />
+            );
+          })}
+          {pathD && !useSegments && (
             <>
               <path
                 d={`${pathD} L ${svgX(isNewFormat ? totalSec : 100)} ${height - PADDING.bottom} L ${svgX(0)} ${height - PADDING.bottom} Z`}
@@ -152,7 +192,7 @@ export function EmotionalJourneyView({
               />
             </>
           )}
-          {sortedPoints.map((pt, i) => (
+          {!useSegments && sortedPoints.map((pt, i) => (
             <circle
               key={pt.id ?? i}
               cx={svgX(pt.x)}
@@ -163,7 +203,7 @@ export function EmotionalJourneyView({
               strokeWidth={1.5}
             />
           ))}
-          {!isNewFormat && momentPins.map((pin) => (
+          {!useSegments && !isNewFormat && momentPins.map((pin) => (
             <g key={pin.id}>
               <line
                 x1={svgX(pin.positionPercent)}
@@ -184,7 +224,7 @@ export function EmotionalJourneyView({
           style={{ paddingLeft: PADDING.left + 4, paddingRight: PADDING.right + 4 }}
         >
           <span>0</span>
-          {isNewFormat ? (
+          {(useSegments || isNewFormat) ? (
             <>
               {[1, 2, 3, 4, 5].map((i) => (
                 <span key={i}>{formatTime((totalSec * i) / 6, xAxisInSeconds)}</span>
@@ -201,14 +241,28 @@ export function EmotionalJourneyView({
         <div className="absolute left-1 top-4 text-[10px] text-muted-foreground">{yMax}</div>
         <div className="absolute left-1 bottom-8 text-[10px] text-muted-foreground">{yMin}</div>
       </div>
-      {(pointsWithNotes.length > 0 || momentPins.length > 0) && (
+      {(segmentsWithNotes.length > 0 || pointsWithNotes.length > 0 || momentPins.length > 0) && (
         <div className="mt-3 space-y-2">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin className="w-3.5 h-3.5 text-secondary" />
             Moments
           </div>
           <ul className="space-y-2">
-            {isNewFormat
+            {useSegments
+              ? segmentsWithNotes.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 text-sm">
+                    <span className="text-primary font-medium flex-shrink-0">
+                      {formatTime(s.startSeconds, xAxisInSeconds)}–{formatTime(s.endSeconds, xAxisInSeconds)}
+                    </span>
+                    {s.image && (
+                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
+                        <img src={s.image} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <span className="text-muted-foreground line-clamp-2">{s.note || '—'}</span>
+                  </li>
+                ))
+              : isNewFormat
               ? pointsWithNotes.map((p) => (
                   <li key={p.id} className="flex items-center gap-2 text-sm">
                     <span className="text-primary font-medium w-16 flex-shrink-0">
