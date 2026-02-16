@@ -38,6 +38,10 @@ function buildPathNew(
 interface EmotionalJourneyViewProps {
   categoryId?: string;
   totalDurationSeconds?: number;
+  /** For series: duration in seconds per episode. When set with episodeSegments, shows episode tabs. */
+  episodeDurations?: number[];
+  /** For series: segments per episode. When set with episodeDurations, shows episode tabs. */
+  episodeSegments?: EmotionalSegment[][];
   /** Legacy: points on a curve (x in seconds, y 0-10) */
   curvePoints?: EmotionalCurvePoint[];
   /** New: time-range segments (video-editor style bars). When set, drawn as bars. */
@@ -49,6 +53,8 @@ interface EmotionalJourneyViewProps {
 
 export function EmotionalJourneyView({
   totalDurationSeconds = 0,
+  episodeDurations = [],
+  episodeSegments = [],
   curvePoints = [],
   emotionalSegments = [],
   momentPins = [],
@@ -56,7 +62,17 @@ export function EmotionalJourneyView({
   xAxisInSeconds = false,
 }: EmotionalJourneyViewProps) {
   const [graphWidth, setGraphWidth] = useState(400);
+  const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const isSeriesMode =
+    episodeDurations.length > 0 &&
+    episodeSegments.length === episodeDurations.length &&
+    episodeSegments.some((arr) => arr.length > 0);
+
+  const episodeIndex = isSeriesMode
+    ? Math.min(selectedEpisodeIndex, Math.max(0, episodeDurations.length - 1))
+    : 0;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -69,10 +85,28 @@ export function EmotionalJourneyView({
     return () => ro.disconnect();
   }, []);
 
-  const useSegments = emotionalSegments.length > 0 && totalDurationSeconds > 0;
+  // Per-episode: use selected episode's duration and segments
+  const totalSecForSeries =
+    isSeriesMode && episodeDurations[episodeIndex] != null
+      ? episodeDurations[episodeIndex] || 1
+      : 0;
+  const segmentsForSeries = isSeriesMode
+    ? (episodeSegments[episodeIndex] ?? [])
+    : [];
+
+  const totalDuration =
+    isSeriesMode ? totalSecForSeries : totalDurationSeconds;
+  const segmentsSingle =
+    isSeriesMode ? segmentsForSeries : emotionalSegments;
+
+  const useSegments =
+    isSeriesMode
+      ? segmentsSingle.length > 0 && totalDuration > 0
+      : emotionalSegments.length > 0 && totalDurationSeconds > 0;
+  const formatAxisTime = (t: number) => formatTime(t, xAxisInSeconds);
   const isNewFormat =
-    !useSegments && totalDurationSeconds > 0 && curvePoints.length >= 2 && curvePoints.every((p) => 'id' in p);
-  const totalSec = totalDurationSeconds || 1;
+    !isSeriesMode && !useSegments && totalDurationSeconds > 0 && curvePoints.length >= 2 && curvePoints.every((p) => 'id' in p);
+  const totalSec = totalDuration || 1;
   const width = graphWidth;
   const height = GRAPH_HEIGHT;
   const chartW = width - PADDING.left - PADDING.right;
@@ -87,8 +121,8 @@ export function EmotionalJourneyView({
     [curvePoints]
   );
   const sortedSegments = useMemo(
-    () => [...emotionalSegments].sort((a, b) => a.startSeconds - b.startSeconds),
-    [emotionalSegments]
+    () => [...segmentsSingle].sort((a, b) => a.startSeconds - b.startSeconds),
+    [segmentsSingle]
   );
 
   const svgX = (x: number) => PADDING.left + x * scaleX;
@@ -123,6 +157,24 @@ export function EmotionalJourneyView({
         <TrendingUp className="w-4 h-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">Emotional journey</span>
       </div>
+      {isSeriesMode && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {episodeDurations.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setSelectedEpisodeIndex(i)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                episodeIndex === i
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Ep {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
       <div
         className="relative w-full overflow-hidden rounded-lg bg-card/30 border border-white/10"
         style={{ height: GRAPH_HEIGHT + 22 }}
@@ -227,9 +279,9 @@ export function EmotionalJourneyView({
           {(useSegments || isNewFormat) ? (
             <>
               {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i}>{formatTime((totalSec * i) / 6, xAxisInSeconds)}</span>
+                <span key={i}>{formatAxisTime((totalSec * i) / 6)}</span>
               ))}
-              <span>{formatTime(totalSec, xAxisInSeconds)}</span>
+              <span>{formatAxisTime(totalSec)}</span>
             </>
           ) : (
             <>
@@ -252,7 +304,7 @@ export function EmotionalJourneyView({
               ? segmentsWithNotes.map((s) => (
                   <li key={s.id} className="flex items-center gap-2 text-sm">
                     <span className="text-primary font-medium flex-shrink-0">
-                      {formatTime(s.startSeconds, xAxisInSeconds)}–{formatTime(s.endSeconds, xAxisInSeconds)}
+                      {formatAxisTime(s.startSeconds)}–{formatAxisTime(s.endSeconds)}
                     </span>
                     {s.image && (
                       <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">

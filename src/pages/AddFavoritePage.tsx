@@ -31,6 +31,8 @@ import { Favorite, Mood, EmotionalSegment } from "@/types/wishbook";
 import { getEmotionFill } from "@/data/emotionColors";
 
 const TOTAL_STEPS = 4;
+/** Categories that show the "Your emotional journey" section (movie, series, anime, song). */
+const EMOTIONAL_JOURNEY_CATEGORIES = ["movies", "series", "anime", "songs"];
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop";
 
@@ -64,9 +66,37 @@ export default function AddFavoritePage() {
   const [newTag, setNewTag] = useState("");
   const [recommendedTimes, setRecommendedTimes] = useState<string[]>([]);
   const [totalDurationSeconds, setTotalDurationSeconds] = useState(0);
+  const [totalEpisodes, setTotalEpisodes] = useState(0);
   const [emotionalSegments, setEmotionalSegments] = useState<
     EmotionalSegment[]
   >([]);
+  /** For series: duration in seconds per episode (index = episode - 1). */
+  const [episodeDurations, setEpisodeDurations] = useState<number[]>([]);
+  /** For series: segments per episode (index = episode - 1). */
+  const [episodeSegments, setEpisodeSegments] = useState<
+    EmotionalSegment[][]
+  >([]);
+  const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
+
+  const isSeries = selectedCategory === "series";
+  const hasEmotionalJourney = EMOTIONAL_JOURNEY_CATEGORIES.includes(selectedCategory);
+  const totalSteps = hasEmotionalJourney ? TOTAL_STEPS : TOTAL_STEPS - 1;
+
+  // Keep episode arrays in sync with totalEpisodes
+  useEffect(() => {
+    if (!isSeries || totalEpisodes <= 0) return;
+    setEpisodeDurations((prev) => {
+      const next = prev.slice(0, totalEpisodes);
+      while (next.length < totalEpisodes) next.push(0);
+      return next;
+    });
+    setEpisodeSegments((prev) => {
+      const next = prev.slice(0, totalEpisodes);
+      while (next.length < totalEpisodes) next.push([]);
+      return next;
+    });
+    setSelectedEpisodeIndex((i) => Math.min(i, totalEpisodes - 1));
+  }, [isSeries, totalEpisodes]);
 
   const toggleMood = (mood: Mood) => {
     setSelectedMoods((prev) =>
@@ -109,9 +139,12 @@ export default function AddFavoritePage() {
         genre: formData.genre.split(",").map((g) => g.trim()),
         releaseYear: parseInt(formData.releaseYear) || new Date().getFullYear(),
         plotSummary: formData.plotSummary,
-        totalDurationSeconds: totalDurationSeconds || undefined,
+        totalDurationSeconds: isSeries ? undefined : (totalDurationSeconds || undefined),
+        totalEpisodes: isSeries ? (totalEpisodes || undefined) : undefined,
         emotionalSegments:
-          emotionalSegments.length > 0 ? emotionalSegments : undefined,
+          !isSeries && emotionalSegments.length > 0 ? emotionalSegments : undefined,
+        episodeDurations: isSeries && episodeDurations.length > 0 ? episodeDurations : undefined,
+        episodeSegments: isSeries && episodeSegments.some((arr) => arr.length > 0) ? episodeSegments : undefined,
       },
     };
     addFavorite(newFavorite);
@@ -121,8 +154,13 @@ export default function AddFavoritePage() {
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const isInitialMount = useRef(true);
 
-  const goNext = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+  const goNext = () => setStep((s) => Math.min(totalSteps, s + 1));
   const goBack = () => setStep((s) => Math.max(1, s - 1));
+
+  // When category changes and emotional journey is hidden, clamp step to valid range
+  useEffect(() => {
+    if (step > totalSteps) setStep(totalSteps);
+  }, [totalSteps, step]);
 
   // When step changes (Next or Back), scroll so the current section is at the top (smooth). Skip on first load.
   useEffect(() => {
@@ -306,6 +344,27 @@ export default function AddFavoritePage() {
                         className="mt-1"
                       />
                     </div>
+                    {isSeries && (
+                      <div>
+                        <Label htmlFor="episodes">Number of episodes *</Label>
+                        <Input
+                          id="episodes"
+                          type="number"
+                          min={1}
+                          placeholder="e.g. 10"
+                          value={totalEpisodes || ""}
+                          onChange={(e) =>
+                            setTotalEpisodes(
+                              Math.max(0, parseInt(e.target.value, 10) || 0)
+                            )
+                          }
+                          className="mt-1 w-32"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Used for the emotional journey timeline (Ep 1, Ep 2, …).
+                        </p>
+                      </div>
+                    )}
                   </div>
                   {step === 1 && (
                     <div className="mt-6 flex justify-end">
@@ -401,8 +460,8 @@ export default function AddFavoritePage() {
                 </motion.section>
               )}
 
-              {/* Section 3: Emotional journey (appears after step 2 complete) */}
-              {step > 2 && (
+              {/* Section 3: Emotional journey (only for movies, series, anime, songs) */}
+              {step > 2 && hasEmotionalJourney && (
                 <motion.section
                   ref={(el) => {
                     sectionRefs.current[2] = el;
@@ -412,21 +471,73 @@ export default function AddFavoritePage() {
                   className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(2)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    {/* <TrendingUp className="w-5 h-5 text-primary" /> */}
-                    {/* <h2 className="font-display text-lg font-semibold">Emotional journey</h2> */}
                     {step > 3 && (
                       <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
                         <Check className="w-3.5 h-3.5" /> Done
                       </span>
                     )}
                   </div>
-                  <EmotionalJourneyEditor
-                    categoryId={selectedCategory}
-                    totalDurationSeconds={totalDurationSeconds}
-                    onTotalDurationSecondsChange={setTotalDurationSeconds}
-                    segments={emotionalSegments}
-                    onSegmentsChange={setEmotionalSegments}
-                  />
+                  {isSeries ? (
+                    <>
+                      {totalEpisodes > 0 && (
+                        <>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Select an episode, set its duration (min/sec), then build the emotional journey for that episode like you would for a movie.
+                          </p>
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {Array.from({ length: totalEpisodes }, (_, i) => (
+                              <Button
+                                key={i}
+                                type="button"
+                                variant={selectedEpisodeIndex === i ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setSelectedEpisodeIndex(i)}
+                              >
+                                Ep {i + 1}
+                              </Button>
+                            ))}
+                          </div>
+                          <EmotionalJourneyEditor
+                            categoryId={selectedCategory}
+                            totalDurationSeconds={
+                              episodeDurations[selectedEpisodeIndex] ?? 0
+                            }
+                            onTotalDurationSecondsChange={(sec) => {
+                              setEpisodeDurations((prev) => {
+                                const next = [...prev];
+                                next[selectedEpisodeIndex] = sec;
+                                return next;
+                              });
+                            }}
+                            segments={
+                              episodeSegments[selectedEpisodeIndex] ?? []
+                            }
+                            onSegmentsChange={(seg) => {
+                              setEpisodeSegments((prev) => {
+                                const next = prev.map((a, j) =>
+                                  j === selectedEpisodeIndex ? seg : a
+                                );
+                                return next;
+                              });
+                            }}
+                          />
+                        </>
+                      )}
+                      {totalEpisodes === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Enter the number of episodes in the Basics section first, then you can add an emotional journey per episode here.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <EmotionalJourneyEditor
+                      categoryId={selectedCategory}
+                      totalDurationSeconds={totalDurationSeconds}
+                      onTotalDurationSecondsChange={setTotalDurationSeconds}
+                      segments={emotionalSegments}
+                      onSegmentsChange={setEmotionalSegments}
+                    />
+                  )}
                   {step === 3 && (
                     <div className="mt-6 flex justify-between">
                       <Button variant="outline" onClick={goBack}>
@@ -440,15 +551,15 @@ export default function AddFavoritePage() {
                 </motion.section>
               )}
 
-              {/* Section 4: Moods + Times + Tags + Submit (appears after step 3 complete) */}
-              {step > 3 && (
+              {/* Section 4: Moods + Times + Tags + Submit */}
+              {step > (hasEmotionalJourney ? 3 : 2) && (
                 <motion.section
                   ref={(el) => {
-                    sectionRefs.current[3] = el;
+                    sectionRefs.current[hasEmotionalJourney ? 3 : 2] = el;
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(3)}`}
+                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(hasEmotionalJourney ? 3 : 2)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Palette className="w-5 h-5 text-primary" />
@@ -537,7 +648,7 @@ export default function AddFavoritePage() {
                       )}
                     </div>
                   </div>
-                  {step === 4 && (
+                  {step === (hasEmotionalJourney ? 4 : 3) && (
                     <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-between">
                       <Button variant="outline" onClick={goBack}>
                         Back
@@ -564,7 +675,7 @@ export default function AddFavoritePage() {
                   <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
                     <p>Live preview</p>
                     <div className="flex items-center gap-2">
-                      {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                      {Array.from({ length: totalSteps }).map((_, i) => (
                         <button
                           key={i}
                           type="button"
@@ -639,50 +750,57 @@ export default function AddFavoritePage() {
                         ))}
                       </div>
                     )}
-                    {emotionalSegments.length >= 1 &&
-                      (() => {
-                        const totalSec =
-                          totalDurationSeconds ||
-                          Math.max(
-                            1,
-                            ...emotionalSegments.map((s) => s.endSeconds),
-                          );
-                        const sorted = [...emotionalSegments].sort(
-                          (a, b) => a.startSeconds - b.startSeconds,
-                        );
-                        return (
-                          <div className="mt-3 pt-3 border-t border-white/5">
-                            <p className="text-xs text-muted-foreground mb-1">
-                              Emotional journey
-                            </p>
-                            <div className="h-12 rounded-lg bg-muted/50 flex items-end overflow-hidden">
-                              {sorted.map((s) => {
-                                const widthPct =
-                                  totalSec > 0
-                                    ? ((s.endSeconds - s.startSeconds) /
-                                        totalSec) *
-                                      100
-                                    : 0;
-                                const fill =
-                                  getEmotionFill(s.emotionColor) ||
-                                  "hsl(var(--primary))";
-                                return (
-                                  <div
-                                    key={s.id}
-                                    className="rounded-t min-w-[2px] shrink-0"
-                                    style={{
-                                      width: `${widthPct}%`,
-                                      height: `${(s.intensity / 10) * 100}%`,
-                                      backgroundColor: fill,
-                                      opacity: 0.8,
-                                    }}
-                                  />
-                                );
-                              })}
-                            </div>
+                    {(() => {
+                      const segs = isSeries
+                        ? (episodeSegments[selectedEpisodeIndex] ?? [])
+                        : emotionalSegments;
+                      const totalSec = isSeries
+                        ? (episodeDurations[selectedEpisodeIndex] ?? 0) ||
+                          Math.max(1, ...(segs.map((s) => s.endSeconds) || [0]))
+                        : totalDurationSeconds ||
+                          Math.max(1, ...emotionalSegments.map((s) => s.endSeconds));
+                      if (segs.length < 1) return null;
+                      const sorted = [...segs].sort(
+                        (a, b) => a.startSeconds - b.startSeconds,
+                      );
+                      return (
+                        <div className="mt-3 pt-3 border-t border-white/5">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Emotional journey
+                            {isSeries && totalEpisodes > 0 && (
+                              <span className="ml-1">
+                                (Ep {selectedEpisodeIndex + 1})
+                              </span>
+                            )}
+                          </p>
+                          <div className="h-12 rounded-lg bg-muted/50 flex items-end overflow-hidden">
+                            {sorted.map((s) => {
+                              const widthPct =
+                                totalSec > 0
+                                  ? ((s.endSeconds - s.startSeconds) /
+                                      totalSec) *
+                                    100
+                                  : 0;
+                              const fill =
+                                getEmotionFill(s.emotionColor) ||
+                                "hsl(var(--primary))";
+                              return (
+                                <div
+                                  key={s.id}
+                                  className="rounded-t min-w-[2px] shrink-0"
+                                  style={{
+                                    width: `${widthPct}%`,
+                                    height: `${(s.intensity / 10) * 100}%`,
+                                    backgroundColor: fill,
+                                    opacity: 0.8,
+                                  }}
+                                />
+                              );
+                            })}
                           </div>
-                        );
-                      })()}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

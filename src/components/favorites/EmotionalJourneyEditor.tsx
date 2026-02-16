@@ -47,7 +47,8 @@ interface EmotionalJourneyEditorProps {
 /** Normalize segments to cover [0, totalSec] with no gaps. Ensures at least one segment when totalSec > 0. */
 function normalizeSegments(
   segments: EmotionalSegment[],
-  totalSec: number
+  totalSec: number,
+  minSegment: number = MIN_SEGMENT_SECONDS
 ): EmotionalSegment[] {
   if (totalSec <= 0) return [];
   const sorted = [...segments].sort((a, b) => a.startSeconds - b.startSeconds).filter((s) => s.endSeconds > s.startSeconds);
@@ -57,8 +58,8 @@ function normalizeSegments(
   const out: EmotionalSegment[] = [];
   let lastEnd = 0;
   for (const s of sorted) {
-    const start = Math.max(lastEnd, Math.min(s.startSeconds, totalSec - MIN_SEGMENT_SECONDS));
-    let end = Math.max(start + MIN_SEGMENT_SECONDS, Math.min(s.endSeconds, totalSec));
+    const start = Math.max(lastEnd, Math.min(s.startSeconds, totalSec - minSegment));
+    let end = Math.max(start + minSegment, Math.min(s.endSeconds, totalSec));
     if (end > totalSec) end = totalSec;
     if (start < end) {
       out.push({ ...s, startSeconds: start, endSeconds: end });
@@ -117,6 +118,7 @@ export function EmotionalJourneyEditor({
   const canEdit = totalDurationSeconds > 0;
   const totalSec = totalDurationSeconds || 1;
   const windowSpan = Math.max(1, visibleWindowEnd - visibleWindowStart);
+  const minSegment = MIN_SEGMENT_SECONDS;
 
   useEffect(() => {
     setVisibleWindowStart(0);
@@ -124,8 +126,8 @@ export function EmotionalJourneyEditor({
   }, [totalSec]);
 
   const normalizedSegments = useMemo(
-    () => normalizeSegments(segments, totalSec),
-    [segments, totalSec]
+    () => normalizeSegments(segments, totalSec, minSegment),
+    [segments, totalSec, minSegment]
   );
 
   useEffect(() => {
@@ -241,11 +243,10 @@ export function EmotionalJourneyEditor({
           { id: generateId(), startSeconds: 0, endSeconds: sec, intensity: Y_MID },
         ]);
       } else {
-        const norm = normalizeSegments(segments, sec);
-        onSegmentsChange(norm);
+        onSegmentsChange(normalizeSegments(segments, sec, minSegment));
       }
     }
-  }, [durationMinutes, durationSeconds, onTotalDurationSecondsChange, segments, onSegmentsChange]);
+  }, [durationMinutes, durationSeconds, onTotalDurationSecondsChange, segments, onSegmentsChange, minSegment]);
 
   const screenToData = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } | null => {
@@ -424,7 +425,7 @@ export function EmotionalJourneyEditor({
         const idx = normalizedSegments.findIndex((s) => s.id === id);
         const prev = normalizedSegments[idx - 1];
         const next = normalizedSegments[idx + 1];
-        const minW = MIN_SEGMENT_SECONDS;
+        const minW = minSegment;
 
         if (resizingSegmentId === 'left') {
           const newStart = Math.max(
@@ -463,7 +464,7 @@ export function EmotionalJourneyEditor({
         setHoverEdge(null);
       }
     },
-    [screenToData, getSegmentAtScreen, resizingSegmentId, draggingSegmentId, normalizedSegments, updateSegment, onSegmentsChange, totalSec, chartW, windowSpan, width]
+    [screenToData, getSegmentAtScreen, resizingSegmentId, draggingSegmentId, normalizedSegments, updateSegment, onSegmentsChange, totalSec, chartW, windowSpan, width, minSegment]
   );
 
   const handlePointerUp = useCallback(
@@ -484,8 +485,8 @@ export function EmotionalJourneyEditor({
         const seg = pos ? getSegmentAtTime(pos.x) : null;
         if (seg && pos && normalizedSegments.length < 20) {
           const splitTime = Math.max(
-            seg.startSeconds + MIN_SEGMENT_SECONDS,
-            Math.min(seg.endSeconds - MIN_SEGMENT_SECONDS, pos.x)
+            seg.startSeconds + minSegment,
+            Math.min(seg.endSeconds - minSegment, pos.x)
           );
           const isDoubleClick =
             lastClickRef.current?.segmentId === seg.id &&
@@ -507,7 +508,7 @@ export function EmotionalJourneyEditor({
       panStartRef.current = null;
       setIsPanning(false);
     },
-    [screenToData, getSegmentAtTime, normalizedSegments.length, splitSegment, resizingSegmentId, draggingSegmentId, updateSegment]
+    [screenToData, getSegmentAtTime, normalizedSegments.length, splitSegment, resizingSegmentId, draggingSegmentId, updateSegment, minSegment]
   );
 
   const selectedSegment = selectedSegmentId
@@ -623,8 +624,8 @@ export function EmotionalJourneyEditor({
               <Label className="text-xs text-muted-foreground">Split at (seconds):</Label>
               <Input
                 type="number"
-                min={MIN_SEGMENT_SECONDS}
-                max={Math.max(MIN_SEGMENT_SECONDS, totalSec - MIN_SEGMENT_SECONDS)}
+                min={minSegment}
+                max={Math.max(minSegment, totalSec - minSegment)}
                 step={1}
                 placeholder={`0–${Math.round(totalSec)}`}
                 value={splitAtSeconds}
@@ -640,7 +641,7 @@ export function EmotionalJourneyEditor({
                   const t = parseFloat(splitAtSeconds);
                   if (Number.isNaN(t)) return;
                   const seg = getSegmentAtTime(t);
-                  if (seg && t > seg.startSeconds + MIN_SEGMENT_SECONDS && t < seg.endSeconds - MIN_SEGMENT_SECONDS) {
+                  if (seg && t > seg.startSeconds + minSegment && t < seg.endSeconds - minSegment) {
                     splitSegment(seg.id, t);
                     setSplitAtSeconds('');
                   }
