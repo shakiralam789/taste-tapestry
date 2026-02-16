@@ -42,6 +42,8 @@ interface EmotionalJourneyViewProps {
   episodeDurations?: number[];
   /** For series: segments per episode. When set with episodeDurations, shows episode tabs. */
   episodeSegments?: EmotionalSegment[][];
+  /** For series: episodes per season, e.g. [3, 4]. When length > 1, tabs are grouped by season (S1 E1, S2 E1, …). */
+  seasonEpisodeCounts?: number[];
   /** Legacy: points on a curve (x in seconds, y 0-10) */
   curvePoints?: EmotionalCurvePoint[];
   /** New: time-range segments (video-editor style bars). When set, drawn as bars. */
@@ -55,6 +57,7 @@ export function EmotionalJourneyView({
   totalDurationSeconds = 0,
   episodeDurations = [],
   episodeSegments = [],
+  seasonEpisodeCounts = [],
   curvePoints = [],
   emotionalSegments = [],
   momentPins = [],
@@ -158,21 +161,59 @@ export function EmotionalJourneyView({
         <span className="text-sm font-semibold text-foreground">Emotional journey</span>
       </div>
       {isSeriesMode && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {episodeDurations.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setSelectedEpisodeIndex(i)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                episodeIndex === i
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              Ep {i + 1}
-            </button>
-          ))}
+        <div className="space-y-2 mb-3">
+          {seasonEpisodeCounts.length > 1
+            ? (() => {
+                let flatIndex = 0;
+                return seasonEpisodeCounts.map((count, s) => {
+                  const start = flatIndex;
+                  flatIndex += count;
+                  if (count <= 0) return null;
+                  return (
+                    <div key={s}>
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">Season {s + 1}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.from({ length: count }, (_, e) => {
+                          const i = start + e;
+                          if (i >= episodeDurations.length) return null;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setSelectedEpisodeIndex(i)}
+                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                                episodeIndex === i
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                              }`}
+                            >
+                              S{s + 1} E{e + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            : (
+              <div className="flex flex-wrap gap-1.5">
+                {episodeDurations.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedEpisodeIndex(i)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      episodeIndex === i
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    Ep {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
         </div>
       )}
       <div

@@ -41,6 +41,8 @@ interface EmotionalJourneyEditorProps {
   onTotalDurationSecondsChange: (seconds: number) => void;
   segments: EmotionalSegment[];
   onSegmentsChange: (segments: EmotionalSegment[]) => void;
+  /** Rendered after "How it works" and before duration/timeline (e.g. episode selector for series). */
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -84,6 +86,7 @@ export function EmotionalJourneyEditor({
   onTotalDurationSecondsChange,
   segments,
   onSegmentsChange,
+  children,
   className = '',
 }: EmotionalJourneyEditorProps) {
   const [graphWidth, setGraphWidth] = useState(400);
@@ -578,6 +581,8 @@ export function EmotionalJourneyEditor({
         </div>
       </div>
 
+      {children}
+
       <div className="mb-4 p-4 rounded-xl bg-card/30 border border-white/10 space-y-3">
         <Label>Duration (for timeline)</Label>
         <div className="flex flex-wrap items-center gap-3">
@@ -652,27 +657,7 @@ export function EmotionalJourneyEditor({
                 Split
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">X-axis:</Label>
-              <Button
-                type="button"
-                variant={!xAxisInSeconds ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 gap-1"
-                onClick={() => setXAxisInSeconds(false)}
-              >
-                Minutes
-              </Button>
-              <Button
-                type="button"
-                variant={xAxisInSeconds ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 gap-1"
-                onClick={() => setXAxisInSeconds(true)}
-              >
-                Seconds
-              </Button>
-            </div>
+           
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Zoom:</Label>
               <Button type="button" variant="ghost" size="sm" className="h-7 gap-1" onClick={zoomIn} title="Zoom in timeline">

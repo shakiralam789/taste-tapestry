@@ -67,36 +67,46 @@ export default function AddFavoritePage() {
   const [recommendedTimes, setRecommendedTimes] = useState<string[]>([]);
   const [totalDurationSeconds, setTotalDurationSeconds] = useState(0);
   const [totalEpisodes, setTotalEpisodes] = useState(0);
+  /** For series/anime: episodes per season, e.g. [3, 4, 2] = S1 has 3, S2 has 4, S3 has 2. */
+  const [seasonEpisodeCounts, setSeasonEpisodeCounts] = useState<number[]>([]);
   const [emotionalSegments, setEmotionalSegments] = useState<
     EmotionalSegment[]
   >([]);
   /** For series: duration in seconds per episode (index = episode - 1). */
   const [episodeDurations, setEpisodeDurations] = useState<number[]>([]);
   /** For series: segments per episode (index = episode - 1). */
-  const [episodeSegments, setEpisodeSegments] = useState<
-    EmotionalSegment[][]
-  >([]);
+  const [episodeSegments, setEpisodeSegments] = useState<EmotionalSegment[][]>(
+    [],
+  );
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
 
   const isSeries = selectedCategory === "series";
-  const hasEmotionalJourney = EMOTIONAL_JOURNEY_CATEGORIES.includes(selectedCategory);
+  const isSeriesOrAnime = isSeries || selectedCategory === "anime";
+  const hasEmotionalJourney =
+    EMOTIONAL_JOURNEY_CATEGORIES.includes(selectedCategory);
   const totalSteps = hasEmotionalJourney ? TOTAL_STEPS : TOTAL_STEPS - 1;
 
-  // Keep episode arrays in sync with totalEpisodes
+  // For series/anime: total episodes = sum of season counts (or legacy totalEpisodes if single season with no counts)
+  const totalEpisodesDerived =
+    isSeriesOrAnime && seasonEpisodeCounts.length > 0
+      ? seasonEpisodeCounts.reduce((a, b) => a + b, 0) || totalEpisodes
+      : totalEpisodes;
+
+  // Keep episode arrays in sync with totalEpisodesDerived
   useEffect(() => {
-    if (!isSeries || totalEpisodes <= 0) return;
+    if (!isSeriesOrAnime || totalEpisodesDerived <= 0) return;
     setEpisodeDurations((prev) => {
-      const next = prev.slice(0, totalEpisodes);
-      while (next.length < totalEpisodes) next.push(0);
+      const next = prev.slice(0, totalEpisodesDerived);
+      while (next.length < totalEpisodesDerived) next.push(0);
       return next;
     });
     setEpisodeSegments((prev) => {
-      const next = prev.slice(0, totalEpisodes);
-      while (next.length < totalEpisodes) next.push([]);
+      const next = prev.slice(0, totalEpisodesDerived);
+      while (next.length < totalEpisodesDerived) next.push([]);
       return next;
     });
-    setSelectedEpisodeIndex((i) => Math.min(i, totalEpisodes - 1));
-  }, [isSeries, totalEpisodes]);
+    setSelectedEpisodeIndex((i) => Math.min(i, totalEpisodesDerived - 1));
+  }, [isSeriesOrAnime, totalEpisodesDerived]);
 
   const toggleMood = (mood: Mood) => {
     setSelectedMoods((prev) =>
@@ -139,12 +149,28 @@ export default function AddFavoritePage() {
         genre: formData.genre.split(",").map((g) => g.trim()),
         releaseYear: parseInt(formData.releaseYear) || new Date().getFullYear(),
         plotSummary: formData.plotSummary,
-        totalDurationSeconds: isSeries ? undefined : (totalDurationSeconds || undefined),
-        totalEpisodes: isSeries ? (totalEpisodes || undefined) : undefined,
+        totalDurationSeconds: isSeries
+          ? undefined
+          : totalDurationSeconds || undefined,
+        totalEpisodes: isSeriesOrAnime
+          ? totalEpisodesDerived || undefined
+          : undefined,
+        seasonEpisodeCounts:
+          isSeriesOrAnime && seasonEpisodeCounts.length > 0
+            ? seasonEpisodeCounts
+            : undefined,
         emotionalSegments:
-          !isSeries && emotionalSegments.length > 0 ? emotionalSegments : undefined,
-        episodeDurations: isSeries && episodeDurations.length > 0 ? episodeDurations : undefined,
-        episodeSegments: isSeries && episodeSegments.some((arr) => arr.length > 0) ? episodeSegments : undefined,
+          !isSeries && emotionalSegments.length > 0
+            ? emotionalSegments
+            : undefined,
+        episodeDurations:
+          isSeriesOrAnime && episodeDurations.length > 0
+            ? episodeDurations
+            : undefined,
+        episodeSegments:
+          isSeriesOrAnime && episodeSegments.some((arr) => arr.length > 0)
+            ? episodeSegments
+            : undefined,
       },
     };
     addFavorite(newFavorite);
@@ -344,25 +370,107 @@ export default function AddFavoritePage() {
                         className="mt-1"
                       />
                     </div>
-                    {isSeries && (
-                      <div>
-                        <Label htmlFor="episodes">Number of episodes *</Label>
-                        <Input
-                          id="episodes"
-                          type="number"
-                          min={1}
-                          placeholder="e.g. 10"
-                          value={totalEpisodes || ""}
-                          onChange={(e) =>
-                            setTotalEpisodes(
-                              Math.max(0, parseInt(e.target.value, 10) || 0)
-                            )
-                          }
-                          className="mt-1 w-32"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Used for the emotional journey timeline (Ep 1, Ep 2, …).
-                        </p>
+                    {isSeriesOrAnime && (
+                      <div className="space-y-3">
+                        <div>
+                          <Label>Number of seasons</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={20}
+                            placeholder="1"
+                            value={
+                              seasonEpisodeCounts.length === 0
+                                ? ""
+                                : String(seasonEpisodeCounts.length)
+                            }
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                setSeasonEpisodeCounts([]);
+                                return;
+                              }
+                              const n = parseInt(raw, 10);
+                              if (!Number.isNaN(n) && n >= 1 && n <= 20) {
+                                setSeasonEpisodeCounts((prev) => {
+                                  const next = prev.slice(0, n);
+                                  while (next.length < n)
+                                    next.push(next.length === 0 ? 0 : 1);
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="mt-1 w-24"
+                          />
+                        </div>
+                        {seasonEpisodeCounts.length === 0 ||
+                        seasonEpisodeCounts.length === 1 ? (
+                          <div>
+                            <Label htmlFor="episodes">
+                              Number of episodes *
+                            </Label>
+                            <Input
+                              id="episodes"
+                              type="number"
+                              min={1}
+                              placeholder="e.g. 10"
+                              value={
+                                (seasonEpisodeCounts[0] ?? totalEpisodes) || ""
+                              }
+                              onChange={(e) => {
+                                const v = Math.max(
+                                  0,
+                                  parseInt(e.target.value, 10) || 0,
+                                );
+                                setSeasonEpisodeCounts([v]);
+                                setTotalEpisodes(v);
+                              }}
+                              className="mt-1 w-32"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Used for the emotional journey (Ep 1, Ep 2, …).
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="">
+                            <Label>Episodes per season *</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6 mt-3">
+                              {seasonEpisodeCounts.map((count, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="text-sm text-muted-foreground w-20">
+                                    Season {i + 1}:
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={count || ""}
+                                    onChange={(e) => {
+                                      const v = Math.max(
+                                        0,
+                                        parseInt(e.target.value, 10) || 0,
+                                      );
+                                      setSeasonEpisodeCounts((prev) => {
+                                        const next = [...prev];
+                                        next[i] = v;
+                                        return next;
+                                      });
+                                    }}
+                                    className="w-20"
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    episodes
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground ">
+                              Total: {totalEpisodesDerived} episodes.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -477,55 +585,109 @@ export default function AddFavoritePage() {
                       </span>
                     )}
                   </div>
-                  {isSeries ? (
+                  {isSeriesOrAnime ? (
                     <>
-                      {totalEpisodes > 0 && (
-                        <>
+                      {totalEpisodesDerived > 0 ? (
+                        <EmotionalJourneyEditor
+                          categoryId={selectedCategory}
+                          totalDurationSeconds={
+                            episodeDurations[selectedEpisodeIndex] ?? 0
+                          }
+                          onTotalDurationSecondsChange={(sec) => {
+                            setEpisodeDurations((prev) => {
+                              const next = [...prev];
+                              next[selectedEpisodeIndex] = sec;
+                              return next;
+                            });
+                          }}
+                          segments={
+                            episodeSegments[selectedEpisodeIndex] ?? []
+                          }
+                          onSegmentsChange={(seg) => {
+                            setEpisodeSegments((prev) => {
+                              const next = prev.map((a, j) =>
+                                j === selectedEpisodeIndex ? seg : a,
+                              );
+                              return next;
+                            });
+                          }}
+                        >
                           <p className="text-sm text-muted-foreground mb-3">
-                            Select an episode, set its duration (min/sec), then build the emotional journey for that episode like you would for a movie.
+                            Select an episode, set its duration (min/sec), then
+                            build the emotional journey for that episode like
+                            you would for a movie.
                           </p>
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {Array.from({ length: totalEpisodes }, (_, i) => (
-                              <Button
-                                key={i}
-                                type="button"
-                                variant={selectedEpisodeIndex === i ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setSelectedEpisodeIndex(i)}
-                              >
-                                Ep {i + 1}
-                              </Button>
-                            ))}
+                          <div className="space-y-3 mb-4">
+                            {seasonEpisodeCounts.length <= 1 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {Array.from(
+                                  { length: totalEpisodesDerived },
+                                  (_, i) => (
+                                    <Button
+                                      key={i}
+                                      type="button"
+                                      variant={
+                                        selectedEpisodeIndex === i
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      size="sm"
+                                      onClick={() => setSelectedEpisodeIndex(i)}
+                                    >
+                                      Ep {i + 1}
+                                    </Button>
+                                  ),
+                                )}
+                              </div>
+                            ) : (
+                              (() => {
+                                let flatIndex = 0;
+                                return seasonEpisodeCounts.map((count, s) => {
+                                  const start = flatIndex;
+                                  flatIndex += count;
+                                  if (count <= 0) return null;
+                                  return (
+                                    <div key={s}>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                                        Season {s + 1}
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {Array.from(
+                                          { length: count },
+                                          (_, e) => {
+                                            const i = start + e;
+                                            return (
+                                              <Button
+                                                key={i}
+                                                type="button"
+                                                variant={
+                                                  selectedEpisodeIndex === i
+                                                    ? "default"
+                                                    : "outline"
+                                                }
+                                                size="sm"
+                                                onClick={() =>
+                                                  setSelectedEpisodeIndex(i)
+                                                }
+                                              >
+                                                S{s + 1} E{e + 1}
+                                              </Button>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                              })()
+                            )}
                           </div>
-                          <EmotionalJourneyEditor
-                            categoryId={selectedCategory}
-                            totalDurationSeconds={
-                              episodeDurations[selectedEpisodeIndex] ?? 0
-                            }
-                            onTotalDurationSecondsChange={(sec) => {
-                              setEpisodeDurations((prev) => {
-                                const next = [...prev];
-                                next[selectedEpisodeIndex] = sec;
-                                return next;
-                              });
-                            }}
-                            segments={
-                              episodeSegments[selectedEpisodeIndex] ?? []
-                            }
-                            onSegmentsChange={(seg) => {
-                              setEpisodeSegments((prev) => {
-                                const next = prev.map((a, j) =>
-                                  j === selectedEpisodeIndex ? seg : a
-                                );
-                                return next;
-                              });
-                            }}
-                          />
-                        </>
-                      )}
-                      {totalEpisodes === 0 && (
+                        </EmotionalJourneyEditor>
+                      ) : (
                         <p className="text-sm text-muted-foreground">
-                          Enter the number of episodes in the Basics section first, then you can add an emotional journey per episode here.
+                          Enter the number of seasons and episodes in the Basics
+                          section first, then you can add an emotional journey
+                          per episode here.
                         </p>
                       )}
                     </>
@@ -751,26 +913,48 @@ export default function AddFavoritePage() {
                       </div>
                     )}
                     {(() => {
-                      const segs = isSeries
+                      const segs = isSeriesOrAnime
                         ? (episodeSegments[selectedEpisodeIndex] ?? [])
                         : emotionalSegments;
-                      const totalSec = isSeries
+                      const totalSec = isSeriesOrAnime
                         ? (episodeDurations[selectedEpisodeIndex] ?? 0) ||
                           Math.max(1, ...(segs.map((s) => s.endSeconds) || [0]))
                         : totalDurationSeconds ||
-                          Math.max(1, ...emotionalSegments.map((s) => s.endSeconds));
+                          Math.max(
+                            1,
+                            ...emotionalSegments.map((s) => s.endSeconds),
+                          );
                       if (segs.length < 1) return null;
                       const sorted = [...segs].sort(
                         (a, b) => a.startSeconds - b.startSeconds,
                       );
+                      const episodeLabel =
+                        isSeriesOrAnime && totalEpisodesDerived > 0
+                          ? seasonEpisodeCounts.length > 1
+                            ? (() => {
+                                let idx = 0;
+                                for (
+                                  let s = 0;
+                                  s < seasonEpisodeCounts.length;
+                                  s++
+                                ) {
+                                  if (
+                                    selectedEpisodeIndex <
+                                    idx + seasonEpisodeCounts[s]
+                                  )
+                                    return `S${s + 1} E${selectedEpisodeIndex - idx + 1}`;
+                                  idx += seasonEpisodeCounts[s];
+                                }
+                                return `Ep ${selectedEpisodeIndex + 1}`;
+                              })()
+                            : `Ep ${selectedEpisodeIndex + 1}`
+                          : null;
                       return (
                         <div className="mt-3 pt-3 border-t border-white/5">
                           <p className="text-xs text-muted-foreground mb-1">
                             Emotional journey
-                            {isSeries && totalEpisodes > 0 && (
-                              <span className="ml-1">
-                                (Ep {selectedEpisodeIndex + 1})
-                              </span>
+                            {episodeLabel && (
+                              <span className="ml-1">({episodeLabel})</span>
                             )}
                           </p>
                           <div className="h-12 rounded-lg bg-muted/50 flex items-end overflow-hidden">

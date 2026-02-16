@@ -94,9 +94,9 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
         )}
 
         {/* Emotional journey (read-only) when present */}
-        {((favorite.fields?.emotionalSegments?.length > 0 && favorite.categoryId !== 'series') ||
+        {((favorite.fields?.emotionalSegments?.length > 0 && favorite.categoryId !== 'series' && favorite.categoryId !== 'anime') ||
           (favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
-          (favorite.categoryId === 'series' && Array.isArray(favorite.fields?.episodeSegments) && favorite.fields.episodeSegments.some((arr: unknown) => Array.isArray(arr) && arr.length > 0)) ||
+          ((favorite.categoryId === 'series' || favorite.categoryId === 'anime') && Array.isArray(favorite.fields?.episodeSegments) && favorite.fields.episodeSegments.some((arr: unknown) => Array.isArray(arr) && arr.length > 0)) ||
           (favorite.fields?.emotionalCurve?.length >= 2 && favorite.fields?.emotionalCurve?.some((p: { id?: string }) => p.id)) ||
           (favorite.fields?.emotionalCurve?.length >= 5) ||
           (favorite.fields?.momentPins?.length ?? 0) > 0) && (
@@ -106,6 +106,7 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
               totalDurationSeconds={favorite.fields?.totalDurationSeconds}
               episodeDurations={Array.isArray(favorite.fields?.episodeDurations) ? favorite.fields.episodeDurations : undefined}
               episodeSegments={Array.isArray(favorite.fields?.episodeSegments) ? favorite.fields.episodeSegments : undefined}
+              seasonEpisodeCounts={Array.isArray(favorite.fields?.seasonEpisodeCounts) ? favorite.fields.seasonEpisodeCounts : undefined}
               curvePoints={Array.isArray(favorite.fields.emotionalCurve) ? favorite.fields.emotionalCurve : []}
               emotionalSegments={Array.isArray(favorite.fields.emotionalSegments) ? favorite.fields.emotionalSegments : []}
               momentPins={Array.isArray(favorite.fields.momentPins) ? favorite.fields.momentPins : []}
