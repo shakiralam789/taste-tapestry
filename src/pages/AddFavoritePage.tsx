@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -179,6 +179,22 @@ export default function AddFavoritePage() {
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const isInitialMount = useRef(true);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverImageFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setFormData((prev) => ({ ...prev, image: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    },
+    []
+  );
 
   const goNext = () => setStep((s) => Math.min(totalSteps, s + 1));
   const goBack = () => setStep((s) => Math.max(1, s - 1));
@@ -291,19 +307,55 @@ export default function AddFavoritePage() {
                     </div>
                     <div>
                       <Label className="mb-2 block">Cover Image</Label>
-                      <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                      <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors space-y-3">
                         <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                        <Input
-                          placeholder="Paste image URL"
-                          value={formData.image}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              image: e.target.value,
-                            }))
-                          }
-                          className="max-w-sm mx-auto bg-transparent"
-                        />
+                        <p className="text-sm text-muted-foreground">
+                          Upload a file or paste an image URL
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <input
+                            ref={coverImageInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleCoverImageFile}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              coverImageInputRef.current?.click()
+                            }
+                            className="gap-1.5"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload
+                          </Button>
+                          <span className="text-muted-foreground text-sm">
+                            or
+                          </span>
+                          <Input
+                            placeholder="Paste image URL"
+                            value={
+                              formData.image.startsWith("data:")
+                                ? ""
+                                : formData.image
+                            }
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                image: e.target.value.trim(),
+                              }))
+                            }
+                            className="w-64 bg-transparent"
+                          />
+                        </div>
+                        {formData.image.startsWith("data:") && (
+                          <p className="text-xs text-muted-foreground">
+                            Image set from upload
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div>

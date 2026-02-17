@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EmotionalCurvePoint, EmotionalSegment } from '@/types/wishbook';
 import { getEmotionFill } from '@/data/emotionColors';
-import { TrendingUp, MapPin } from 'lucide-react';
+import { TrendingUp, MapPin, Video } from 'lucide-react';
 
 const GRAPH_HEIGHT = 180;
 const PADDING = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -152,7 +152,7 @@ export function EmotionalJourneyView({
         : '';
 
   const pointsWithNotes = sortedPoints.filter((p) => p.note || p.image);
-  const segmentsWithNotes = sortedSegments.filter((s) => s.note || s.image);
+  const segmentsWithNotes = sortedSegments.filter((s) => s.note || s.image || s.video);
 
   return (
     <div className={className} ref={containerRef}>
@@ -350,6 +350,11 @@ export function EmotionalJourneyView({
                     {s.image && (
                       <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
                         <img src={s.image} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    {s.video && !s.image && (
+                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                        <Video className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
                     <span className="text-muted-foreground line-clamp-2">{s.note || '—'}</span>

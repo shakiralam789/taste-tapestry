@@ -89,6 +89,8 @@ export interface EmotionalSegment {
   /** Optional emotion color preset for this segment */
   emotionColor?: EmotionColorKey;
   image?: string;
+  /** Optional video URL or data URL for this segment */
+  video?: string;
   note?: string;
 }
 

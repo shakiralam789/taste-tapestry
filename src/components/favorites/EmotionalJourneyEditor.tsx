@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, X, ImageIcon, ZoomIn, ZoomOut, Split, Merge, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { TrendingUp, X, ImageIcon, Video, ZoomIn, ZoomOut, Split, Merge, HelpCircle, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
 
 const GRAPH_HEIGHT = 220;
 const PADDING = { top: 20, right: 20, bottom: 36, left: 44 };
@@ -28,7 +28,7 @@ function formatTime(seconds: number, useSeconds: boolean): string {
 function formatTimeMinutesSeconds(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
-  return `${m}m${s}s`;
+  return `${m}m ${s}s`;
 }
 
 function generateId() {
@@ -114,6 +114,9 @@ export function EmotionalJourneyEditor({
   const [hoverTimeSeconds, setHoverTimeSeconds] = useState<number | null>(null);
   const [howItWorksExpanded, setHowItWorksExpanded] = useState(false);
   const [hoverEdge, setHoverEdge] = useState<'left' | 'right' | null>(null);
+  const segmentImageInputRef = useRef<HTMLInputElement>(null);
+  const segmentVideoInputRef = useRef<HTMLInputElement>(null);
+  const [fullscreenMedia, setFullscreenMedia] = useState<{ type: 'image' | 'video'; url: string } | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [visibleWindowStart, setVisibleWindowStart] = useState(0);
   const [visibleWindowEnd, setVisibleWindowEnd] = useState(totalDurationSeconds || 1);
@@ -148,6 +151,15 @@ export function EmotionalJourneyEditor({
     ro.observe(el);
     return () => ro.disconnect();
   }, [canEdit]);
+
+  useEffect(() => {
+    if (!fullscreenMedia) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreenMedia(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenMedia]);
 
   const width = graphWidth;
   const height = GRAPH_HEIGHT;
@@ -880,11 +892,11 @@ export function EmotionalJourneyEditor({
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3"
+              className="mt-4 p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-6"
             >
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-sm font-medium">
-                  {formatTime(selectedSegment.startSeconds, xAxisInSeconds)} – {formatTime(selectedSegment.endSeconds, xAxisInSeconds)} · intensity {selectedSegment.intensity}
+                  {formatTimeMinutesSeconds(selectedSegment.startSeconds)} – {formatTimeMinutesSeconds(selectedSegment.endSeconds)} · intensity {selectedSegment.intensity}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedSegmentId(null)}>
@@ -927,20 +939,100 @@ export function EmotionalJourneyEditor({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="flex items-center gap-1">
                     <ImageIcon className="w-4 h-4" />
-                    Image URL (optional)
+                    Image (optional)
                   </Label>
-                  <Input
-                    placeholder="Paste image URL for this moment"
-                    value={selectedSegment.image ?? ''}
-                    onChange={(e) => updateSegment(selectedSegment.id, { image: e.target.value.trim() || undefined })}
-                    className="mt-1"
-                  />
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                    Upload a file or paste an image URL
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={segmentImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !file.type.startsWith('image/')) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          updateSegment(selectedSegment.id, { image: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => segmentImageInputRef.current?.click()}
+                      className="gap-1.5"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      Upload
+                    </Button>
+                    <Input
+                      placeholder="Or paste image URL"
+                      value={(selectedSegment.image ?? '').startsWith('data:') ? '' : (selectedSegment.image ?? '')}
+                      onChange={(e) => updateSegment(selectedSegment.id, { image: e.target.value.trim() || undefined })}
+                      className="flex-1 min-w-[140px]"
+                    />
+                  </div>
+                  {(selectedSegment.image ?? '').startsWith('data:') && (
+                    <p className="text-xs text-muted-foreground mt-1">Image set from upload</p>
+                  )}
                 </div>
                 <div>
+                  <Label className="flex items-center gap-1">
+                    <Video className="w-4 h-4" />
+                    Video (optional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                    Upload a file or paste a video URL
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={segmentVideoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !file.type.startsWith('video/')) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          updateSegment(selectedSegment.id, { video: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => segmentVideoInputRef.current?.click()}
+                      className="gap-1.5"
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      Upload
+                    </Button>
+                    <Input
+                      placeholder="Or paste video URL"
+                      value={(selectedSegment.video ?? '').startsWith('data:') ? '' : (selectedSegment.video ?? '')}
+                      onChange={(e) => updateSegment(selectedSegment.id, { video: e.target.value.trim() || undefined })}
+                      className="flex-1 min-w-[140px]"
+                    />
+                  </div>
+                  {(selectedSegment.video ?? '').startsWith('data:') && (
+                    <p className="text-xs text-muted-foreground mt-1">Video set from upload</p>
+                  )}
+                </div>
+                <div className='col-span-2'>
                   <Label>Comment (optional)</Label>
                   <Textarea
                     placeholder="e.g., The twist / Best part / Made me cry"
@@ -981,32 +1073,99 @@ export function EmotionalJourneyEditor({
             </motion.div>
           )}
 
-          {normalizedSegments.some((s) => s.note || s.image) && (
+          {normalizedSegments.some((s) => s.note || s.image || s.video) && (
             <div className="mt-4 space-y-2">
-              <Label className="text-xs text-muted-foreground">Moments with notes</Label>
+              <Label className="text-xs text-muted-foreground">Moments with notes / media</Label>
               <ul className="space-y-2">
                 {normalizedSegments
-                  .filter((s) => s.note || s.image)
+                  .filter((s) => s.note || s.image || s.video)
                   .map((s) => (
                     <li key={s.id} className="flex items-center gap-3 p-2 rounded-lg bg-card/30 border border-white/5 text-sm">
                       <span className="text-primary font-medium flex-shrink-0">
-                        {formatTime(s.startSeconds, xAxisInSeconds)}–{formatTime(s.endSeconds, xAxisInSeconds)}
+                        {formatTimeMinutesSeconds(s.startSeconds)} – {formatTimeMinutesSeconds(s.endSeconds)}
                       </span>
                       {s.image && (
-                        <div className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
-                          <img src={s.image} alt="" className="w-full h-full object-cover" />
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setFullscreenMedia({ type: 'image', url: s.image! }); }}
+                          className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <img src={s.image} alt="" className="w-full h-full object-cover pointer-events-none" />
+                        </button>
+                      )}
+                      {s.video && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setFullscreenMedia({ type: 'video', url: s.video! }); }}
+                          className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <Video className="w-6 h-6 text-muted-foreground pointer-events-none" />
+                        </button>
                       )}
                       <span className="text-muted-foreground line-clamp-1 flex-1">{s.note || '—'}</span>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedSegmentId(s.id)}>
-                        Edit
-                      </Button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedSegmentId(s.id)}>
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            updateSegment(s.id, { note: undefined, image: undefined, video: undefined });
+                            if (selectedSegmentId === s.id) setSelectedSegmentId(null);
+                          }}
+                          title="Reset note, image and video"
+                          className="text-muted-foreground hover:text-white"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </li>
                   ))}
               </ul>
             </div>
           )}
         </>
+      )}
+
+      {fullscreenMedia && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setFullscreenMedia(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Media fullscreen"
+        >
+          <button
+            type="button"
+            onClick={() => setFullscreenMedia(null)}
+            className="absolute top-4 right-4 z-10 rounded-full p-2 bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+            aria-label="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div
+            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {fullscreenMedia.type === 'image' ? (
+              <img
+                src={fullscreenMedia.url}
+                alt=""
+                className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+              />
+            ) : (
+              <video
+                src={fullscreenMedia.url}
+                controls
+                autoPlay
+                className="max-w-full max-h-[90vh] w-auto rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
