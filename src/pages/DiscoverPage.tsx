@@ -42,13 +42,13 @@ export default function DiscoverPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center md:mb-12 mb-6"
         >
           <h1 className="font-display text-4xl md:text-6xl font-bold mb-4 tracking-tight">
             Discover{' '}
             <span className="gradient-text">New Favorites</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
             Explore recommendations from people with similar taste and find your next obsession.
           </p>
         </motion.div>
@@ -58,16 +58,16 @@ export default function DiscoverPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="max-w-2xl mx-auto mb-10"
+          className="max-w-2xl mx-auto md:mb-10 mb-4"
         >
           <div className="relative group">
             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Search className="z-10 absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
               placeholder="Search movies, songs, books, places..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-14 pr-14 h-16 text-lg rounded-full border-2 bg-card/50 backdrop-blur-xl focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-lg"
+              className="pl-14 pr-14 h-16 md:text-lg text-base rounded-full border-2 bg-card/50 backdrop-blur-xl focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-lg"
             />
             <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-primary/10 hover:text-primary rounded-full w-10 h-10">
               <Filter className="w-5 h-5" />
@@ -80,7 +80,7 @@ export default function DiscoverPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex justify-center items-center gap-3 overflow-x-auto pb-4 mb-10 scrollbar-hide px-1 py-1"
+          className="flex justify-center items-center gap-1.5 md:gap-3 overflow-x-auto pb-4 md:mb-10 mb-4 scrollbar-hide px-1 py-1"
         >
           <CategoryChip
             category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
@@ -162,7 +162,7 @@ export default function DiscoverPage() {
                 <Bookmark className="w-8 h-8 text-primary" />
               </div>
               <h3 className="font-display text-xl font-semibold mb-2">Curated Collections</h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+              <p className="text-sm md:text-base text-muted-foreground mb-6 max-w-sm mx-auto">
                 Explore hand-picked collections from our top tastemakers. Coming soon to a galaxy near you.
               </p>
               <Button variant="outline">Notify Me</Button>

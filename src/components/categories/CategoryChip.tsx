@@ -16,7 +16,7 @@ export function CategoryChip({ category, isSelected, onClick, count }: CategoryC
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300",
+        "inline-flex items-center gap-1 md:gap-2 px-4 md:py-2 py-1.5 rounded-full transition-all duration-300",
         "border font-medium text-sm backdrop-blur-sm",
         isSelected 
           ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-5px_hsl(var(--primary)/0.5)]" 
@@ -24,10 +24,10 @@ export function CategoryChip({ category, isSelected, onClick, count }: CategoryC
       )}
     >
       <span className="text-base">{category.icon}</span>
-      <span>{category.name}</span>
+      <span className='hidden md:block'>{category.name}</span>
       {count !== undefined && (
         <span className={cn(
-          "px-2 py-0.5 rounded-full text-xs font-semibold",
+          "md:px-2 px-1.5 md:py-0.5 py-0.25 rounded-full md:text-xs text-xs font-semibold",
           isSelected ? "bg-primary-foreground/20" : "bg-muted"
         )}>
           {count}

@@ -68,24 +68,24 @@ export default function ProfilePage() {
   };
 
   return (
-    <Layout>
+    <Layout className="md:px-0 px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
         {/* Immersive Cyber Banner */}
-        <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-lg border shadow-sm">
+        <div className="relative h-64 md:h-80 w-full overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 mix-blend-overlay" />
         </div>
 
         <div className="container mx-auto px-4 -mt-32 relative z-10">
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
+          <div className="flex flex-col lg:flex-row md:gap-6 gap-4 items-start">
             {/* Left: Profile Identity Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full lg:w-1/3 flex flex-col items-center text-center p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
+              className="w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
-              <div className="relative mb-6 group">
+              <div className="relative md:mb-6 mb-4 group">
                 <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-full opacity-75 blur transition duration-500 group-hover:opacity-100" />
                 <Avatar className="w-40 h-40 ring-4 ring-background relative">
                   <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
@@ -100,17 +100,17 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <h1 className="font-display text-4xl font-bold mb-2 flex items-center gap-2">
+              <h1 className="font-display md:text-4xl text-2xl font-bold mb-2 flex items-center gap-2">
                 {user.name}
                 <Sparkles className="w-6 h-6 text-yellow-400 fill-yellow-400 animate-pulse" />
               </h1>
-              <p className="text-primary font-medium mb-4 text-lg">@{user.username}</p>
+              <p className="text-primary font-medium mb-4 md:text-lg text-base">@{user.username}</p>
 
-              <p className="text-muted-foreground mb-6 leading-relaxed max-w-xs">
+              <p className="text-sm md:text-base text-muted-foreground md:mb-6 mb-4 leading-relaxed max-w-xs">
                 {user.bio || 'Digital explorer navigating the neon tides. Curator of moments and memories.'}
               </p>
 
-              <div className="flex items-center justify-center gap-4 text-sm text-gray-400 mb-6 w-full flex-wrap">
+              <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
                   <MapPin className="w-3.5 h-3.5" />
                   {user.location || 'Neo Tokyo'}
@@ -132,7 +132,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Quick discovery links */}
-              <div className="mt-6 w-full space-y-2">
+              <div className="md:mt-6 mt-4 w-full space-y-2">
                 <Link to="/matches" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                       <stat.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
                       <span className="text-xs font-semibold uppercase tracking-wider">{stat.label}</span>
                     </div>
-                    <p className="font-display text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
+                    <p className="font-display md:text-3xl text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
                       {stat.value}
                     </p>
                   </div>

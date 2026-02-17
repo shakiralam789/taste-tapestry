@@ -114,11 +114,11 @@ export default function UserProfilePage() {
   const hasInterests = profileUser.interests.length > 0;
 
   return (
-    <Layout>
+    <Layout className="md:px-0 px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
         {/* Header: Back + cover + profile row */}
         <div className="relative">
-          <div className="relative h-44 md:h-52 w-full overflow-hidden rounded-b-2xl border-b border-white/10">
+          <div className="relative h-44 md:h-52 w-full overflow-hidden border-b border-white/10">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex flex-wrap items-end gap-4">
@@ -183,19 +183,19 @@ export default function UserProfilePage() {
             className="grid grid-cols-3 gap-4"
           >
             <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
                 {profileUser.followers.toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Followers</p>
             </div>
             <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
                 {profileUser.following.toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Following</p>
             </div>
             <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display text-2xl font-bold text-foreground">
+              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
                 {userFavorites.length}
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Favorites</p>
@@ -205,7 +205,7 @@ export default function UserProfilePage() {
           {/* Interests (only if they have any) */}
           {hasInterests && (
             <section>
-              <h2 className="text-xl font-display font-bold mb-3 flex items-center gap-2">
+              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
                 <Palette className="w-5 h-5 text-primary" />
                 Interests & pursuits
               </h2>
@@ -238,7 +238,7 @@ export default function UserProfilePage() {
           {/* Revealed talents (only public) */}
           {revealedTalents.length > 0 && (
             <section>
-              <h2 className="text-xl font-display font-bold mb-3 flex items-center gap-2">
+              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
                 <Mic2 className="w-5 h-5 text-secondary" />
                 Revealed talents
               </h2>
@@ -259,7 +259,7 @@ export default function UserProfilePage() {
           {/* Their Collection */}
           <section>
             <div className="mb-6">
-              <h2 className="text-2xl font-display font-bold">Their collection</h2>
+              <h2 className="md:text-2xl text-xl font-display font-bold">Their collection</h2>
               <p className="text-muted-foreground text-sm">
                 A peek into {profileUser.name}&apos;s taste universe — movies, songs, books, places.
               </p>
@@ -289,7 +289,7 @@ export default function UserProfilePage() {
           {/* Time capsules (if any) */}
           {userCapsules.length > 0 && (
             <section>
-              <h2 className="text-xl font-display font-bold mb-3 flex items-center gap-2">
+              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
                 <Rocket className="w-5 h-5 text-primary" />
                 Time capsules
               </h2>

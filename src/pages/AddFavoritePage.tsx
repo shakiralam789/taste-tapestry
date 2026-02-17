@@ -229,8 +229,8 @@ export default function AddFavoritePage() {
 
   return (
     <Layout>
-      <div className="min-h-screen py-8 pb-16">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen py-0 pb-16">
+        <div className="container mx-auto px-0">
           {/* Header + progress */}
           <div className="mb-8">
             <Button
@@ -278,7 +278,7 @@ export default function AddFavoritePage() {
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
+                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Film className="w-5 h-5 text-primary" />
@@ -294,7 +294,7 @@ export default function AddFavoritePage() {
                   <div className="space-y-4">
                     <div>
                       <Label className="mb-2 block">Category</Label>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1 md:gap-2">
                         {categories.map((cat) => (
                           <CategoryChip
                             key={cat.id}
@@ -544,7 +544,7 @@ export default function AddFavoritePage() {
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(1)}`}
+                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(1)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Heart className="w-5 h-5 text-primary" />
@@ -628,7 +628,7 @@ export default function AddFavoritePage() {
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(2)}`}
+                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(2)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     {step > 3 && (
@@ -773,7 +773,7 @@ export default function AddFavoritePage() {
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(hasEmotionalJourney ? 3 : 2)}`}
+                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(hasEmotionalJourney ? 3 : 2)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Palette className="w-5 h-5 text-primary" />

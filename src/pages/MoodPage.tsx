@@ -43,7 +43,7 @@ export default function MoodPage() {
   return (
     <Layout>
       <div className="min-h-screen py-12">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-0">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -58,7 +58,7 @@ export default function MoodPage() {
               How are you feeling{' '}
               <span className="gradient-text">today?</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
               Select your current mood and we'll show you recommendations that match how you feel right now.
             </p>
           </motion.div>
@@ -159,10 +159,10 @@ export default function MoodPage() {
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'var(--gradient-sunset)' }}>
                   <Shuffle className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="font-display text-xl font-semibold mb-2">
+                <h3 className="font-display md:text-xl text-lg font-semibold mb-2">
                   Blind Recommendation Roulette
                 </h3>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-sm md:text-base text-muted-foreground mb-6">
                   Feeling adventurous? Get a random recommendation without knowing what it is. 
                   Experience first, then judge!
                 </p>

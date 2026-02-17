@@ -78,7 +78,7 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
       {/* Content */}
       <div className="" onClick={onClick}>
         <h3 className="text-lg font-display font-semibold mb-2">{favorite.title}</h3>
-        <p className="text-foreground/90 mb-3 whitespace-pre-wrap leading-relaxed">
+        <p className="text-sm md:text-base text-foreground/90 mb-3 whitespace-pre-wrap leading-relaxed">
           {favorite.whyILike}
         </p>
 
