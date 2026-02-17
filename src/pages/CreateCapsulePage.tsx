@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -32,6 +32,22 @@ export default function CreateCapsulePage() {
   const [selectedFavorites, setSelectedFavorites] = useState<string[]>([]);
   const [emotions, setEmotions] = useState<string[]>([]);
   const [newEmotion, setNewEmotion] = useState('');
+  const coverImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleCoverImageFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setFormData(prev => ({ ...prev, image: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    },
+    []
+  );
 
   const emotionSuggestions = [
     'nostalgic', 'happy', 'bittersweet', 'adventurous', 'peaceful', 
@@ -111,26 +127,53 @@ export default function CreateCapsulePage() {
             {/* Cover Image */}
             <div className="elevated-card">
               <Label className="text-base font-medium mb-3 block">Cover Image</Label>
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
                   <Upload className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">
                   Add a photo that represents this time
                 </p>
-                <Input
-                  placeholder="Or paste an image URL"
-                  value={formData.image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                  className="max-w-md mx-auto"
-                />
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                  <input
+                    ref={coverImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverImageFile}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => coverImageInputRef.current?.click()}
+                    className="gap-1.5"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload
+                  </Button>
+                  <span className="text-muted-foreground text-sm">or</span>
+                  <Input
+                    placeholder="Paste image URL"
+                    value={formData.image.startsWith('data:') ? '' : formData.image}
+                    onChange={(e) =>
+                      setFormData(prev => ({ ...prev, image: e.target.value.trim() }))
+                    }
+                    className="w-64"
+                  />
+                </div>
+                {formData.image.startsWith('data:') && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Image set from upload
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Basic Info */}
             <div className="elevated-card space-y-4">
               <div>
-                <Label htmlFor="title" className="flex items-center gap-2">
+                <Label htmlFor="title" className="mb-1 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary" />
                   Capsule Title *
                 </Label>

@@ -21,7 +21,7 @@ export default function HomePage() {
       <div className="min-h-screen">
         {/* Header / Tabs */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-white/5 px-4 mb-4 md:rounded-xl md:mx-0">
-          <div className="flex items-center justify-between pb-3 pt-3">
+          <div className="flex items-center justify-center pb-3 pt-3">
             <div className="flex gap-6">
               <button
                 onClick={() => setFeedType("foryou")}
@@ -54,7 +54,7 @@ export default function HomePage() {
           </div>
 
           {/* Categories Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 py-1">
+          <div className="flex justify-center items-center gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 py-1">
             <CategoryChip
               category={{
                 id: "all",
@@ -79,7 +79,7 @@ export default function HomePage() {
             ))}
           </div>
         </header>
-        <div className="max-w-2xl mx-auto px-4 md:px-8">
+        <div className="max-w-2xl mx-auto md:px-4">
           {/* Create Post Input (Desktop) */}
           <div className="hidden md:block mb-6 relative group">
             <Link to="/add-favorite">

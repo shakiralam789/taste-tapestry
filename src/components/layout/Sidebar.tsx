@@ -19,7 +19,7 @@ export function Sidebar() {
   const { user } = useWishbook();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border hidden lg:flex flex-col p-4 z-40">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border hidden md:flex flex-col p-4 z-40">
       {/* Logo */}
       <div className="mb-8 px-4 py-2">
         <Link to="/" className="flex items-center gap-3 group">

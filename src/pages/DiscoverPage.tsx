@@ -80,7 +80,7 @@ export default function DiscoverPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-3 overflow-x-auto pb-4 mb-10 scrollbar-hide px-1 py-1"
+          className="flex justify-center items-center gap-3 overflow-x-auto pb-4 mb-10 scrollbar-hide px-1 py-1"
         >
           <CategoryChip
             category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
