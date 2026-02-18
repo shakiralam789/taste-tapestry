@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -35,6 +36,17 @@ const TOTAL_STEPS = 4;
 const EMOTIONAL_JOURNEY_CATEGORIES = ["movies", "series", "anime", "songs"];
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop";
+
+const TMDB_API_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+// Set VITE_TMDB_API_KEY in .env to enable movie/series search and auto-fill (get key at https://www.themoviedb.org/settings/api)
+
+type TmdbSearchResult = {
+  id: number;
+  title: string;
+  year?: string;
+  poster_path?: string | null;
+};
 
 const timeOptions = [
   { id: "night", label: "🌙 Night" },
@@ -80,6 +92,15 @@ export default function AddFavoritePage() {
   );
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
 
+  const [dropdownClosed, setDropdownClosed] = useState(false);
+  const [tmdbTvId, setTmdbTvId] = useState<number | null>(null);
+  const [debouncedSearchTitle, setDebouncedSearchTitle] = useState("");
+  const titleDropdownRef = useRef<HTMLDivElement>(null);
+  /** When true, next debounce effect must not reopen dropdown (title was set by TMDb selection). */
+  const skipDropdownOpenRef = useRef(false);
+  /** When set by TMDb TV details, used to fill episodeDurations in the sync effect. */
+  const tmdbEpisodeRuntimeSecondsRef = useRef<number | null>(null);
+
   const isSeries = selectedCategory === "series";
   const isSeriesOrAnime = isSeries || selectedCategory === "anime";
   const hasEmotionalJourney =
@@ -95,11 +116,13 @@ export default function AddFavoritePage() {
   // Keep episode arrays in sync with totalEpisodesDerived
   useEffect(() => {
     if (!isSeriesOrAnime || totalEpisodesDerived <= 0) return;
+    const defaultRuntime = tmdbEpisodeRuntimeSecondsRef.current ?? 0;
     setEpisodeDurations((prev) => {
       const next = prev.slice(0, totalEpisodesDerived);
-      while (next.length < totalEpisodesDerived) next.push(0);
+      while (next.length < totalEpisodesDerived) next.push(defaultRuntime);
       return next;
     });
+    tmdbEpisodeRuntimeSecondsRef.current = null;
     setEpisodeSegments((prev) => {
       const next = prev.slice(0, totalEpisodesDerived);
       while (next.length < totalEpisodesDerived) next.push([]);
@@ -181,6 +204,215 @@ export default function AddFavoritePage() {
   const isInitialMount = useRef(true);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
 
+  const tmdbApiKey = import.meta.env.VITE_TMDB_API_KEY as string | undefined;
+  const tmdbEnabled =
+    Boolean(tmdbApiKey) &&
+    (selectedCategory === "movies" || selectedCategory === "series" || selectedCategory === "anime");
+
+  // Debounce title for TMDb search; reopen dropdown only when user typed (not when title came from TMDb selection)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearchTitle(formData.title.trim());
+      if (!skipDropdownOpenRef.current) {
+        setDropdownClosed(false);
+      } else {
+        skipDropdownOpenRef.current = false;
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [formData.title]);
+
+  // TMDb search (movies or TV) — react-query with caching and deduping
+  const searchQuery = useQuery({
+    queryKey: ["tmdb-search", debouncedSearchTitle, selectedCategory],
+    queryFn: async (): Promise<TmdbSearchResult[]> => {
+      if (!tmdbApiKey || !debouncedSearchTitle) return [];
+      const isMovie = selectedCategory === "movies";
+      const endpoint = isMovie
+        ? `${TMDB_API_BASE}/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(debouncedSearchTitle)}`
+        : `${TMDB_API_BASE}/search/tv?api_key=${tmdbApiKey}&query=${encodeURIComponent(debouncedSearchTitle)}`;
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      const results = (data.results || []).slice(0, 8).map(
+        (r: {
+          id: number;
+          title?: string;
+          name?: string;
+          release_date?: string;
+          first_air_date?: string;
+          poster_path?: string | null;
+        }) => ({
+          id: r.id,
+          title: isMovie ? (r.title ?? "") : (r.name ?? ""),
+          year: (r.release_date || r.first_air_date || "").slice(0, 4) || undefined,
+          poster_path: r.poster_path ?? null,
+        })
+      );
+      return results;
+    },
+    enabled: tmdbEnabled && debouncedSearchTitle.length > 0,
+    staleTime: 60_000,
+  });
+
+  const tmdbResults = searchQuery.data ?? [];
+
+  // Fetch movie/TV details when user selects a result (react-query mutation)
+  const fetchDetailsMutation = useMutation({
+    mutationFn: async (result: TmdbSearchResult) => {
+      if (!tmdbApiKey) throw new Error("No API key");
+      const isMovie = selectedCategory === "movies";
+      const endpoint = isMovie
+        ? `${TMDB_API_BASE}/movie/${result.id}?api_key=${tmdbApiKey}`
+        : `${TMDB_API_BASE}/tv/${result.id}?api_key=${tmdbApiKey}`;
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      if (!res.ok) throw new Error("Details fetch failed");
+      let episodeRuntimeMinutes: number | null = null;
+      if (!isMovie && (selectedCategory === "series" || selectedCategory === "anime")) {
+        const runTimes = data.episode_run_time;
+        episodeRuntimeMinutes =
+          Array.isArray(runTimes) && runTimes.length > 0
+            ? runTimes.reduce((a: number, b: number) => a + b, 0) / runTimes.length
+            : null;
+        if ((episodeRuntimeMinutes == null || episodeRuntimeMinutes <= 0) && result.id) {
+          const epRes = await fetch(
+            `${TMDB_API_BASE}/tv/${result.id}/season/1/episode/1?api_key=${tmdbApiKey}`
+          );
+          const epData = await epRes.json();
+          if (typeof epData.runtime === "number" && epData.runtime > 0) {
+            episodeRuntimeMinutes = epData.runtime;
+          }
+        }
+      }
+      return {
+        data,
+        result,
+        isMovie,
+        episodeRuntimeMinutes,
+      };
+    },
+    onSuccess: (payload) => {
+      const { data, result, isMovie, episodeRuntimeMinutes } = payload;
+      skipDropdownOpenRef.current = true; // prevent debounce effect from reopening dropdown when title updates
+      setDropdownClosed(true);
+      const genreStr = (data.genres || []).map((g: { name: string }) => g.name).join(", ");
+      const year = isMovie
+        ? (data.release_date || "").slice(0, 4)
+        : (data.first_air_date || "").slice(0, 4);
+      const overview = data.overview || "";
+      const posterPath = data.poster_path
+        ? `${TMDB_IMAGE_BASE}${data.poster_path}`
+        : "";
+      setFormData((prev) => ({
+        ...prev,
+        title: isMovie ? (data.title ?? prev.title) : (data.name ?? prev.title),
+        genre: genreStr || prev.genre,
+        releaseYear: year || prev.releaseYear,
+        plotSummary: overview || prev.plotSummary,
+        image: posterPath || prev.image,
+      }));
+      if (isMovie) {
+        setTmdbTvId(null);
+        if (typeof data.runtime === "number" && data.runtime > 0) {
+          setTotalDurationSeconds(data.runtime * 60);
+        }
+      } else if (selectedCategory === "series" || selectedCategory === "anime") {
+        setTmdbTvId(result.id);
+        if (episodeRuntimeMinutes != null && episodeRuntimeMinutes > 0) {
+          tmdbEpisodeRuntimeSecondsRef.current = Math.round(episodeRuntimeMinutes * 60);
+        }
+        const numEpisodes = data.number_of_episodes;
+        const numSeasons = Math.max(1, data.number_of_seasons || 1);
+        if (numEpisodes > 0) {
+          setTotalEpisodes(numEpisodes);
+          if (numSeasons === 1) {
+            setSeasonEpisodeCounts([numEpisodes]);
+          } else {
+            const base = Math.floor(numEpisodes / numSeasons);
+            const remainder = numEpisodes % numSeasons;
+            setSeasonEpisodeCounts([
+              ...Array(remainder).fill(base + 1),
+              ...Array(numSeasons - remainder).fill(base),
+            ]);
+          }
+        }
+      }
+    },
+  });
+
+  const selectTmdbResult = useCallback(
+    (result: TmdbSearchResult) => {
+      if (!tmdbApiKey) return;
+      fetchDetailsMutation.mutate(result);
+    },
+    [tmdbApiKey, fetchDetailsMutation]
+  );
+
+  const tmdbLoading = searchQuery.isFetching || fetchDetailsMutation.isPending;
+  const showTmdbDropdown = !dropdownClosed && tmdbResults.length > 0 && !tmdbLoading;
+
+  // (season, episode) 1-based for the currently selected episode
+  const { season: episodeSeason, episode: episodeNumber } = useMemo(() => {
+    let start = 0;
+    for (let s = 0; s < seasonEpisodeCounts.length; s++) {
+      const count = seasonEpisodeCounts[s];
+      if (selectedEpisodeIndex < start + count) {
+        return { season: s + 1, episode: selectedEpisodeIndex - start + 1 };
+      }
+      start += count;
+    }
+    return { season: 0, episode: 0 };
+  }, [selectedEpisodeIndex, seasonEpisodeCounts]);
+
+  // Per-episode runtime from TMDb when user selects an episode (react-query)
+  const episodeRuntimeQuery = useQuery({
+    queryKey: ["tmdb-episode", tmdbTvId, episodeSeason, episodeNumber],
+    queryFn: async () => {
+      if (!tmdbApiKey || tmdbTvId == null || episodeSeason < 1 || episodeNumber < 1) return null;
+      const res = await fetch(
+        `${TMDB_API_BASE}/tv/${tmdbTvId}/season/${episodeSeason}/episode/${episodeNumber}?api_key=${tmdbApiKey}`
+      );
+      const data = await res.json();
+      const runtimeMinutes = data.runtime;
+      if (typeof runtimeMinutes === "number" && runtimeMinutes > 0) {
+        return runtimeMinutes * 60;
+      }
+      return null;
+    },
+    enabled:
+      Boolean(tmdbApiKey) &&
+      tmdbTvId != null &&
+      episodeSeason >= 1 &&
+      episodeNumber >= 1 &&
+      isSeriesOrAnime &&
+      selectedEpisodeIndex >= 0 &&
+      selectedEpisodeIndex < totalEpisodesDerived,
+    staleTime: 5 * 60_000,
+  });
+
+  // Sync episode runtime from query into episodeDurations
+  useEffect(() => {
+    const sec = episodeRuntimeQuery.data;
+    if (sec == null || episodeRuntimeQuery.isPlaceholderData) return;
+    const idx = selectedEpisodeIndex;
+    setEpisodeDurations((prev) => {
+      const next = [...prev];
+      if (idx >= 0 && idx < next.length) next[idx] = sec;
+      return next;
+    });
+  }, [episodeRuntimeQuery.data, episodeRuntimeQuery.isPlaceholderData, selectedEpisodeIndex]);
+
+  // Close TMDb dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (titleDropdownRef.current && !titleDropdownRef.current.contains(e.target as Node)) {
+        setDropdownClosed(true);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleCoverImageFile = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -247,23 +479,6 @@ export default function AddFavoritePage() {
                   Add New <span className="gradient-text">Favorite</span>
                 </h1>
               </div>
-              {/* <div className="flex items-center gap-2">
-                {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setStep(i + 1)}
-                    className={`h-4 rounded-full transition-all duration-300 ${
-                      i + 1 === step
-                        ? "w-8 bg-primary"
-                        : i + 1 < step
-                          ? "w-4 bg-primary/60"
-                          : "w-4 bg-gray-500"
-                    }`}
-                    aria-label={`Go to step ${i + 1}`}
-                  />
-                ))}
-              </div> */}
             </div>
           </div>
 
@@ -304,6 +519,66 @@ export default function AddFavoritePage() {
                           />
                         ))}
                       </div>
+                    </div>
+                    <div ref={titleDropdownRef} className="relative">
+                      <Label htmlFor="title">Title *</Label>
+                      <Input
+                        id="title"
+                        placeholder={
+                          selectedCategory === "movies"
+                            ? "e.g., Eternal Sunshine of the Spotless Mind"
+                            : selectedCategory === "series" || selectedCategory === "anime"
+                              ? "e.g., Breaking Bad"
+                              : "Enter title..."
+                        }
+                        value={formData.title}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            title: e.target.value,
+                          }))
+                        }
+                        onFocus={() => tmdbEnabled && tmdbResults.length > 0 && setDropdownClosed(false)}
+                        className="mt-1"
+                      />
+                      {tmdbEnabled && (
+                        <>
+                          {tmdbLoading && (
+                            <p className="text-xs text-muted-foreground mt-1">Searching TMDb...</p>
+                          )}
+                          {showTmdbDropdown && !tmdbLoading && tmdbResults.length > 0 && (
+                            <ul className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-border bg-card shadow-lg py-1">
+                              {tmdbResults.map((r) => (
+                                <li key={r.id}>
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/80 transition-colors"
+                                    onClick={() => selectTmdbResult(r)}
+                                  >
+                                    {r.poster_path ? (
+                                      <img
+                                        src={`${TMDB_IMAGE_BASE}${r.poster_path}`}
+                                        alt=""
+                                        className="w-10 h-14 rounded object-cover flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                                        <Film className="w-5 h-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="font-medium truncate flex-1">{r.title}</span>
+                                    {r.year && (
+                                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                                        {r.year}
+                                      </span>
+                                    )}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      )}
                     </div>
                     <div>
                       <Label className="mb-2 block">Cover Image</Label>
@@ -358,21 +633,7 @@ export default function AddFavoritePage() {
                         )}
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="title">Title *</Label>
-                      <Input
-                        id="title"
-                        placeholder="e.g., Eternal Sunshine of the Spotless Mind"
-                        value={formData.title}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            title: e.target.value,
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+                   
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="genre">Genre</Label>

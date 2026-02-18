@@ -182,10 +182,14 @@ export function EmotionalJourneyEditor({
   const windowSpan = Math.max(1, visibleWindowEnd - visibleWindowStart);
   const minSegment = MIN_SEGMENT_SECONDS;
 
+  // Sync duration inputs and visible window when prop changes (e.g. switching episode in series)
   useEffect(() => {
+    const sec = totalDurationSeconds || 0;
+    setDurationMinutes(sec ? Math.floor(sec / 60) : 0);
+    setDurationSeconds(sec ? sec % 60 : 0);
     setVisibleWindowStart(0);
-    setVisibleWindowEnd(totalSec);
-  }, [totalSec]);
+    setVisibleWindowEnd(sec || 1);
+  }, [totalDurationSeconds]);
 
   const normalizedSegments = useMemo(
     () => normalizeSegments(segments, totalSec, minSegment),

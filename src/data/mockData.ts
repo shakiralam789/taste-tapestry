@@ -82,7 +82,7 @@ export const defaultCategories: Category[] = [
   // { id: 'places', name: 'Places', icon: '🌍', color: 'teal', isDefault: true },
   // { id: 'food', name: 'Food', icon: '🍜', color: 'rose', isDefault: true },
   // { id: 'games', name: 'Games', icon: '🎮', color: 'purple', isDefault: true },
-  { id: 'anime', name: 'Anime', icon: '🌸', color: 'rose', isDefault: true },
+  // { id: 'anime', name: 'Anime', icon: '🌸', color: 'rose', isDefault: true },
   // { id: 'podcasts', name: 'Podcasts', icon: '🎙️', color: 'teal', isDefault: true },
   // { id: 'artists', name: 'Artists', icon: '🎨', color: 'amber', isDefault: true },
 ];
