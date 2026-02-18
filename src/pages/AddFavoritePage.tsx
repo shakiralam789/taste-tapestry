@@ -390,7 +390,7 @@ export default function AddFavoritePage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="year">Year</Label>
+                        <Label htmlFor="year">Release Year</Label>
                         <Input
                           id="year"
                           type="number"
