@@ -983,7 +983,7 @@ export default function AddFavoritePage() {
                                                   setSelectedEpisodeIndex(i)
                                                 }
                                               >
-                                                S{s + 1} E{e + 1}
+                                                E{e + 1}
                                               </Button>
                                             );
                                           },
