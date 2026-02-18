@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const TMDB_API_BASE = "https://api.themoviedb.org/3";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
@@ -15,17 +15,22 @@ export async function GET(
 
   if (!apiKey) {
     return NextResponse.json(
-      { error: "TMDb API key not configured. Set TMDB_API_KEY or NEXT_PUBLIC_TMDB_API_KEY in .env" },
+      {
+        error: "TMDb API key not configured",
+        hint: "On Vercel: Project Settings → Environment Variables → add TMDB_API_KEY",
+      },
       { status: 500 }
     );
   }
 
-  const { searchParams } = new URL(_request.url);
-  const query = searchParams.toString();
+  // Use nextUrl so query string is correct on Vercel (request.url can differ in serverless)
+  const query = request.nextUrl.searchParams.toString();
   const url = `${TMDB_API_BASE}/${pathSegment}?api_key=${apiKey}${query ? `&${query}` : ""}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
     const data = await res.json();
     if (!res.ok) {
       return NextResponse.json(data, { status: res.status });
