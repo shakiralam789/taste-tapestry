@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import NextTopLoader from "nextjs-toploader";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -19,6 +20,13 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <NextTopLoader
+          color="hsl(var(--primary))"
+          height={3}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
