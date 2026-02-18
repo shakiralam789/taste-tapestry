@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { FavoriteCard } from "@/components/favorites/FavoriteCard";
@@ -5,7 +6,7 @@ import { CategoryChip } from "@/components/categories/CategoryChip";
 import { useWishbook } from "@/contexts/WishbookContext";
 import { Button } from "@/components/ui/button";
 import { PenSquare } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 export default function HomePage() {
   const { favorites, categories } = useWishbook();
@@ -70,7 +71,7 @@ export default function HomePage() {
         <div className="max-w-2xl mx-auto md:px-4">
           {/* Create Post Input (Desktop) */}
           <div className="px-4 md:px-0 mb-4 md:mb-6 relative group">
-            <Link to="/add-favorite">
+            <Link href="/add-favorite">
               <div className="flex gap-4 p-4 bg-card/30 rounded-xl border border-white/5 cursor-text hover:bg-card/50 transition-colors">
                 {/* <div className="w-10 h-10 rounded-full bg-gradient-cyber" /> */}
                 <div className="flex-1 text-muted-foreground pt-2 md:text-base text-sm">
@@ -93,7 +94,7 @@ export default function HomePage() {
               <div className="text-center py-20 text-muted-foreground">
                 <p>No favorites found in this category.</p>
                 <Link
-                  to="/add-favorite"
+                  href="/add-favorite"
                   className="text-primary hover:underline"
                 >
                   Create a post

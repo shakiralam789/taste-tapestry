@@ -1,4 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+"use client";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Compass, Sparkles, Clock, Heart, MessageCircle, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,14 +17,13 @@ const navItems = [
 ];
 
 export function Sidebar() {
-  const location = useLocation();
+  const pathname = usePathname();
   const { user } = useWishbook();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border hidden md:flex flex-col p-4 z-40">
-      {/* Logo */}
       <div className="mb-8 px-4 py-2">
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-cyber flex items-center justify-center shadow-glow group-hover:shadow-neon transition-all duration-300">
             <span className="text-xl">🌌</span>
           </div>
@@ -35,9 +36,9 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-2">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = pathname === item.path;
           return (
-            <Link key={item.path} to={item.path}>
+            <Link key={item.path} href={item.path}>
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={`w-full justify-start gap-3 text-base font-medium h-12 mb-1 ${

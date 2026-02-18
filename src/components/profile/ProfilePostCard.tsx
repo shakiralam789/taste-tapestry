@@ -1,6 +1,8 @@
+"use client";
 import { Favorite } from '@/types/wishbook';
 import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Star } from 'lucide-react';
+import { useWishbook } from '@/contexts/WishbookContext';
 
 interface ProfilePostCardProps {
   favorite: Favorite;
@@ -8,6 +10,8 @@ interface ProfilePostCardProps {
 }
 
 export function ProfilePostCard({ favorite, onClick }: ProfilePostCardProps) {
+  const { categories } = useWishbook();
+  const categoryName = categories.find((c) => c.id === favorite.categoryId)?.name ?? favorite.categoryId;
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -37,7 +41,7 @@ export function ProfilePostCard({ favorite, onClick }: ProfilePostCardProps) {
         <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
           <div className="flex items-center gap-2 mb-2 text-primary text-xs font-semibold tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity delay-100">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            {favorite.category}
+            {categoryName}
           </div>
           
           <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md">

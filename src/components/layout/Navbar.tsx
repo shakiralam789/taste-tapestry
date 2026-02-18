@@ -1,5 +1,7 @@
+"use client";
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
@@ -28,7 +30,7 @@ const navItems = [
 ];
 
 export function Navbar() {
-  const location = useLocation();
+  const pathname = usePathname();
   const { user } = useWishbook();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,7 +40,7 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-sunset)' }}>
               <span className="text-xl">📖</span>
             </div>
@@ -50,9 +52,9 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = pathname === item.path;
               return (
-                <Link key={item.path} to={item.path}>
+                <Link key={item.path} href={item.path}>
                   <Button
                     variant={isActive ? 'default' : 'ghost'}
                     size="sm"
@@ -103,14 +105,14 @@ export function Navbar() {
             </Button>
 
             {/* Messages */}
-            <Link to="/messages">
+            <Link href="/messages">
               <Button variant="ghost" size="icon">
                 <MessageCircle className="w-5 h-5" />
               </Button>
             </Link>
 
             {/* Profile */}
-            <Link to="/profile">
+            <Link href="/profile">
               <Avatar className="w-9 h-9 ring-2 ring-primary/20 cursor-pointer hover:ring-primary/50 transition-all">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback>{user.name[0]}</AvatarFallback>
@@ -141,11 +143,11 @@ export function Navbar() {
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = pathname === item.path;
                 return (
                   <Link 
                     key={item.path} 
-                    to={item.path}
+                    href={item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Button

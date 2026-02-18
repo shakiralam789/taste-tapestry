@@ -1,4 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+"use client";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Compass, Sparkles, MessageCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,15 +13,15 @@ const navItems = [
 ];
 
 export function MobileNav() {
-  const location = useLocation();
+  const pathname = usePathname();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-xl border-t border-border z-50 md:hidden pb-safe">
       <div className="flex items-center justify-around h-full px-2">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = pathname === item.path;
           return (
-            <Link key={item.path} to={item.path} className="flex-1">
+            <Link key={item.path} href={item.path} className="flex-1">
               <div className={cn(
                 "flex flex-col items-center justify-center gap-1 h-full w-full transition-all duration-300",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"

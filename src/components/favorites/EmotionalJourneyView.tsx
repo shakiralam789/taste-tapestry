@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EmotionalCurvePoint, EmotionalSegment } from '@/types/wishbook';
 import { getEmotionFill } from '@/data/emotionColors';

@@ -1,3 +1,4 @@
+"use client";
 import { Favorite } from '@/types/wishbook';
 import { useWishbook } from '@/contexts/WishbookContext';
 import { EmotionalJourneyView } from '@/components/favorites/EmotionalJourneyView';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 interface FavoriteCardProps {
   favorite: Favorite;
@@ -15,7 +16,7 @@ interface FavoriteCardProps {
 
 export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
   const { allUsers } = useWishbook();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const author = allUsers.find(u => u.id === favorite.userId) || {
     name: 'Unknown User',
@@ -26,7 +27,7 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
   const handleAuthorClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (favorite.userId) {
-      navigate(`/users/${favorite.userId}`);
+      router.push(`/users/${favorite.userId}`);
     }
   };
 

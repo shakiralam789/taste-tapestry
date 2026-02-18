@@ -1,3 +1,4 @@
+"use client";
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
@@ -24,7 +25,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const categoryLabels: Record<InterestCategory, string> = {
   creative: 'Creative pursuits',
@@ -133,7 +134,7 @@ export default function ProfilePage() {
 
               {/* Quick discovery links */}
               <div className="md:mt-6 mt-4 w-full space-y-2">
-                <Link to="/matches" className="block">
+                <Link href="/matches" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">
                       <Heart className="w-4 h-4 text-primary" />
@@ -142,7 +143,7 @@ export default function ProfilePage() {
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </Link>
-                <Link to="/mood" className="block">
+                <Link href="/mood" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">
                       <Palette className="w-4 h-4 text-primary" />
@@ -151,7 +152,7 @@ export default function ProfilePage() {
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </Link>
-                <Link to="/capsules" className="block">
+                <Link href="/capsules" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">
                       <Rocket className="w-4 h-4 text-primary" />
@@ -229,7 +230,7 @@ export default function ProfilePage() {
                         Curated favorites — movies, songs, books, places. Your taste, your story.
                       </p>
                     </div>
-                    <Link to="/add-favorite">
+                    <Link href="/add-favorite">
                       <Button
                         variant="outline"
                         size="sm"
@@ -250,7 +251,7 @@ export default function ProfilePage() {
                         <ProfilePostCard favorite={favorite} />
                       </motion.div>
                     ))}
-                    <Link to="/add-favorite">
+                    <Link href="/add-favorite">
                       <motion.div
                         variants={itemVariants}
                         className="aspect-[4/5] rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
@@ -367,14 +368,14 @@ export default function ProfilePage() {
                         Collections tied to a period — school days, breakup era, summer 2024.
                       </p>
                     </div>
-                    <Link to="/create-capsule">
+                    <Link href="/create-capsule">
                       <Button variant="outline" size="sm" className="rounded-full border-dashed group hover:border-primary hover:text-primary">
                         <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" /> Create capsule
                       </Button>
                     </Link>
                   </div>
                   {timeCapsules.length === 0 ? (
-                    <Link to="/create-capsule">
+                    <Link href="/create-capsule">
                       <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
                         <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50 group-hover:opacity-80" />
                         <h4 className="text-lg font-semibold mb-2 text-foreground">No capsules yet</h4>
@@ -391,7 +392,7 @@ export default function ProfilePage() {
                     >
                       {timeCapsules.map((capsule) => (
                         <motion.div key={capsule.id} variants={itemVariants}>
-                          <Link to={`/capsules#${capsule.id}`}>
+                          <Link href={`/capsules#${capsule.id}`}>
                             <div className="group rounded-2xl overflow-hidden border border-white/10 bg-card/30 hover:border-primary/20 transition-all">
                               <div className="aspect-video relative overflow-hidden">
                                 {capsule.image ? (
@@ -425,7 +426,7 @@ export default function ProfilePage() {
                           </Link>
                         </motion.div>
                       ))}
-                      <Link to="/create-capsule">
+                      <Link href="/create-capsule">
                         <motion.div
                           variants={itemVariants}
                           className="aspect-video rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"

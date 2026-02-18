@@ -1,5 +1,6 @@
+"use client";
 import { useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,8 +30,9 @@ const categoryLabels: Record<InterestCategory, string> = {
   collaborative: 'Collaborative',
 };
 
-export default function UserProfilePage() {
-  const { id } = useParams<{ id: string }>();
+type UserProfilePageProps = { id: string };
+
+export default function UserProfilePage({ id }: UserProfilePageProps) {
   const { user: currentUser, favorites, timeCapsules, tasteMatches, allUsers } = useWishbook();
 
   const profileUser = useMemo(
@@ -100,7 +102,7 @@ export default function UserProfilePage() {
       <Layout>
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
           <p className="text-lg text-muted-foreground">User not found.</p>
-          <Link to="/matches">
+          <Link href="/matches">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to matches

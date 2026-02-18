@@ -1,3 +1,4 @@
+"use client";
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, Category, Favorite, TimeCapsule, Mood, TasteMatch } from '@/types/wishbook';
 import { 
@@ -28,7 +29,26 @@ interface WishbookContextType {
   getFavoritesByCategory: (categoryId: string) => Favorite[];
 }
 
-const WishbookContext = createContext<WishbookContextType | undefined>(undefined);
+const defaultContextValue: WishbookContextType = {
+  user: initialUser,
+  setUser: () => {},
+  categories: defaultCategories,
+  setCategories: () => {},
+  favorites: sampleFavorites,
+  addFavorite: () => {},
+  updateFavorite: () => {},
+  deleteFavorite: () => {},
+  timeCapsules: sampleTimeCapsules,
+  addTimeCapsule: () => {},
+  tasteMatches: sampleTasteMatches,
+  selectedMood: null,
+  setSelectedMood: () => {},
+  allUsers: [initialUser, ...sampleUsers],
+  getFavoritesByMood: () => sampleFavorites,
+  getFavoritesByCategory: () => sampleFavorites,
+};
+
+const WishbookContext = createContext<WishbookContextType>(defaultContextValue);
 
 export function WishbookProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(initialUser);
@@ -88,9 +108,5 @@ export function WishbookProvider({ children }: { children: ReactNode }) {
 }
 
 export function useWishbook() {
-  const context = useContext(WishbookContext);
-  if (context === undefined) {
-    throw new Error('useWishbook must be used within a WishbookProvider');
-  }
-  return context;
+  return useContext(WishbookContext);
 }

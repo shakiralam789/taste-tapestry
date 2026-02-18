@@ -1,7 +1,8 @@
+"use client";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,9 +38,9 @@ const EMOTIONAL_JOURNEY_CATEGORIES = ["movies", "series", "anime", "songs"];
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop";
 
-const TMDB_API_BASE = "https://api.themoviedb.org/3";
+/** Next.js API proxy for TMDb (keeps API key server-side). Set TMDB_API_KEY or VITE_TMDB_API_KEY in .env */
+const TMDB_PROXY_BASE = "/api/tmdb";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-// Set VITE_TMDB_API_KEY in .env to enable movie/series search and auto-fill (get key at https://www.themoviedb.org/settings/api)
 
 type TmdbSearchResult = {
   id: number;
@@ -57,8 +58,8 @@ const timeOptions = [
   { id: "weekend", label: "📅 Weekend" },
 ];
 
-export default function AddFavoritePage() {
-  const navigate = useNavigate();
+function AddFavoritePageContent() {
+  const router = useRouter();
   const { categories, addFavorite } = useWishbook();
 
   const [step, setStep] = useState(1);
@@ -197,17 +198,15 @@ export default function AddFavoritePage() {
       },
     };
     addFavorite(newFavorite);
-    navigate("/profile");
+    router.push("/profile");
   };
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const isInitialMount = useRef(true);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
 
-  const tmdbApiKey = import.meta.env.VITE_TMDB_API_KEY as string | undefined;
   const tmdbEnabled =
-    Boolean(tmdbApiKey) &&
-    (selectedCategory === "movies" || selectedCategory === "series" || selectedCategory === "anime");
+    selectedCategory === "movies" || selectedCategory === "series" || selectedCategory === "anime";
 
   // Debounce title for TMDb search; reopen dropdown only when user typed (not when title came from TMDb selection)
   useEffect(() => {
@@ -222,16 +221,16 @@ export default function AddFavoritePage() {
     return () => clearTimeout(t);
   }, [formData.title]);
 
-  // TMDb search (movies or TV) — react-query with caching and deduping
+  // TMDb search (movies or TV) — via Next.js API proxy (API key server-side)
   const searchQuery = useQuery({
     queryKey: ["tmdb-search", debouncedSearchTitle, selectedCategory],
     queryFn: async (): Promise<TmdbSearchResult[]> => {
-      if (!tmdbApiKey || !debouncedSearchTitle) return [];
+      if (!debouncedSearchTitle) return [];
       const isMovie = selectedCategory === "movies";
-      const endpoint = isMovie
-        ? `${TMDB_API_BASE}/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(debouncedSearchTitle)}`
-        : `${TMDB_API_BASE}/search/tv?api_key=${tmdbApiKey}&query=${encodeURIComponent(debouncedSearchTitle)}`;
-      const res = await fetch(endpoint);
+      const path = isMovie ? "search/movie" : "search/tv";
+      const res = await fetch(
+        `${TMDB_PROXY_BASE}/${path}?query=${encodeURIComponent(debouncedSearchTitle)}`
+      );
       const data = await res.json();
       const results = (data.results || []).slice(0, 8).map(
         (r: {
@@ -259,12 +258,9 @@ export default function AddFavoritePage() {
   // Fetch movie/TV details when user selects a result (react-query mutation)
   const fetchDetailsMutation = useMutation({
     mutationFn: async (result: TmdbSearchResult) => {
-      if (!tmdbApiKey) throw new Error("No API key");
       const isMovie = selectedCategory === "movies";
-      const endpoint = isMovie
-        ? `${TMDB_API_BASE}/movie/${result.id}?api_key=${tmdbApiKey}`
-        : `${TMDB_API_BASE}/tv/${result.id}?api_key=${tmdbApiKey}`;
-      const res = await fetch(endpoint);
+      const path = isMovie ? `movie/${result.id}` : `tv/${result.id}`;
+      const res = await fetch(`${TMDB_PROXY_BASE}/${path}`);
       const data = await res.json();
       if (!res.ok) throw new Error("Details fetch failed");
       let episodeRuntimeMinutes: number | null = null;
@@ -276,7 +272,7 @@ export default function AddFavoritePage() {
             : null;
         if ((episodeRuntimeMinutes == null || episodeRuntimeMinutes <= 0) && result.id) {
           const epRes = await fetch(
-            `${TMDB_API_BASE}/tv/${result.id}/season/1/episode/1?api_key=${tmdbApiKey}`
+            `${TMDB_PROXY_BASE}/tv/${result.id}/season/1/episode/1`
           );
           const epData = await epRes.json();
           if (typeof epData.runtime === "number" && epData.runtime > 0) {
@@ -342,10 +338,9 @@ export default function AddFavoritePage() {
 
   const selectTmdbResult = useCallback(
     (result: TmdbSearchResult) => {
-      if (!tmdbApiKey) return;
       fetchDetailsMutation.mutate(result);
     },
-    [tmdbApiKey, fetchDetailsMutation]
+    [fetchDetailsMutation]
   );
 
   const tmdbLoading = searchQuery.isFetching || fetchDetailsMutation.isPending;
@@ -368,9 +363,9 @@ export default function AddFavoritePage() {
   const episodeRuntimeQuery = useQuery({
     queryKey: ["tmdb-episode", tmdbTvId, episodeSeason, episodeNumber],
     queryFn: async () => {
-      if (!tmdbApiKey || tmdbTvId == null || episodeSeason < 1 || episodeNumber < 1) return null;
+      if (tmdbTvId == null || episodeSeason < 1 || episodeNumber < 1) return null;
       const res = await fetch(
-        `${TMDB_API_BASE}/tv/${tmdbTvId}/season/${episodeSeason}/episode/${episodeNumber}?api_key=${tmdbApiKey}`
+        `${TMDB_PROXY_BASE}/tv/${tmdbTvId}/season/${episodeSeason}/episode/${episodeNumber}`
       );
       const data = await res.json();
       const runtimeMinutes = data.runtime;
@@ -380,7 +375,6 @@ export default function AddFavoritePage() {
       return null;
     },
     enabled:
-      Boolean(tmdbApiKey) &&
       tmdbTvId != null &&
       episodeSeason >= 1 &&
       episodeNumber >= 1 &&
@@ -467,7 +461,7 @@ export default function AddFavoritePage() {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => navigate(-1)}
+              onClick={() => router.back()}
               className="mb-4 -ml-2"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1307,4 +1301,19 @@ export default function AddFavoritePage() {
       </div>
     </Layout>
   );
+}
+
+export default function AddFavoritePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <span className="text-muted-foreground">Loading...</span>
+        </div>
+      </Layout>
+    );
+  }
+  return <AddFavoritePageContent />;
 }

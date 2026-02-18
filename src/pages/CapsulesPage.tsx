@@ -1,10 +1,11 @@
+"use client";
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { TimeCapsuleCard } from '@/components/capsules/TimeCapsuleCard';
 import { Button } from '@/components/ui/button';
 import { useWishbook } from '@/contexts/WishbookContext';
 import { Clock, Plus, Archive, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 export default function CapsulesPage() {
   const { timeCapsules } = useWishbook();
@@ -52,7 +53,7 @@ export default function CapsulesPage() {
             transition={{ delay: 0.1 }}
             className="flex justify-center mb-12"
           >
-            <Link to="/create-capsule">
+            <Link href="/create-capsule">
               <Button variant="gradient" size="lg">
                 <Plus className="w-5 h-5" />
                 Create New Capsule
@@ -116,7 +117,7 @@ export default function CapsulesPage() {
 
               {/* Add New Card */}
               <motion.div variants={itemVariants}>
-                <Link to="/create-capsule">
+                <Link href="/create-capsule">
                   <div className="elevated-card p-8 h-full min-h-[280px] flex flex-col items-center justify-center text-center border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer group">
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
                       <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -142,7 +143,7 @@ export default function CapsulesPage() {
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Create your first time capsule to preserve the favorites that define a special period of your life.
               </p>
-              <Link to="/create-capsule">
+              <Link href="/create-capsule">
                 <Button variant="gradient" size="lg">
                   <Plus className="w-5 h-5" />
                   Create Your First Capsule

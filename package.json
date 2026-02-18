@@ -1,14 +1,14 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "taste-tapestry",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "build:turbo": "turbo run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -48,17 +48,18 @@
     "framer-motion": "^12.26.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
+    "next": "^16.1.6",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "turbo": "^2.8.10",
     "vaul": "^0.9.9",
     "zod": "^3.25.76"
   },

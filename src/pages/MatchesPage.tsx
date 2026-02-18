@@ -1,3 +1,4 @@
+"use client";
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { TasteMatchCard } from '@/components/matching/TasteMatchCard';

@@ -1,6 +1,7 @@
+"use client";
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,7 @@ import {
 import { TimeCapsule } from '@/types/wishbook';
 
 export default function CreateCapsulePage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { favorites, addTimeCapsule } = useWishbook();
   
   const [formData, setFormData] = useState({
@@ -88,7 +89,7 @@ export default function CreateCapsulePage() {
     };
 
     addTimeCapsule(newCapsule);
-    navigate('/capsules');
+    router.push('/capsules');
   };
 
   return (
@@ -103,7 +104,7 @@ export default function CreateCapsulePage() {
           >
             <Button 
               variant="ghost" 
-              onClick={() => navigate(-1)}
+              onClick={() => router.back()}
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -320,7 +321,7 @@ export default function CreateCapsulePage() {
 
             {/* Submit */}
             <div className="flex gap-4 pt-4">
-              <Button variant="outline" className="flex-1" onClick={() => navigate(-1)}>
+              <Button variant="outline" className="flex-1" onClick={() => router.back()}>
                 Cancel
               </Button>
               <Button 
