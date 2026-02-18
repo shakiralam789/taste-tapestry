@@ -12,7 +12,7 @@ const navItems = [
   { path: '/mood', icon: Sparkles, label: 'Moods' },
   { path: '/capsules', icon: Clock, label: 'Capsules' },
   { path: '/matches', icon: Heart, label: 'Matches' },
-  { path: '/messages', icon: MessageCircle, label: 'Messages' },
+  // { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
 
