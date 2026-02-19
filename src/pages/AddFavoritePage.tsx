@@ -27,6 +27,8 @@ import {
   TrendingUp,
   Palette,
   FilmIcon,
+  AlertCircle,
+  ChevronRight,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
@@ -64,6 +66,7 @@ function AddFavoritePageContent() {
   const { categories, addFavorite } = useWishbook();
 
   const [step, setStep] = useState(1);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("movies");
   const [formData, setFormData] = useState({
     title: "",
@@ -157,6 +160,10 @@ function AddFavoritePageContent() {
   };
 
   const handleSubmit = () => {
+    if (!formData.title?.trim() || !formData.whyILike?.trim()) {
+      setSubmitAttempted(true);
+      return;
+    }
     const newFavorite: Favorite = {
       id: Date.now().toString(),
       userId: "1",
@@ -726,7 +733,7 @@ function AddFavoritePageContent() {
                         <Input
                           id="year"
                           type="number"
-                          placeholder="2004"
+                          placeholder="Release year"
                           value={formData.releaseYear}
                           onChange={(e) =>
                             setFormData((prev) => ({
@@ -750,7 +757,7 @@ function AddFavoritePageContent() {
                             plotSummary: e.target.value,
                           }))
                         }
-                        rows={2}
+                        rows={5}
                         className="mt-1"
                       />
                     </div>
@@ -1193,19 +1200,64 @@ function AddFavoritePageContent() {
                     </div>
                   </div>
                   {step === (hasEmotionalJourney ? 4 : 3) && (
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-between">
-                      <Button variant="outline" onClick={goBack}>
-                        Back
-                      </Button>
-                      <Button
-                        variant="gradient"
-                        className="gap-2"
-                        onClick={handleSubmit}
-                        disabled={!formData.title || !formData.whyILike}
-                      >
-                        <Sparkles className="w-5 h-5" />
-                        Add to Favorites
-                      </Button>
+                    <div className="mt-6 space-y-4">
+                      {submitAttempted &&
+                        (!formData.title?.trim() || !formData.whyILike?.trim()) && (
+                        <div
+                          role="status"
+                          className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-4 w-4" aria-hidden />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground">
+                              Almost there — complete these to add to favorites
+                            </p>
+                            <ul className="mt-1.5 flex flex-wrap gap-2 text-muted-foreground">
+                              {!formData.title?.trim() && (
+                                <li>
+                                  <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
+                                  >
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                    Step 1: Title
+                                    <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
+                                  </button>
+                                </li>
+                              )}
+                              {!formData.whyILike?.trim() && (
+                                <li>
+                                  <button
+                                    type="button"
+                                    onClick={() => setStep(2)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
+                                  >
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                    Step 2: Why you love it
+                                    <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
+                                  </button>
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-3 justify-between">
+                        <Button variant="outline" onClick={goBack}>
+                          Back
+                        </Button>
+                        <Button
+                          variant="gradient"
+                          className="gap-2"
+                          onClick={handleSubmit}
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          Add to Favorites
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </motion.section>

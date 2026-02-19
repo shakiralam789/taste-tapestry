@@ -513,7 +513,6 @@ export function EmotionalJourneyEditor({
         setDraggingSegmentId(hit.segment.id);
         pointerDownAtRef.current = null;
       } else {
-        setSelectedSegmentId(hit.segment.id);
         pointerDownAtRef.current = {
           x: e.clientX,
           y: e.clientY,
@@ -670,6 +669,7 @@ export function EmotionalJourneyEditor({
       ) {
         const pos = screenToData(e.clientX, e.clientY);
         const seg = pos ? getSegmentAtTime(pos.x) : null;
+        let didSplit = false;
         if (seg && pos && normalizedSegments.length < 20) {
           const splitTime = Math.max(
             seg.startSeconds + minSegment,
@@ -685,9 +685,13 @@ export function EmotionalJourneyEditor({
           ) {
             splitSegment(seg.id, splitTime);
             lastClickRef.current = null;
+            didSplit = true;
           } else {
             lastClickRef.current = { segmentId: seg.id, timestamp: Date.now() };
           }
+        }
+        if (seg && !didSplit) {
+          setSelectedSegmentId(seg.id);
         }
         pointerDownAtRef.current = null;
       }
