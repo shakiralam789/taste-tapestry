@@ -615,7 +615,7 @@ export function EmotionalJourneyEditor({
       }
 
       if (draggingSegmentId) {
-        const y = Math.max(Y_MIN, Math.min(Y_MAX, Math.round(pos.y * 2) / 2));
+        const y = Math.max(Y_MIN, Math.min(Y_MAX, Math.round(pos.y * 10) / 10));
         updateSegment(draggingSegmentId, { intensity: y });
       }
 
@@ -657,7 +657,7 @@ export function EmotionalJourneyEditor({
       if (draggingSegmentId && !resizingSegmentId) {
         const pos = screenToData(e.clientX, e.clientY);
         if (pos) {
-          const y = Math.max(Y_MIN, Math.min(Y_MAX, Math.round(pos.y * 2) / 2));
+          const y = Math.max(Y_MIN, Math.min(Y_MAX, Math.round(pos.y * 10) / 10));
           updateSegment(draggingSegmentId, { intensity: y });
         }
         dragEndedRef.current = true;
@@ -1318,10 +1318,8 @@ export function EmotionalJourneyEditor({
                     />
                     <Button
                       type="button"
-                      variant="outline"
                       size="sm"
                       onClick={() => segmentImageInputRef.current?.click()}
-                      className="gap-1.5"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
                       Upload
@@ -1376,7 +1374,6 @@ export function EmotionalJourneyEditor({
                     />
                     <Button
                       type="button"
-                      variant="outline"
                       size="sm"
                       onClick={() => segmentVideoInputRef.current?.click()}
                       className="gap-1.5"

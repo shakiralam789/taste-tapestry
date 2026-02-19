@@ -26,6 +26,7 @@ import {
   Heart,
   TrendingUp,
   Palette,
+  FilmIcon,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
@@ -206,7 +207,9 @@ function AddFavoritePageContent() {
   const coverImageInputRef = useRef<HTMLInputElement>(null);
 
   const tmdbEnabled =
-    selectedCategory === "movies" || selectedCategory === "series" || selectedCategory === "anime";
+    selectedCategory === "movies" ||
+    selectedCategory === "series" ||
+    selectedCategory === "anime";
 
   // Debounce title for TMDb search; reopen dropdown only when user typed (not when title came from TMDb selection)
   useEffect(() => {
@@ -229,24 +232,28 @@ function AddFavoritePageContent() {
       const isMovie = selectedCategory === "movies";
       const path = isMovie ? "search/movie" : "search/tv";
       const res = await fetch(
-        `${TMDB_PROXY_BASE}/${path}?query=${encodeURIComponent(debouncedSearchTitle)}`
+        `${TMDB_PROXY_BASE}/${path}?query=${encodeURIComponent(debouncedSearchTitle)}`,
       );
       const data = await res.json();
-      const results = (data.results || []).slice(0, 8).map(
-        (r: {
-          id: number;
-          title?: string;
-          name?: string;
-          release_date?: string;
-          first_air_date?: string;
-          poster_path?: string | null;
-        }) => ({
-          id: r.id,
-          title: isMovie ? (r.title ?? "") : (r.name ?? ""),
-          year: (r.release_date || r.first_air_date || "").slice(0, 4) || undefined,
-          poster_path: r.poster_path ?? null,
-        })
-      );
+      const results = (data.results || [])
+        .slice(0, 8)
+        .map(
+          (r: {
+            id: number;
+            title?: string;
+            name?: string;
+            release_date?: string;
+            first_air_date?: string;
+            poster_path?: string | null;
+          }) => ({
+            id: r.id,
+            title: isMovie ? (r.title ?? "") : (r.name ?? ""),
+            year:
+              (r.release_date || r.first_air_date || "").slice(0, 4) ||
+              undefined,
+            poster_path: r.poster_path ?? null,
+          }),
+        );
       return results;
     },
     enabled: tmdbEnabled && debouncedSearchTitle.length > 0,
@@ -264,15 +271,22 @@ function AddFavoritePageContent() {
       const data = await res.json();
       if (!res.ok) throw new Error("Details fetch failed");
       let episodeRuntimeMinutes: number | null = null;
-      if (!isMovie && (selectedCategory === "series" || selectedCategory === "anime")) {
+      if (
+        !isMovie &&
+        (selectedCategory === "series" || selectedCategory === "anime")
+      ) {
         const runTimes = data.episode_run_time;
         episodeRuntimeMinutes =
           Array.isArray(runTimes) && runTimes.length > 0
-            ? runTimes.reduce((a: number, b: number) => a + b, 0) / runTimes.length
+            ? runTimes.reduce((a: number, b: number) => a + b, 0) /
+              runTimes.length
             : null;
-        if ((episodeRuntimeMinutes == null || episodeRuntimeMinutes <= 0) && result.id) {
+        if (
+          (episodeRuntimeMinutes == null || episodeRuntimeMinutes <= 0) &&
+          result.id
+        ) {
           const epRes = await fetch(
-            `${TMDB_PROXY_BASE}/tv/${result.id}/season/1/episode/1`
+            `${TMDB_PROXY_BASE}/tv/${result.id}/season/1/episode/1`,
           );
           const epData = await epRes.json();
           if (typeof epData.runtime === "number" && epData.runtime > 0) {
@@ -291,7 +305,9 @@ function AddFavoritePageContent() {
       const { data, result, isMovie, episodeRuntimeMinutes } = payload;
       skipDropdownOpenRef.current = true; // prevent debounce effect from reopening dropdown when title updates
       setDropdownClosed(true);
-      const genreStr = (data.genres || []).map((g: { name: string }) => g.name).join(", ");
+      const genreStr = (data.genres || [])
+        .map((g: { name: string }) => g.name)
+        .join(", ");
       const year = isMovie
         ? (data.release_date || "").slice(0, 4)
         : (data.first_air_date || "").slice(0, 4);
@@ -312,10 +328,15 @@ function AddFavoritePageContent() {
         if (typeof data.runtime === "number" && data.runtime > 0) {
           setTotalDurationSeconds(data.runtime * 60);
         }
-      } else if (selectedCategory === "series" || selectedCategory === "anime") {
+      } else if (
+        selectedCategory === "series" ||
+        selectedCategory === "anime"
+      ) {
         setTmdbTvId(result.id);
         if (episodeRuntimeMinutes != null && episodeRuntimeMinutes > 0) {
-          tmdbEpisodeRuntimeSecondsRef.current = Math.round(episodeRuntimeMinutes * 60);
+          tmdbEpisodeRuntimeSecondsRef.current = Math.round(
+            episodeRuntimeMinutes * 60,
+          );
         }
         const numEpisodes = data.number_of_episodes;
         const numSeasons = Math.max(1, data.number_of_seasons || 1);
@@ -340,11 +361,12 @@ function AddFavoritePageContent() {
     (result: TmdbSearchResult) => {
       fetchDetailsMutation.mutate(result);
     },
-    [fetchDetailsMutation]
+    [fetchDetailsMutation],
   );
 
   const tmdbLoading = searchQuery.isFetching || fetchDetailsMutation.isPending;
-  const showTmdbDropdown = !dropdownClosed && tmdbResults.length > 0 && !tmdbLoading;
+  const showTmdbDropdown =
+    !dropdownClosed && tmdbResults.length > 0 && !tmdbLoading;
 
   // (season, episode) 1-based for the currently selected episode
   const { season: episodeSeason, episode: episodeNumber } = useMemo(() => {
@@ -363,9 +385,10 @@ function AddFavoritePageContent() {
   const episodeRuntimeQuery = useQuery({
     queryKey: ["tmdb-episode", tmdbTvId, episodeSeason, episodeNumber],
     queryFn: async () => {
-      if (tmdbTvId == null || episodeSeason < 1 || episodeNumber < 1) return null;
+      if (tmdbTvId == null || episodeSeason < 1 || episodeNumber < 1)
+        return null;
       const res = await fetch(
-        `${TMDB_PROXY_BASE}/tv/${tmdbTvId}/season/${episodeSeason}/episode/${episodeNumber}`
+        `${TMDB_PROXY_BASE}/tv/${tmdbTvId}/season/${episodeSeason}/episode/${episodeNumber}`,
       );
       const data = await res.json();
       const runtimeMinutes = data.runtime;
@@ -394,12 +417,19 @@ function AddFavoritePageContent() {
       if (idx >= 0 && idx < next.length) next[idx] = sec;
       return next;
     });
-  }, [episodeRuntimeQuery.data, episodeRuntimeQuery.isPlaceholderData, selectedEpisodeIndex]);
+  }, [
+    episodeRuntimeQuery.data,
+    episodeRuntimeQuery.isPlaceholderData,
+    selectedEpisodeIndex,
+  ]);
 
   // Close TMDb dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (titleDropdownRef.current && !titleDropdownRef.current.contains(e.target as Node)) {
+      if (
+        titleDropdownRef.current &&
+        !titleDropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownClosed(true);
       }
     };
@@ -419,7 +449,7 @@ function AddFavoritePageContent() {
       reader.readAsDataURL(file);
       e.target.value = "";
     },
-    []
+    [],
   );
 
   const goNext = () => setStep((s) => Math.min(totalSteps, s + 1));
@@ -521,7 +551,8 @@ function AddFavoritePageContent() {
                         placeholder={
                           selectedCategory === "movies"
                             ? "e.g., Eternal Sunshine of the Spotless Mind"
-                            : selectedCategory === "series" || selectedCategory === "anime"
+                            : selectedCategory === "series" ||
+                                selectedCategory === "anime"
                               ? "e.g., Breaking Bad"
                               : "Enter title..."
                         }
@@ -532,102 +563,148 @@ function AddFavoritePageContent() {
                             title: e.target.value,
                           }))
                         }
-                        onFocus={() => tmdbEnabled && tmdbResults.length > 0 && setDropdownClosed(false)}
+                        onFocus={() =>
+                          tmdbEnabled &&
+                          tmdbResults.length > 0 &&
+                          setDropdownClosed(false)
+                        }
                         className="mt-1"
                       />
                       {tmdbEnabled && (
                         <>
                           {tmdbLoading && (
-                            <p className="text-xs text-muted-foreground mt-1">Searching TMDb...</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Searching TMDb...
+                            </p>
                           )}
-                          {showTmdbDropdown && !tmdbLoading && tmdbResults.length > 0 && (
-                            <ul className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-border bg-card shadow-lg py-1">
-                              {tmdbResults.map((r) => (
-                                <li key={r.id}>
-                                  <button
-                                    type="button"
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/80 transition-colors"
-                                    onClick={() => selectTmdbResult(r)}
-                                  >
-                                    {r.poster_path ? (
-                                      <img
-                                        src={`${TMDB_IMAGE_BASE}${r.poster_path}`}
-                                        alt=""
-                                        className="w-10 h-14 rounded object-cover flex-shrink-0"
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                                        <Film className="w-5 h-5 text-muted-foreground" />
-                                      </div>
-                                    )}
-                                    <span className="font-medium truncate flex-1">{r.title}</span>
-                                    {r.year && (
-                                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                                        {r.year}
+                          {showTmdbDropdown &&
+                            !tmdbLoading &&
+                            tmdbResults.length > 0 && (
+                              <ul className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-border bg-card shadow-lg py-1">
+                                {tmdbResults.map((r) => (
+                                  <li key={r.id}>
+                                    <button
+                                      type="button"
+                                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/80 transition-colors"
+                                      onClick={() => selectTmdbResult(r)}
+                                    >
+                                      {r.poster_path ? (
+                                        <img
+                                          src={`${TMDB_IMAGE_BASE}${r.poster_path}`}
+                                          alt=""
+                                          className="w-10 h-14 rounded object-cover flex-shrink-0"
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                                          <Film className="w-5 h-5 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                      <span className="font-medium truncate flex-1">
+                                        {r.title}
                                       </span>
-                                    )}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+                                      {r.year && (
+                                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                                          {r.year}
+                                        </span>
+                                      )}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                         </>
                       )}
                     </div>
                     <div>
                       <Label className="mb-2 block">Cover Image</Label>
-                      <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors space-y-3">
-                        <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Upload a file or paste an image URL
-                        </p>
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          <input
-                            ref={coverImageInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleCoverImageFile}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              coverImageInputRef.current?.click()
-                            }
-                            className="gap-1.5"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Upload
-                          </Button>
-                          <span className="text-muted-foreground text-sm">
-                            or
-                          </span>
-                          <Input
-                            placeholder="Paste image URL"
-                            value={
-                              formData.image.startsWith("data:")
-                                ? ""
-                                : formData.image
-                            }
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                image: e.target.value.trim(),
-                              }))
-                            }
-                            className="w-64 bg-transparent"
-                          />
-                        </div>
-                        {formData.image.startsWith("data:") && (
-                          <p className="text-xs text-muted-foreground">
-                            Image set from upload
+                      <div className="border-2 border-dashed border-border rounded-xl p-6 hover:border-primary/50 transition-colors flex flex-wrap justify-center gap-6">
+                        <div className="text-center space-y-3">
+                          <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Upload a file or paste an image URL
                           </p>
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <input
+                              ref={coverImageInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleCoverImageFile}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() =>
+                                coverImageInputRef.current?.click()
+                              }
+                              className="gap-1.5"
+                            >
+                              <Upload className="w-4 h-4" />
+                              Upload
+                            </Button>
+                            <span className="text-muted-foreground text-sm">
+                              or
+                            </span>
+                            <Input
+                              placeholder="Paste image URL"
+                              value={
+                                formData.image.startsWith("data:")
+                                  ? ""
+                                  : formData.image
+                              }
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  image: e.target.value.trim(),
+                                }))
+                              }
+                              className="w-64 bg-transparent"
+                            />
+                          </div>
+                          {formData.image.startsWith("data:") && (
+                            <p className="text-xs text-muted-foreground">
+                              Image set from upload
+                            </p>
+                          )}
+                        </div>
+                        {formData.image ? (
+                          <div className="w-fit relative flex-shrink-0">
+                            <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex items-center justify-center">
+                              <img
+                                src={formData.image}
+                                alt="Cover preview"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    DEFAULT_IMAGE;
+                                }}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  image: "",
+                                }));
+                                if (coverImageInputRef.current)
+                                  coverImageInputRef.current.value = "";
+                              }}
+                              className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground p-1 shadow-md hover:bg-destructive/90 transition-colors focus:outline-none focus:ring-2 focus:ring-destructive"
+                              title="Remove image"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex flex-col items-center justify-center">
+                            <FilmIcon className="w-5 h-5 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mt-4">Preview</p>
+                          </div>
                         )}
                       </div>
                     </div>
-                   
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="genre">Genre</Label>
@@ -827,7 +904,7 @@ function AddFavoritePageContent() {
                         }
                         max={10}
                         min={1}
-                        step={0.5}
+                        step={0.1}
                       />
                     </div>
                     <div>
@@ -907,9 +984,7 @@ function AddFavoritePageContent() {
                               return next;
                             });
                           }}
-                          segments={
-                            episodeSegments[selectedEpisodeIndex] ?? []
-                          }
+                          segments={episodeSegments[selectedEpisodeIndex] ?? []}
                           onSegmentsChange={(seg) => {
                             setEpisodeSegments((prev) => {
                               const next = prev.map((a, j) =>
