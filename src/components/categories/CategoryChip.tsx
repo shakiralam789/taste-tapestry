@@ -20,7 +20,7 @@ export function CategoryChip({ category, isSelected, onClick, count }: CategoryC
         "border font-medium text-sm backdrop-blur-sm",
         isSelected 
           ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-5px_hsl(var(--primary)/0.5)]" 
-          : "border-white/10 bg-white/5 hover:border-primary/50 hover:bg-white/10 text-muted-foreground hover:text-foreground"
+          : "border-white/10 bg-gray-200 dark:bg-white/5 hover:border-primary/50 hover:bg-gray-200 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground"
       )}
     >
       <span className="text-base">{category.icon}</span>

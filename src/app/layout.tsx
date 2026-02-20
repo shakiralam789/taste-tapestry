@@ -18,7 +18,7 @@ export default async function RootLayout({
 }) {
   await cookies();
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <NextTopLoader
           color="hsl(var(--primary))"

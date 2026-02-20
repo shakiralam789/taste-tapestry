@@ -44,7 +44,7 @@ export function Sidebar() {
                 className={`w-full justify-start gap-3 text-base font-medium h-12 mb-1 ${
                   isActive 
                     ? 'bg-primary/10 text-primary hover:bg-primary/20 shadow-[0_0_15px_-5px_hsl(var(--primary)/0.3)]' 
-                    : 'text-foreground hover:text-foreground hover:bg-white/5'
+                    : 'text-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
               >
                 <item.icon className={`w-6 h-6 ${isActive ? 'text-primary' : ''}`} />
@@ -57,7 +57,7 @@ export function Sidebar() {
 
       {/* User Actions */}
       <div className="pt-4 border-t border-sidebar-border mt-auto">
-        <div className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-white/5 cursor-pointer transition-colors">
+        <Link href="/settings" className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
             <AvatarImage src={user.avatar} />
             <AvatarFallback>{user.name[0]}</AvatarFallback>
@@ -67,7 +67,7 @@ export function Sidebar() {
             <p className="text-xs text-muted-foreground truncate">@{user.name.toLowerCase().replace(' ', '')}</p>
           </div>
           <Settings className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
-        </div>
+        </Link>
       </div>
     </aside>
   );

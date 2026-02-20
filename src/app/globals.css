@@ -5,7 +5,49 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default when dark mode is Off) */
   :root {
+    --background: 240 4% 94%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+    --primary: 190 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 290 60% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 320 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 240 6% 90%;
+    --muted-foreground: 240 5% 45%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 88%;
+    --input: 240 6% 88%;
+    --ring: 190 100% 42%;
+    --radius: 0.75rem;
+    --neon-blue: 190 100% 50%;
+    --neon-purple: 290 100% 50%;
+    --neon-pink: 320 100% 60%;
+    --glass-bg: 0 0% 100%;
+    --gradient-cyber: linear-gradient(135deg, hsl(190 100% 42%), hsl(290 60% 55%));
+    --gradient-void: linear-gradient(180deg, hsl(240 4% 96%), hsl(240 4% 94%));
+    --gradient-glass: linear-gradient(145deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01));
+    --shadow-glow: 0 0 20px -5px hsl(190 100% 42% / 0.25);
+    --shadow-neon: 0 0 10px hsl(190 100% 42% / 0.2), 0 0 20px hsl(190 100% 42% / 0.15);
+    --sidebar-background: 240 4% 96%;
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 190 100% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 6% 90%;
+    --sidebar-accent-foreground: 240 10% 10%;
+    --sidebar-border: 240 6% 88%;
+    --sidebar-ring: 190 100% 42%;
+  }
+
+  /* Dark theme (when dark mode is On or Auto + system dark) */
+  .dark {
     --background: 240 2% 11%;
     --foreground: 210 20% 98%;
     --card: 240 22% 8%;
@@ -25,7 +67,6 @@
     --border: 240 20% 25%;
     --input: 240 20% 25%;
     --ring: 190 100% 50%;
-    --radius: 0.75rem;
     --neon-blue: 190 100% 50%;
     --neon-purple: 290 100% 50%;
     --neon-pink: 320 100% 60%;
@@ -44,10 +85,6 @@
     --sidebar-border: 240 20% 25%;
     --sidebar-ring: 190 100% 50%;
   }
-  .dark {
-    --background: 240 25% 4%;
-    --foreground: 210 20% 98%;
-  }
 }
 
 @layer base {
@@ -58,6 +95,7 @@
       radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.05), transparent 40%),
       radial-gradient(circle at 0% 50%, hsl(var(--secondary) / 0.05), transparent 40%);
     background-attachment: fixed;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   h1, h2, h3, h4, h5, h6 { @apply font-display tracking-tight; }
 }

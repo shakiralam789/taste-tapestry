@@ -21,7 +21,7 @@ export default function HomePage() {
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
       <div className="min-h-screen">
         {/* Header / Tabs */}
-        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-white/5 px-4 mb-4 md:rounded-xl md:mx-0">
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-black/10 dark:border-white/5 px-4 mb-4 md:mx-0">
           <div className="flex items-center justify-center pb-3 pt-3">
             <div className="flex gap-6">
               <button
@@ -72,7 +72,7 @@ export default function HomePage() {
           {/* Create Post Input (Desktop) */}
           <div className="px-4 md:px-0 mb-4 md:mb-6 relative group">
             <Link href="/add-favorite">
-              <div className="flex gap-4 p-4 bg-card/30 rounded-xl border border-white/5 cursor-text hover:bg-card/50 transition-colors">
+              <div className="flex gap-4 p-4 bg-card/30 rounded-xl shadow-sm border border-white/5 cursor-text hover:bg-card/50 transition-colors">
                 {/* <div className="w-10 h-10 rounded-full bg-gradient-cyber" /> */}
                 <div className="flex-1 text-muted-foreground pt-2 md:text-base text-sm">
                   Share your taste with the universe...

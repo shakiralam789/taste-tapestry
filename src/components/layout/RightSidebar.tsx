@@ -25,7 +25,7 @@ export function RightSidebar() {
         </div>
         <Input 
           placeholder="Search Nebula..." 
-          className="pl-10 bg-white/5 border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 h-12 rounded-full transition-all"
+          className="pl-10 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 h-12 rounded-full transition-all"
         />
       </div>
 
@@ -35,7 +35,7 @@ export function RightSidebar() {
           <TrendingUp className="w-5 h-5 text-primary" />
           Trending Now
         </h3>
-        <div className="space-y-4 bg-white/5 rounded-2xl p-4 border border-white/10">
+        <div className="space-y-4 bg-black/5 dark:bg-white/5 rounded-2xl p-4 border border-black/10 dark:border-white/10">
           {trends.map((trend, i) => (
             <div key={i} className="flex justify-between items-center group cursor-pointer">
               <div>
@@ -58,7 +58,7 @@ export function RightSidebar() {
         </h3>
         <div className="space-y-4">
           {suggestions.map((user, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors group">
+            <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
               <Avatar className="w-10 h-10 ring-2 ring-transparent group-hover:ring-secondary/50 transition-all">
                 <AvatarImage src={user.avatar} />
                 <AvatarFallback>{user.name[0]}</AvatarFallback>
