@@ -38,6 +38,13 @@ import { getEmotionFill } from "@/data/emotionColors";
 const TOTAL_STEPS = 4;
 /** Categories that show the "Your emotional journey" section (movie, series, anime, song). */
 const EMOTIONAL_JOURNEY_CATEGORIES = ["movies", "series", "anime", "songs"];
+/** Singular label for "Your thoughts about this [X]" */
+const CATEGORY_SINGULAR: Record<string, string> = {
+  movies: "movie",
+  series: "series",
+  anime: "anime",
+  songs: "song",
+};
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop";
 
@@ -888,7 +895,7 @@ function AddFavoritePageContent() {
                   <div className="flex items-center gap-2 mb-4">
                     <Heart className="w-5 h-5 text-primary" />
                     <h2 className="font-display text-lg font-semibold">
-                      Why you love it
+                      Your thoughts
                     </h2>
                     {step > 2 && (
                       <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
@@ -915,7 +922,12 @@ function AddFavoritePageContent() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="why">Why I Love This *</Label>
+                      <Label htmlFor="why">
+                        Your thoughts about{" "}
+                        {CATEGORY_SINGULAR[selectedCategory]
+                          ? `this ${CATEGORY_SINGULAR[selectedCategory]}`
+                          : "it"}
+                      </Label>
                       <Textarea
                         id="why"
                         placeholder="What makes this special to you?"
@@ -1236,7 +1248,7 @@ function AddFavoritePageContent() {
                                     className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
                                   >
                                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                                    Step 2: Why you love it
+                                    Step 2: Your thoughts
                                     <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
                                   </button>
                                 </li>
