@@ -56,18 +56,35 @@ export function Sidebar() {
       </nav>
 
       {/* User Actions */}
-      <div className="pt-4 border-t border-sidebar-border mt-auto">
-        <Link href="/settings" className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
+      <div className="pt-4 border-t border-sidebar-border mt-auto space-y-2">
+        <Link
+          href="/settings"
+          className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors"
+        >
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
             <AvatarImage src={user.avatar} />
             <AvatarFallback>{user.name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate text-foreground">{user.name}</p>
-            <p className="text-xs text-muted-foreground truncate">@{user.name.toLowerCase().replace(' ', '')}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              @{user.name.toLowerCase().replace(" ", "")}
+            </p>
           </div>
           <Settings className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
         </Link>
+
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+        >
+          <Link href="/login">
+            <LogOut className="w-4 h-4" />
+            Log out
+          </Link>
+        </Button>
       </div>
     </aside>
   );

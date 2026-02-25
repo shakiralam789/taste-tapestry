@@ -71,6 +71,30 @@ export default function SettingsPage() {
             </RadioGroup>
           </div>
         </section>
+
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="font-display text-lg font-semibold mb-1">Account</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Manage your session. You can sign out from this device at any time.
+          </p>
+          <div className="flex justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Log out</p>
+              <p>Sign out of Nebula on this device.</p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs md:text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/login";
+                }
+              }}
+            >
+              <span>Log out</span>
+            </button>
+          </div>
+        </section>
       </div>
     </Layout>
   );
