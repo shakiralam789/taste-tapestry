@@ -8,7 +8,7 @@ import { Mail, ArrowRight, RefreshCw } from "lucide-react";
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") ?? "";
+  const email = searchParams?.get("email") ?? "";
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
