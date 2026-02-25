@@ -73,18 +73,6 @@ export function Sidebar() {
           </div>
           <Settings className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
         </Link>
-
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-        >
-          <Link href="/login">
-            <LogOut className="w-4 h-4" />
-            Log out
-          </Link>
-        </Button>
       </div>
     </aside>
   );
