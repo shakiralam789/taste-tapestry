@@ -1,15 +1,16 @@
 "use client";
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Compass, Sparkles, MessageCircle, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Compass, Sparkles, MessageCircle, User, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Home' },
-  { path: '/discover', icon: Compass, label: 'Discover' },
-  { path: '/mood', icon: Sparkles, label: 'Mood' },
-  { path: '/messages', icon: MessageCircle, label: 'Chat' },
-  { path: '/profile', icon: User, label: 'Profile' },
+  { path: "/", icon: Home, label: "Home" },
+  { path: "/discover", icon: Compass, label: "Discover" },
+  { path: "/mood", icon: Sparkles, label: "Mood" },
+  { path: "/messages", icon: MessageCircle, label: "Chat" },
+  { path: "/profile", icon: User, label: "Profile" },
+  { path: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export function MobileNav() {
