@@ -36,6 +36,7 @@ import {
   FilmIcon,
   AlertCircle,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
@@ -161,6 +162,33 @@ export function FavoriteEditor({
     EMOTIONAL_JOURNEY_CATEGORIES.includes(selectedCategory);
   const totalSteps = hasEmotionalJourney ? TOTAL_STEPS : TOTAL_STEPS - 1;
 
+  // Hydrate series/anime episode structure from existing favorite when editing
+  useEffect(() => {
+    if (!initialFavorite) return;
+    if (!isSeriesOrAnime) return;
+    const fields = initialFavorite.fields as any;
+
+    if (Array.isArray(fields?.seasonEpisodeCounts)) {
+      setSeasonEpisodeCounts(fields.seasonEpisodeCounts);
+    }
+
+    if (typeof fields?.totalEpisodes === "number") {
+      setTotalEpisodes(fields.totalEpisodes);
+    }
+
+    if (Array.isArray(fields?.episodeDurations)) {
+      setEpisodeDurations(fields.episodeDurations);
+    }
+
+    if (Array.isArray(fields?.episodeSegments)) {
+      setEpisodeSegments(fields.episodeSegments);
+    }
+
+    if (typeof fields?.tmdbTvId === "number") {
+      setTmdbTvId(fields.tmdbTvId);
+    }
+  }, [initialFavorite, isSeriesOrAnime]);
+
   // For series/anime: total episodes = sum of season counts (or legacy totalEpisodes if single season with no counts)
   const totalEpisodesDerived =
     isSeriesOrAnime && seasonEpisodeCounts.length > 0
@@ -258,6 +286,8 @@ export function FavoriteEditor({
           isSeriesOrAnime && episodeSegments.some((arr) => arr.length > 0)
             ? episodeSegments
             : undefined,
+        tmdbTvId:
+          isSeriesOrAnime && tmdbTvId != null ? tmdbTvId : undefined,
       },
     };
 
@@ -328,6 +358,17 @@ export function FavoriteEditor({
     enabled: tmdbEnabled && debouncedSearchTitle.length > 0,
     staleTime: 60_000,
   });
+
+  // When editing series/anime without saved tmdbTvId, derive it from the first TMDb TV search result
+  useEffect(() => {
+    if (!initialFavorite) return;
+    if (!isSeriesOrAnime) return;
+    if (tmdbTvId != null) return;
+    const first = (searchQuery.data ?? [])[0];
+    if (first && typeof first.id === "number") {
+      setTmdbTvId(first.id);
+    }
+  }, [initialFavorite, isSeriesOrAnime, tmdbTvId, searchQuery.data]);
 
   const tmdbResults = searchQuery.data ?? [];
 
@@ -1036,15 +1077,11 @@ export function FavoriteEditor({
 
               {/* Section 3: Emotional journey (only for movies, series, anime, songs) */}
               {step > 2 && hasEmotionalJourney && (
-                <motion.section
+                <div
                   ref={(el) => {
                     sectionRefs.current[2] = el;
                   }}
-                  layout
-                  transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(
-                    2,
-                  )}`}
+                  className="elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl"
                 >
                   <div className="flex items-center gap-2 mb-4">
                     {step > 3 && (
@@ -1077,6 +1114,7 @@ export function FavoriteEditor({
                               return next;
                             });
                           }}
+                          isDurationLoading={episodeRuntimeQuery.isFetching}
                         >
                           <p className="text-sm text-muted-foreground mb-3">
                             Select an episode, set its duration (min/sec), then
@@ -1178,7 +1216,7 @@ export function FavoriteEditor({
                       </Button>
                     </div>
                   )}
-                </motion.section>
+                </div>
               )}
 
               {/* Section 4: Moods + Times + Tags + Submit */}

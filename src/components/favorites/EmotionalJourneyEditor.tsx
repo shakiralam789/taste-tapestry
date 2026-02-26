@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronRight,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 
 const GRAPH_HEIGHT = 220;
@@ -58,6 +59,8 @@ interface EmotionalJourneyEditorProps {
   /** Rendered after "How it works" and before duration/timeline (e.g. episode selector for series). */
   children?: React.ReactNode;
   className?: string;
+  /** Optional loading state for when duration is being fetched (e.g. TMDb episode runtime). */
+  isDurationLoading?: boolean;
 }
 
 /** Normalize segments to cover [0, totalSec] with no gaps. Ensures at least one segment when totalSec > 0. */
@@ -121,6 +124,7 @@ export function EmotionalJourneyEditor({
   onSegmentsChange,
   children,
   className = "",
+  isDurationLoading = false,
 }: EmotionalJourneyEditorProps) {
   const [graphWidth, setGraphWidth] = useState(400);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -830,7 +834,12 @@ export function EmotionalJourneyEditor({
       {children}
 
       <div className="mb-4 p-4 rounded-xl bg-card/30 border border-white/10 space-y-3">
-        <Label>Duration (for timeline)</Label>
+        <Label className="inline-flex items-center gap-2">
+          <span>Duration (for timeline)</span>
+          {isDurationLoading && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+        </Label>
         <div className="flex flex-wrap items-center gap-3">
           <Input
             type="number"
