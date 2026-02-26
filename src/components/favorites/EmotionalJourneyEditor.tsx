@@ -1458,7 +1458,7 @@ export function EmotionalJourneyEditor({
               </Label>
               <ul className="space-y-2">
                 {normalizedSegments
-                  .filter((s) => s.note || s.image || s.video)
+                  .filter((s) => s.id === selectedSegmentId)
                   .map((s) => (
                     <li
                       key={s.id}

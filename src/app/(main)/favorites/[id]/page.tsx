@@ -9,6 +9,7 @@ import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { getFavorite } from "@/features/favorites/api";
 import type { Favorite } from "@/types/wishbook";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
+import { ArrowLeftIcon, PencilIcon } from "lucide-react";
 
 export default function FavoriteShowPage() {
   const params = useParams<{ id: string }>();
@@ -64,6 +65,7 @@ export default function FavoriteShowPage() {
               onClick={() => router.back()}
               className="rounded-full"
             >
+              <ArrowLeftIcon className="w-4 h-4" />
               Back
             </Button>
             <Button
@@ -72,6 +74,7 @@ export default function FavoriteShowPage() {
               className="rounded-full"
               onClick={() => router.push(`/favorites/${id}/edit`)}
             >
+              <PencilIcon className="w-4 h-4" />
               Edit favorite
             </Button>
           </div>

@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { EmotionalCurvePoint, EmotionalSegment } from '@/types/wishbook';
-import { getEmotionFill } from '@/data/emotionColors';
-import { TrendingUp, MapPin, Video } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { EmotionalCurvePoint, EmotionalSegment } from "@/types/wishbook";
+import { getEmotionFill } from "@/data/emotionColors";
+import { TrendingUp, MapPin, Video } from "lucide-react";
 
 const GRAPH_HEIGHT = 180;
 const PADDING = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -19,9 +19,9 @@ function buildPathNew(
   points: EmotionalCurvePoint[],
   totalSeconds: number,
   width: number,
-  height: number
+  height: number,
 ): string {
-  if (points.length < 2 || totalSeconds <= 0) return '';
+  if (points.length < 2 || totalSeconds <= 0) return "";
   const chartW = width - PADDING.left - PADDING.right;
   const chartH = height - PADDING.top - PADDING.bottom;
   const scaleX = chartW / totalSeconds;
@@ -49,7 +49,12 @@ interface EmotionalJourneyViewProps {
   curvePoints?: EmotionalCurvePoint[];
   /** New: time-range segments (video-editor style bars). When set, drawn as bars. */
   emotionalSegments?: EmotionalSegment[];
-  momentPins?: { id: string; positionPercent: number; note: string; image?: string }[];
+  momentPins?: {
+    id: string;
+    positionPercent: number;
+    note: string;
+    image?: string;
+  }[];
   className?: string;
   xAxisInSeconds?: boolean;
 }
@@ -62,11 +67,14 @@ export function EmotionalJourneyView({
   curvePoints = [],
   emotionalSegments = [],
   momentPins = [],
-  className = '',
+  className = "",
   xAxisInSeconds = false,
 }: EmotionalJourneyViewProps) {
   const [graphWidth, setGraphWidth] = useState(400);
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | "all">(
+    "all",
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isSeriesMode =
@@ -83,7 +91,7 @@ export function EmotionalJourneyView({
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width;
-      if (typeof w === 'number' && w > 0) setGraphWidth(w);
+      if (typeof w === "number" && w > 0) setGraphWidth(w);
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -98,18 +106,19 @@ export function EmotionalJourneyView({
     ? (episodeSegments[episodeIndex] ?? [])
     : [];
 
-  const totalDuration =
-    isSeriesMode ? totalSecForSeries : totalDurationSeconds;
-  const segmentsSingle =
-    isSeriesMode ? segmentsForSeries : emotionalSegments;
+  const totalDuration = isSeriesMode ? totalSecForSeries : totalDurationSeconds;
+  const segmentsSingle = isSeriesMode ? segmentsForSeries : emotionalSegments;
 
-  const useSegments =
-    isSeriesMode
-      ? segmentsSingle.length > 0 && totalDuration > 0
-      : emotionalSegments.length > 0 && totalDurationSeconds > 0;
+  const useSegments = isSeriesMode
+    ? segmentsSingle.length > 0 && totalDuration > 0
+    : emotionalSegments.length > 0 && totalDurationSeconds > 0;
   const formatAxisTime = (t: number) => formatTime(t, xAxisInSeconds);
   const isNewFormat =
-    !isSeriesMode && !useSegments && totalDurationSeconds > 0 && curvePoints.length >= 2 && curvePoints.every((p) => 'id' in p);
+    !isSeriesMode &&
+    !useSegments &&
+    totalDurationSeconds > 0 &&
+    curvePoints.length >= 2 &&
+    curvePoints.every((p) => "id" in p);
   const totalSec = totalDuration || 1;
   const width = graphWidth;
   const height = GRAPH_HEIGHT;
@@ -122,19 +131,32 @@ export function EmotionalJourneyView({
 
   const sortedPoints = useMemo(
     () => [...curvePoints].sort((a, b) => a.x - b.x),
-    [curvePoints]
+    [curvePoints],
   );
   const sortedSegments = useMemo(
     () => [...segmentsSingle].sort((a, b) => a.startSeconds - b.startSeconds),
-    [segmentsSingle]
+    [segmentsSingle],
   );
+
+  // On load / when segments change: default to first segment if available
+  useEffect(() => {
+    if (!useSegments || sortedSegments.length === 0) {
+      setSelectedSegmentId("all");
+      return;
+    }
+    setSelectedSegmentId((current) =>
+      current && current !== "all"
+        ? current
+        : sortedSegments[0]?.id ?? "all",
+    );
+  }, [useSegments, sortedSegments]);
 
   const svgX = (x: number) => PADDING.left + x * scaleX;
   const svgY = (y: number) => PADDING.top + (yMax - y) * scaleY;
 
   const pathD = useSegments
     ? (() => {
-        if (sortedSegments.length === 0) return '';
+        if (sortedSegments.length === 0) return "";
         let d = `M ${svgX(sortedSegments[0].startSeconds)} ${svgY(sortedSegments[0].intensity)}`;
         for (const s of sortedSegments) {
           d += ` L ${svgX(s.endSeconds)} ${svgY(s.intensity)}`;
@@ -150,71 +172,77 @@ export function EmotionalJourneyView({
               d += ` L ${svgX(sortedPoints[i].x)} ${svgY(sortedPoints[i].y)}`;
             return d;
           })()
-        : '';
+        : "";
 
   const pointsWithNotes = sortedPoints.filter((p) => p.note || p.image);
-  const segmentsWithNotes = sortedSegments.filter((s) => s.note || s.image || s.video);
+  const segmentsWithNotes = sortedSegments.filter(
+    (s) => s.note || s.image || s.video,
+  );
 
   return (
     <div className={className} ref={containerRef}>
       <div className="flex items-center gap-2 mb-2">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <span className="text-sm font-semibold text-foreground">Emotional journey</span>
+        <span className="text-sm font-semibold text-foreground">
+          Emotional journey
+        </span>
       </div>
       {isSeriesMode && (
         <div className="space-y-2 mb-3">
-          {seasonEpisodeCounts.length > 1
-            ? (() => {
-                let flatIndex = 0;
-                return seasonEpisodeCounts.map((count, s) => {
-                  const start = flatIndex;
-                  flatIndex += count;
-                  if (count <= 0) return null;
-                  return (
-                    <div key={s}>
-                      <p className="text-[10px] font-medium text-muted-foreground mb-1">Season {s + 1}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {Array.from({ length: count }, (_, e) => {
-                          const i = start + e;
-                          if (i >= episodeDurations.length) return null;
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => setSelectedEpisodeIndex(i)}
-                              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                                episodeIndex === i
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                              }`}
-                            >
-                              S{s + 1} E{e + 1}
-                            </button>
-                          );
-                        })}
-                      </div>
+          {seasonEpisodeCounts.length > 1 ? (
+            (() => {
+              let flatIndex = 0;
+              return seasonEpisodeCounts.map((count, s) => {
+                const start = flatIndex;
+                flatIndex += count;
+                if (count <= 0) return null;
+                return (
+                  <div key={s}>
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">
+                      Season {s + 1}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.from({ length: count }, (_, e) => {
+                        const i = start + e;
+                        if (i >= episodeDurations.length) return null;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setSelectedEpisodeIndex(i)}
+                            className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                              episodeIndex === i
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            S{s + 1} E{e + 1}
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                });
-              })()
-            : (
-              <div className="flex flex-wrap gap-1.5">
-                {episodeDurations.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSelectedEpisodeIndex(i)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      episodeIndex === i
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    Ep {i + 1}
-                  </button>
-                ))}
-              </div>
-            )}
+                  </div>
+                );
+              });
+            })()
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {episodeDurations.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedEpisodeIndex(i)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    episodeIndex === i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Ep {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
       <div
@@ -229,13 +257,30 @@ export function EmotionalJourneyView({
           className="absolute inset-0 w-full"
         >
           <defs>
-            <linearGradient id="curveGradientView" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="hsl(var(--secondary))" stopOpacity={0.9} />
+            <linearGradient
+              id="curveGradientView"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop
+                offset="0%"
+                stopColor="hsl(var(--primary))"
+                stopOpacity={0.9}
+              />
+              <stop
+                offset="100%"
+                stopColor="hsl(var(--secondary))"
+                stopOpacity={0.9}
+              />
             </linearGradient>
           </defs>
           {/* Y grid */}
-          {(useSegments || isNewFormat ? [0, 2, 4, 6, 8, 10] : [0, 25, 50, 75, 100]).map((v) => (
+          {(useSegments || isNewFormat
+            ? [0, 2, 4, 6, 8, 10]
+            : [0, 25, 50, 75, 100]
+          ).map((v) => (
             <line
               key={`h-${v}`}
               x1={PADDING.left}
@@ -247,28 +292,33 @@ export function EmotionalJourneyView({
               strokeOpacity={0.4}
             />
           ))}
-          {useSegments && sortedSegments.map((seg) => {
-            const x1 = svgX(seg.startSeconds);
-            const x2 = svgX(seg.endSeconds);
-            const yTop = svgY(seg.intensity);
-            const yBottom = height - PADDING.bottom;
-            const fillColor = getEmotionFill(seg.emotionColor) || 'url(#curveGradientView)';
-            return (
-              <rect
-                key={seg.id}
-                x={x1}
-                y={yTop}
-                width={x2 - x1}
-                height={yBottom - yTop}
-                fill={fillColor}
-                fillOpacity={0.45}
-                stroke="hsl(var(--primary))"
-                strokeWidth={1}
-                strokeOpacity={0.6}
-                rx={2}
-              />
-            );
-          })}
+          {useSegments &&
+            sortedSegments.map((seg) => {
+              const x1 = svgX(seg.startSeconds);
+              const x2 = svgX(seg.endSeconds);
+              const yTop = svgY(seg.intensity);
+              const yBottom = height - PADDING.bottom;
+              const fillColor =
+                getEmotionFill(seg.emotionColor) || "url(#curveGradientView)";
+              const isSelected = selectedSegmentId === seg.id;
+              return (
+                <rect
+                  key={seg.id}
+                  x={x1}
+                  y={yTop}
+                  width={x2 - x1}
+                  height={yBottom - yTop}
+                  fill={fillColor}
+                  fillOpacity={isSelected ? 0.7 : 0.45}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={isSelected ? 2 : 1}
+                  strokeOpacity={isSelected ? 0.9 : 0.6}
+                  rx={2}
+                  className="cursor-pointer transition-all"
+                  onClick={() => setSelectedSegmentId(seg.id)}
+                />
+              );
+            })}
           {pathD && !useSegments && (
             <>
               <path
@@ -286,39 +336,50 @@ export function EmotionalJourneyView({
               />
             </>
           )}
-          {!useSegments && sortedPoints.map((pt, i) => (
-            <circle
-              key={pt.id ?? i}
-              cx={svgX(pt.x)}
-              cy={svgY(pt.y)}
-              r={6}
-              fill="hsl(var(--background))"
-              stroke="hsl(var(--primary))"
-              strokeWidth={1.5}
-            />
-          ))}
-          {!useSegments && !isNewFormat && momentPins.map((pin) => (
-            <g key={pin.id}>
-              <line
-                x1={svgX(pin.positionPercent)}
-                y1={svgY(yMax)}
-                x2={svgX(pin.positionPercent)}
-                y2={height - PADDING.bottom}
-                stroke="hsl(var(--secondary))"
-                strokeWidth={1.2}
-                strokeDasharray="4 3"
-                opacity={0.7}
+          {!useSegments &&
+            sortedPoints.map((pt, i) => (
+              <circle
+                key={pt.id ?? i}
+                cx={svgX(pt.x)}
+                cy={svgY(pt.y)}
+                r={6}
+                fill="hsl(var(--background))"
+                stroke="hsl(var(--primary))"
+                strokeWidth={1.5}
               />
-              <circle cx={svgX(pin.positionPercent)} cy={PADDING.top - 3} r={4} fill="hsl(var(--secondary))" />
-            </g>
-          ))}
+            ))}
+          {!useSegments &&
+            !isNewFormat &&
+            momentPins.map((pin) => (
+              <g key={pin.id}>
+                <line
+                  x1={svgX(pin.positionPercent)}
+                  y1={svgY(yMax)}
+                  x2={svgX(pin.positionPercent)}
+                  y2={height - PADDING.bottom}
+                  stroke="hsl(var(--secondary))"
+                  strokeWidth={1.2}
+                  strokeDasharray="4 3"
+                  opacity={0.7}
+                />
+                <circle
+                  cx={svgX(pin.positionPercent)}
+                  cy={PADDING.top - 3}
+                  r={4}
+                  fill="hsl(var(--secondary))"
+                />
+              </g>
+            ))}
         </svg>
         <div
           className="absolute bottom-0 left-0 right-0 text-[10px] text-muted-foreground flex justify-between px-1"
-          style={{ paddingLeft: PADDING.left + 4, paddingRight: PADDING.right + 4 }}
+          style={{
+            paddingLeft: PADDING.left + 4,
+            paddingRight: PADDING.right + 4,
+          }}
         >
           <span>0</span>
-          {(useSegments || isNewFormat) ? (
+          {useSegments || isNewFormat ? (
             <>
               {[1, 2, 3, 4, 5].map((i) => (
                 <span key={i}>{formatAxisTime((totalSec * i) / 6)}</span>
@@ -332,61 +393,185 @@ export function EmotionalJourneyView({
             </>
           )}
         </div>
-        <div className="absolute left-1 top-4 text-[10px] text-muted-foreground">{yMax}</div>
-        <div className="absolute left-1 bottom-8 text-[10px] text-muted-foreground">{yMin}</div>
+        <div className="absolute left-1 top-4 text-[10px] text-muted-foreground">
+          {yMax}
+        </div>
+        <div className="absolute left-1 bottom-8 text-[10px] text-muted-foreground">
+          {yMin}
+        </div>
       </div>
-      {(segmentsWithNotes.length > 0 || pointsWithNotes.length > 0 || momentPins.length > 0) && (
+      {(segmentsWithNotes.length > 0 ||
+        pointsWithNotes.length > 0 ||
+        momentPins.length > 0) && (
         <div className="mt-3 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="w-3.5 h-3.5 text-secondary" />
-            Moments
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="w-3.5 h-3.5 text-secondary" />
+              Moments
+            </div>
+            {useSegments && segmentsWithNotes.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1 mb-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegmentId("all")}
+                  className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
+                    selectedSegmentId === "all"
+                      ? "bg-primary text-primary-foreground border-primary/80"
+                      : "bg-background text-muted-foreground border-border hover:bg-muted"
+                  }`}
+                >
+                  Show All
+                </button>
+              </div>
+            )}
           </div>
           <ul className="space-y-2">
             {useSegments
-              ? segmentsWithNotes.map((s) => (
-                  <li key={s.id} className="flex items-center gap-2 text-sm">
-                    <span className="text-primary font-medium flex-shrink-0">
-                      {formatAxisTime(s.startSeconds)}–{formatAxisTime(s.endSeconds)}
-                    </span>
-                    {s.image && (
-                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
-                        <img src={s.image} alt="" className="w-full h-full object-cover" />
+              ? (() => {
+                  const visibleSegments =
+                    selectedSegmentId === "all"
+                      ? segmentsWithNotes
+                      : segmentsWithNotes.filter(
+                          (s) => s.id === selectedSegmentId,
+                        );
+                  if (visibleSegments.length === 0) {
+                    return (
+                      <li
+                        key="no-segment-moments"
+                        className="text-[11px] text-muted-foreground italic px-1"
+                      >
+                        No moments for this segment yet.
+                      </li>
+                    );
+                  }
+                  return visibleSegments.map((s) => (
+                    <li
+                      key={s.id}
+                      className="flex items-center gap-3 rounded-xl border border-white/5 bg-card/40 px-3 py-2 text-sm hover:border-primary/50 hover:bg-card/70 transition-colors"
+                    >
+                      <div className="flex flex-col items-start gap-1 w-28 flex-shrink-0">
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          {formatAxisTime(s.startSeconds)} –{" "}
+                          {formatAxisTime(s.endSeconds)}
+                        </span>
+                        {s.emotionColor && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{
+                                backgroundColor: getEmotionFill(
+                                  s.emotionColor,
+                                ),
+                              }}
+                            />
+                            {s.emotionColor}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    {s.video && !s.image && (
-                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
-                        <Video className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <span className="text-muted-foreground line-clamp-2">{s.note || '—'}</span>
-                  </li>
-                ))
+                      {(s.image || s.video) && (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                          {s.image ? (
+                            <img
+                              src={s.image}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Video className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      )}
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-3 flex-1 min-w-0">
+                        {s.note || "—"}
+                      </p>
+                    </li>
+                  ));
+                })()
               : isNewFormat
-              ? pointsWithNotes.map((p) => (
-                  <li key={p.id} className="flex items-center gap-2 text-sm">
-                    <span className="text-primary font-medium w-16 flex-shrink-0">
-                      {formatTime(p.x, xAxisInSeconds)}
+                ? pointsWithNotes.map((p) => (
+              <li
+                key={s.id}
+                className="flex items-center gap-3 rounded-xl border border-white/5 bg-card/40 px-3 py-2 text-sm hover:border-primary/50 hover:bg-card/70 transition-colors"
+              >
+                <div className="flex flex-col items-start gap-1 w-28 flex-shrink-0">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    {formatAxisTime(s.startSeconds)} –{" "}
+                    {formatAxisTime(s.endSeconds)}
+                  </span>
+                  {s.emotionColor && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: getEmotionFill(s.emotionColor) }}
+                      />
+                      {s.emotionColor}
                     </span>
-                    {p.image && (
-                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
-                        <img src={p.image} alt="" className="w-full h-full object-cover" />
-                      </div>
+                  )}
+                </div>
+                {(s.image || s.video) && (
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                    {s.image ? (
+                      <img
+                        src={s.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Video className="w-5 h-5 text-muted-foreground" />
                     )}
-                    <span className="text-muted-foreground line-clamp-2">{p.note || '—'}</span>
-                  </li>
-                ))
-              : momentPins
+                  </div>
+                )}
+                <p className="text-xs md:text-sm text-muted-foreground line-clamp-3 flex-1 min-w-0">
+                  {s.note || "—"}
+                </p>
+              </li>
+            ))
+          : isNewFormat
+            ? pointsWithNotes.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-xl border border-white/5 bg-card/40 px-3 py-2 text-sm"
+                >
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary flex-shrink-0">
+                    {formatTime(p.x, xAxisInSeconds)}
+                  </span>
+                  {p.image && (
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      <img
+                        src={p.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-3 flex-1 min-w-0">
+                    {p.note || "No note added for this moment yet."}
+                  </p>
+                </li>
+              ))
+            : momentPins
                 .slice()
                 .sort((a, b) => a.positionPercent - b.positionPercent)
                 .map((pin) => (
-                  <li key={pin.id} className="flex items-center gap-2 text-sm">
-                    <span className="text-primary font-medium w-14 flex-shrink-0">{pin.positionPercent}%</span>
+                  <li
+                    key={pin.id}
+                    className="flex items-center gap-3 rounded-xl border border-white/5 bg-card/40 px-3 py-2 text-sm"
+                  >
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary flex-shrink-0">
+                      {pin.positionPercent}%
+                    </span>
                     {pin.image && (
-                      <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
-                        <img src={pin.image} alt="" className="w-full h-full object-cover" />
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        <img
+                          src={pin.image}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
-                    <span className="text-muted-foreground line-clamp-2">{pin.note}</span>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-3 flex-1 min-w-0">
+                      {pin.note}
+                    </p>
                   </li>
                 ))}
           </ul>
