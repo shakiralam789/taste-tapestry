@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, AtSign, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -13,6 +13,7 @@ import type { AxiosError } from "axios";
 
 type RegisterFormValues = {
   name: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -30,7 +31,12 @@ export default function RegisterPage() {
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      await registerWithEmail(values.email, values.password, values.name);
+      await registerWithEmail(
+        values.email,
+        values.password,
+        values.name,
+        values.username,
+      );
       toast.success("Account created!", { description: "You're signed in." });
       router.push("/");
     } catch (err) {
@@ -80,6 +86,41 @@ export default function RegisterPage() {
             </div>
             {errors.name && (
               <p className="text-xs text-red-500">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-foreground">
+              Username
+            </Label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="username"
+                type="text"
+                placeholder="alex_rivers"
+                autoComplete="username"
+                className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
+                {...register("username", {
+                  required: "Username is required",
+                  minLength: {
+                    value: 3,
+                    message: "At least 3 characters",
+                  },
+                  maxLength: {
+                    value: 32,
+                    message: "At most 32 characters",
+                  },
+                  pattern: {
+                    value: /^[a-zA-Z0-9_]+$/,
+                    message:
+                      "Only letters, numbers, and underscores",
+                  },
+                })}
+              />
+            </div>
+            {errors.username && (
+              <p className="text-xs text-red-500">{errors.username.message}</p>
             )}
           </div>
 

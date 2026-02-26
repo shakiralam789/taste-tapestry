@@ -16,11 +16,12 @@ import { apiClient } from "@/lib/api-client";
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
-  loginWithEmail: (email: string, password: string) => Promise<void>;
+  loginWithEmail: (emailOrUsername: string, password: string) => Promise<void>;
   registerWithEmail: (
     email: string,
     password: string,
     displayName?: string,
+    username?: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -62,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [initialize]);
 
   const loginWithEmail = useCallback(
-    async (email: string, password: string) => {
-      const res = await login({ email, password });
+    async (emailOrUsername: string, password: string) => {
+      const res = await login({ emailOrUsername, password });
       persistAccessToken(res.accessToken);
       setUser(res.user);
       queryClient.clear();
@@ -72,8 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const registerWithEmail = useCallback(
-    async (email: string, password: string, displayName?: string) => {
-      const res = await registerRequest({ email, password, displayName });
+    async (
+      email: string,
+      password: string,
+      displayName?: string,
+      username?: string,
+    ) => {
+      if (!username?.trim()) {
+        throw new Error("Username is required");
+      }
+      const res = await registerRequest({
+        email,
+        username: username.trim(),
+        password,
+        displayName,
+      });
       persistAccessToken(res.accessToken);
       setUser(res.user);
       queryClient.clear();

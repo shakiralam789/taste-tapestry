@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   email: string;
   displayName?: string | null;
+  username?: string | null;
 }
 
 export interface AuthResponse {
@@ -12,7 +13,7 @@ export interface AuthResponse {
 }
 
 export async function login(payload: {
-  email: string;
+  emailOrUsername: string;
   password: string;
 }): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>("/auth/login", payload);
@@ -21,6 +22,7 @@ export async function login(payload: {
 
 export async function register(payload: {
   email: string;
+  username: string;
   password: string;
   displayName?: string;
 }): Promise<AuthResponse> {

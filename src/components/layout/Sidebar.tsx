@@ -82,7 +82,7 @@ export function Sidebar() {
             className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors"
           >
             <Avatar className="w-10 h-10 ring-2 ring-primary/20">
-              <AvatarImage src={profile?.avatar || ""} />
+              <AvatarImage src={profile?.avatar || "/images/default-user.jpg"} />
               <AvatarFallback>{profile?.displayName || ""}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
