@@ -1,21 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthContext";
+import type { AxiosError } from "axios";
+
+type RegisterFormValues = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function RegisterPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>();
+  const router = useRouter();
+  const { registerWithEmail } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Placeholder: wire to your auth later
+  const onSubmit = async (values: RegisterFormValues) => {
+    try {
+      await registerWithEmail(values.email, values.password, values.name);
+      toast.success("Account created!", { description: "You're signed in." });
+      router.push("/");
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
+      const message =
+        axiosError.response?.data?.message ?? "Could not create account.";
+      toast.error("Registration failed", { description: message });
+    }
   };
 
   return (
@@ -40,7 +63,7 @@ export default function RegisterPage() {
           Create account
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-foreground">
               Display name
@@ -51,12 +74,13 @@ export default function RegisterPage() {
                 id="name"
                 type="text"
                 placeholder="Alex"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
+                {...register("name", { required: "Display name is required" })}
               />
             </div>
+            {errors.name && (
+              <p className="text-xs text-red-500">{errors.name.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -69,12 +93,13 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
+                {...register("email", { required: "Email is required" })}
               />
             </div>
+            {errors.email && (
+              <p className="text-xs text-red-500">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -87,13 +112,19 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 placeholder="At least 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
-                minLength={8}
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters",
+                  },
+                })}
               />
             </div>
+            {errors.password && (
+              <p className="text-xs text-red-500">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -106,13 +137,19 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
-                minLength={8}
+                {...register("confirmPassword", {
+                  required: "Confirm your password",
+                  validate: (value) =>
+                    value === watch("password") || "Passwords do not match",
+                })}
               />
             </div>
+            {errors.confirmPassword && (
+              <p className="text-xs text-red-500">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
           <Button
@@ -120,7 +157,7 @@ export default function RegisterPage() {
             variant="gradient"
             className="w-full h-12 rounded-xl text-base font-medium gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
           >
-            Create account
+            {isSubmitting ? "Creating account..." : "Create account"}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </form>

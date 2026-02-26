@@ -1,22 +1,17 @@
 "use client";
-import { Favorite } from '@/types/wishbook';
-import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Star } from 'lucide-react';
-import { useWishbook } from '@/contexts/WishbookContext';
+import { Favorite } from "@/types/wishbook";
+import { motion } from "framer-motion";
+import { Heart, MessageCircle, Star } from "lucide-react";
 
 interface ProfilePostCardProps {
   favorite: Favorite;
-  onClick?: () => void;
 }
 
-export function ProfilePostCard({ favorite, onClick }: ProfilePostCardProps) {
-  const { categories } = useWishbook();
-  const categoryName = categories.find((c) => c.id === favorite.categoryId)?.name ?? favorite.categoryId;
+export function ProfilePostCard({ favorite }: ProfilePostCardProps) {
   return (
     <motion.div
       whileHover={{ y: -5 }}
       className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
-      onClick={onClick}
     >
       {/* Background Image */}
       {favorite.image ? (
@@ -38,17 +33,17 @@ export function ProfilePostCard({ favorite, onClick }: ProfilePostCardProps) {
 
       {/* Content */}
       <div className="absolute inset-0 p-3 md:p-5 flex flex-col justify-end">
-        <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-          <div className="flex items-center gap-2 mb-2 text-primary text-xs font-semibold tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity delay-100">
+        <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+          <div className="flex items-center gap-2 mb-2 text-primary text-xs font-semibold tracking-wider uppercase opacity-90 group-hover:opacity-100 transition-opacity delay-100">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            {categoryName}
+            {favorite.categoryId}
           </div>
           
           <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md">
             {favorite.title}
           </h3>
           
-          <div className="flex items-center justify-between text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+          <div className="flex items-center justify-between text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75">
              <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">
                   <Heart className="w-4 h-4 fill-white/20" /> 24
@@ -57,7 +52,7 @@ export function ProfilePostCard({ favorite, onClick }: ProfilePostCardProps) {
                   <MessageCircle className="w-4 h-4" /> 8
                 </span>
              </div>
-             {favorite.rating && (
+             {favorite.rating != null && (
                <span className="flex items-center gap-1 text-yellow-500 font-bold">
                  <Star className="w-3.5 h-3.5 fill-yellow-500" />
                  {favorite.rating}

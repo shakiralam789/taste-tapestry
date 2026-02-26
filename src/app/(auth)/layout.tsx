@@ -1,8 +1,35 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/AuthContext";
+import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (user) {
+      router.replace("/");
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <FullScreenLoader />
+    );
+  }
+
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 bg-background text-foreground relative overflow-hidden">
       {/* Ambient gradient orbs */}

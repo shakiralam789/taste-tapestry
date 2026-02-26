@@ -1,21 +1,47 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Lock, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthContext";
+import type { AxiosError } from "axios";
+
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const router = useRouter();
+  const { loginWithEmail } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Placeholder: wire to your auth later
+  const onSubmit = async (values: LoginFormValues) => {
+    try {
+      await loginWithEmail(values.email, values.password);
+      if (typeof window !== "undefined" && remember) {
+        window.localStorage.setItem("rememberEmail", values.email);
+      }
+      toast.success("Welcome back!", { description: "You're signed in." });
+      router.push("/");
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
+      const message =
+        axiosError.response?.data?.message ?? "Invalid email or password.";
+      toast.error("Sign in failed", { description: message });
+    }
   };
 
   return (
@@ -40,7 +66,7 @@ export default function LoginPage() {
           Sign in
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground">
               Email
@@ -51,12 +77,13 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
+                {...register("email", { required: "Email is required" })}
               />
             </div>
+            {errors.email && (
+              <p className="text-xs text-red-500">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -77,12 +104,13 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 h-11 rounded-xl border-border bg-background/50 focus-visible:ring-2 focus-visible:ring-primary/30"
-                required
+                {...register("password", { required: "Password is required" })}
               />
             </div>
+            {errors.password && (
+              <p className="text-xs text-red-500">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -104,7 +132,7 @@ export default function LoginPage() {
             variant="gradient"
             className="w-full h-12 rounded-xl text-base font-medium gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
           >
-            Sign in
+            {isSubmitting ? "Signing in..." : "Sign in"}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </form>

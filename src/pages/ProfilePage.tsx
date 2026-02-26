@@ -1,14 +1,17 @@
 "use client";
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Layout } from '@/components/layout/Layout';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ProfilePostCard } from '@/components/profile/ProfilePostCard';
-import { useWishbook } from '@/contexts/WishbookContext';
-import { interestCategories } from '@/data/mockData';
-import type { InterestCategory } from '@/types/wishbook';
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Layout } from "@/components/layout/Layout";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
+import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
+import { useWishbook } from "@/contexts/WishbookContext";
+import { interestCategories } from "@/data/mockData";
+import type { InterestCategory, Favorite } from "@/types/wishbook";
+import { getFavorites } from "@/features/favorites/api";
 import {
   MapPin,
   Calendar,
@@ -23,9 +26,14 @@ import {
   Mic2,
   Lock,
   ChevronRight,
-} from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Link from 'next/link';
+} from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import Link from "next/link";
 
 const categoryLabels: Record<InterestCategory, string> = {
   creative: 'Creative pursuits',
@@ -39,7 +47,25 @@ const categoryLabels: Record<InterestCategory, string> = {
 const talentOptions = ['Singing', 'Dancing', 'Writing', 'Art', 'Acting', 'Stunts'];
 
 export default function ProfilePage() {
-  const { user, favorites, timeCapsules } = useWishbook();
+  const { user, timeCapsules, categories } = useWishbook();
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
+    string | "all"
+  >("all");
+
+  const {
+    data: favorites = [],
+    isLoading: favoritesLoading,
+    isError: favoritesError,
+  } = useQuery({
+    queryKey: ["favorites", selectedCategoryFilter],
+    queryFn: async (): Promise<Favorite[]> => {
+      const categoryId =
+        selectedCategoryFilter === "all" ? undefined : selectedCategoryFilter;
+      return getFavorites(categoryId);
+    },
+  });
+
+  console.log(favorites,'favorites');
 
   const interestsByCategory = useMemo(() => {
     const map: Partial<Record<InterestCategory, typeof user.interests>> = {};
@@ -174,10 +200,26 @@ export default function ProfilePage() {
                 className="grid grid-cols-2 sm:grid-cols-4 gap-4"
               >
                 {[
-                  { label: 'Followers', value: user.followers.toLocaleString(), icon: Users },
-                  { label: 'Following', value: user.following.toLocaleString(), icon: Users },
-                  { label: 'Stars', value: favorites.length, icon: Sparkles },
-                  { label: 'Capsules', value: timeCapsules.length, icon: Rocket },
+                  {
+                    label: "Followers",
+                    value: user.followers.toLocaleString(),
+                    icon: Users,
+                  },
+                  {
+                    label: "Following",
+                    value: user.following.toLocaleString(),
+                    icon: Users,
+                  },
+                  {
+                    label: "Stars",
+                    value: favorites.length,
+                    icon: Sparkles,
+                  },
+                  {
+                    label: "Capsules",
+                    value: timeCapsules.length,
+                    icon: Rocket,
+                  },
                 ].map((stat, i) => (
                   <div
                     key={i}
@@ -223,22 +265,60 @@ export default function ProfilePage() {
                 </TabsList>
 
                 <TabsContent value="favorites" className="mt-0">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-2xl font-display font-bold">My collection</h3>
-                      <p className="text-muted-foreground text-sm">
-                        Curated favorites — movies, songs, books, places. Your taste, your story.
-                      </p>
+                  <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-2xl font-display font-bold">
+                          My collection
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                          Curated favorites — movies, songs, books, places. Your
+                          taste, your story.
+                        </p>
+                      </div>
+                      <Link href="/add-favorite">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full border-dashed group hover:border-primary hover:text-primary"
+                        >
+                          <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
+                          Add new
+                        </Button>
+                      </Link>
                     </div>
-                    <Link href="/add-favorite">
+                    <div className="flex flex-wrap gap-2">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="sm"
-                        className="rounded-full border-dashed group hover:border-primary hover:text-primary"
+                        variant={
+                          selectedCategoryFilter === "all"
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => setSelectedCategoryFilter("all")}
+                        className="rounded-full"
                       >
-                        <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" /> Add new
+                        All
                       </Button>
-                    </Link>
+                      {categories.map((cat) => (
+                        <Button
+                          key={cat.id}
+                          type="button"
+                          size="sm"
+                          variant={
+                            selectedCategoryFilter === cat.id
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => setSelectedCategoryFilter(cat.id)}
+                          className="rounded-full gap-1"
+                        >
+                          <span aria-hidden>{cat.icon}</span>
+                          {cat.name}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                   <motion.div
                     variants={containerVariants}
@@ -246,11 +326,18 @@ export default function ProfilePage() {
                     animate="visible"
                     className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
                   >
-                    {favorites.map((favorite) => (
-                      <motion.div key={favorite.id} variants={itemVariants}>
-                        <ProfilePostCard favorite={favorite} />
-                      </motion.div>
-                    ))}
+                    {favoritesLoading && favorites.length === 0
+                      ? Array.from({ length: 3 }).map((_, idx) => (
+                          <ProfilePostCardSkeleton key={idx} />
+                        ))
+                      : favorites.map((favorite) => (
+                          <Link
+                            key={favorite.id}
+                            href={`/favorites/${favorite.id}`}
+                          >
+                            <ProfilePostCard favorite={favorite} />
+                          </Link>
+                        ))}
                     <Link href="/add-favorite">
                       <motion.div
                         variants={itemVariants}
@@ -259,7 +346,9 @@ export default function ProfilePage() {
                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Plus className="w-6 h-6" />
                         </div>
-                        <span className="font-medium text-sm">Add to collection</span>
+                        <span className="font-medium text-sm">
+                          Add to collection
+                        </span>
                       </motion.div>
                     </Link>
                   </motion.div>

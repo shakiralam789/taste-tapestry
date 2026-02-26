@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Layout } from "@/components/layout/Layout";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings, Monitor, Sun, Moon } from "lucide-react";
+import { Settings, Monitor, Sun, Moon, LogOut } from "lucide-react";
+import { useAuth } from "@/features/auth/AuthContext";
 
 type ThemeValue = "light" | "dark" | "system";
 
@@ -16,6 +19,19 @@ const options: { value: ThemeValue; label: string; description: string; icon: ty
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.replace("/login");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   const currentTheme = (theme ?? "system") as ThemeValue;
 
@@ -84,14 +100,12 @@ export default function SettingsPage() {
             </div>
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs md:text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  window.location.href = "/login";
-                }
-              }}
+              disabled={loggingOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs md:text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              onClick={handleLogout}
             >
-              <span>Log out</span>
+              <LogOut className="h-4 w-4" />
+              <span>{loggingOut ? "Signing out…" : "Log out"}</span>
             </button>
           </div>
         </section>

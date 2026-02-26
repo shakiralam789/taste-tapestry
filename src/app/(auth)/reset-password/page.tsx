@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
+import { resetPassword as resetPasswordRequest } from "@/features/auth/api";
+import type { AxiosError } from "axios";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -14,17 +17,33 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const mismatch = useMemo(
     () => confirmPassword.length > 0 && password !== confirmPassword,
     [password, confirmPassword],
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mismatch) return;
-    // Placeholder: call your auth API with token + new password
-    setSubmitted(true);
+    if (mismatch || !token) return;
+
+    try {
+      setSubmitting(true);
+      await resetPasswordRequest({ token, password });
+      toast.success("Password updated", {
+        description: "You can now sign in with your new password.",
+      });
+      setSubmitted(true);
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
+      const message =
+        axiosError.response?.data?.message ??
+        "Reset link is invalid or has expired.";
+      toast.error("Could not reset password", { description: message });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -105,10 +124,16 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               variant="gradient"
-              disabled={mismatch || password.length < 8 || confirmPassword.length < 8}
+              disabled={
+                submitting ||
+                !token ||
+                mismatch ||
+                password.length < 8 ||
+                confirmPassword.length < 8
+              }
               className="w-full h-12 rounded-xl text-base font-medium gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
             >
-              Reset password
+              {submitting ? "Updating..." : "Reset password"}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
