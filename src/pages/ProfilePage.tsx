@@ -1,13 +1,28 @@
 "use client";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
+import { useAuth } from "@/features/auth/AuthContext";
+import {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+} from "@/features/profile/api";
 import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
@@ -26,37 +41,57 @@ import {
   Mic2,
   Lock,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const categoryLabels: Record<InterestCategory, string> = {
-  creative: 'Creative pursuits',
-  performance: 'Performance-based',
-  skill: 'Skill-based',
-  intellectual: 'Intellectual / technical',
-  unique: 'Unique / unconventional',
-  collaborative: 'Collaborative',
+  creative: "Creative pursuits",
+  performance: "Performance-based",
+  skill: "Skill-based",
+  intellectual: "Intellectual / technical",
+  unique: "Unique / unconventional",
+  collaborative: "Collaborative",
 };
 
-const talentOptions = ['Singing', 'Dancing', 'Writing', 'Art', 'Acting', 'Stunts'];
+const talentOptions = [
+  "Singing",
+  "Dancing",
+  "Writing",
+  "Art",
+  "Acting",
+  "Stunts",
+];
 
 export default function ProfilePage() {
-  const { user, timeCapsules, categories } = useWishbook();
+  const { user: authUser } = useAuth();
+  const { user: wishbookUser, timeCapsules, categories } = useWishbook();
+  const queryClient = useQueryClient();
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
     string | "all"
   >("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    displayName: "",
+    username: "",
+    avatar: "",
+    bio: "",
+    location: "",
+  });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    data: favorites = [],
-    isLoading: favoritesLoading,
-    isError: favoritesError,
-  } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+    enabled: !!authUser,
+  });
+
+  const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["favorites", selectedCategoryFilter],
     queryFn: async (): Promise<Favorite[]> => {
       const categoryId =
@@ -65,20 +100,98 @@ export default function ProfilePage() {
     },
   });
 
-  console.log(favorites,'favorites');
+  const displayName =
+    profile?.displayName?.trim() || authUser?.displayName?.trim() || "";
+  const displayUsername = profile?.username?.trim()
+    ? `@${profile.username}`
+    : "";
+  const displayAvatar = profile?.avatar?.trim() || "";
+  const displayAvatarUrl = displayAvatar
+    ? `${displayAvatar}${displayAvatar.includes("?") ? "&" : "?"}v=${avatarVersion}`
+    : "";
+  const displayBio =
+    profile?.bio?.trim() ||
+    "" ||
+    "Digital explorer navigating the neon tides. Curator of moments and memories.";
+  const displayLocation =
+    profile?.location?.trim() || "" || "Neo Tokyo";
+  const displaySinceYear = profile?.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : new Date().getFullYear();
+
+  useEffect(() => {
+    if (editOpen && profile) {
+      setEditForm({
+        displayName: profile.displayName ?? "",
+        username: profile.username ?? "",
+        avatar: profile.avatar ?? "",
+        bio: profile.bio ?? "",
+        location: profile.location ?? "",
+      });
+    }
+  }, [editOpen, profile]);
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditSubmitting(true);
+    try {
+      await updateProfile({
+        displayName: editForm.displayName.trim() || undefined,
+        username: editForm.username.trim() || undefined,
+        avatar: editForm.avatar.trim() || undefined,
+        bio: editForm.bio.trim() || undefined,
+        location: editForm.location.trim() || undefined,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      setEditOpen(false);
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleAvatarFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !file.type.startsWith("image/")) {
+      toast.error("Please choose an image file (JPEG, PNG, GIF, or WebP)");
+      return;
+    }
+    setAvatarUploading(true);
+    try {
+      const updated = await uploadAvatar(file);
+      if (updated) {
+        queryClient.setQueryData(["profile"], updated);
+        setAvatarVersion((v) => v + 1);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      }
+      toast.success("Avatar updated");
+    } catch {
+      toast.error("Failed to upload avatar");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const interestsByCategory = useMemo(() => {
-    const map: Partial<Record<InterestCategory, typeof user.interests>> = {};
-    user.interests.forEach((i) => {
+    const map: Partial<
+      Record<InterestCategory, typeof wishbookUser.interests>
+    > = {};
+    wishbookUser.interests.forEach((i) => {
       if (!map[i.category]) map[i.category] = [];
       map[i.category]!.push(i);
     });
     return map;
-  }, [user]);
+  }, [wishbookUser]);
 
   const revealedTalents = useMemo(
-    () => user.talents.filter((t) => t.isPublic),
-    [user.talents]
+    () => wishbookUser.talents.filter((t) => t.isPublic),
+    [wishbookUser.talents],
   );
 
   const containerVariants = {
@@ -110,50 +223,87 @@ export default function ProfilePage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
+              className="sticky md:static top-4 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
               <div className="relative md:mb-6 mb-4 group">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarFileChange}
+                  aria-label="Upload avatar"
+                />
                 <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-full opacity-75 blur transition duration-500 group-hover:opacity-100" />
                 <Avatar className="w-40 h-40 ring-4 ring-background relative">
-                  <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
+                  <AvatarImage
+                    src={displayAvatarUrl || displayAvatar}
+                    alt={displayName}
+                    className="object-cover"
+                  />
                   <AvatarFallback className="text-4xl bg-background text-foreground">
-                    {user.name[0]}
+                    {displayName[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute bottom-2 right-2 flex gap-2">
-                  <Button size="icon" variant="secondary" className="rounded-full shadow-lg h-10 w-10">
-                    <Edit3 className="w-4 h-4" />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    className="rounded-full shadow-lg h-10 w-10"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading || !authUser}
+                    aria-label="Change avatar"
+                    title="Upload new avatar"
+                  >
+                    {avatarUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Edit3 className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               </div>
 
               <h1 className="font-display md:text-4xl text-2xl font-bold mb-2 flex items-center gap-2">
-                {user.name}
+                {profileLoading ? "…" : displayName}
                 <Sparkles className="w-6 h-6 text-yellow-400 fill-yellow-400 animate-pulse" />
               </h1>
-              <p className="text-primary font-medium mb-4 md:text-lg text-base">@{user.username}</p>
+              <p className="text-primary font-medium mb-4 md:text-lg text-base">
+                {displayUsername}
+              </p>
 
               <p className="text-sm md:text-base text-muted-foreground md:mb-6 mb-4 leading-relaxed max-w-xs">
-                {user.bio || 'Digital explorer navigating the neon tides. Curator of moments and memories.'}
+                {displayBio}
               </p>
 
               <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
                   <MapPin className="w-3.5 h-3.5" />
-                  {user.location || 'Neo Tokyo'}
+                  {displayLocation}
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
                   <Calendar className="w-3.5 h-3.5" />
-                  Since {user.createdAt.getFullYear()}
+                  Since {displaySinceYear}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 w-full">
-                <Button className="w-full rounded-xl" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  className="w-full rounded-xl"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(true)}
+                >
                   <Edit3 className="w-4 h-4 mr-2" />
                   Edit profile
                 </Button>
-                <Button className="w-full rounded-xl" variant="outline" size="sm">
+                <Button
+                  className="w-full rounded-xl"
+                  variant="outline"
+                  size="sm"
+                >
                   <Share2 className="w-4 h-4 mr-2" /> Share
                 </Button>
               </div>
@@ -202,12 +352,12 @@ export default function ProfilePage() {
                 {[
                   {
                     label: "Followers",
-                    value: user.followers.toLocaleString(),
+                    value: wishbookUser.followers.toLocaleString(),
                     icon: Users,
                   },
                   {
                     label: "Following",
-                    value: user.following.toLocaleString(),
+                    value: wishbookUser.following.toLocaleString(),
                     icon: Users,
                   },
                   {
@@ -227,7 +377,9 @@ export default function ProfilePage() {
                   >
                     <div className="flex items-center gap-2 mb-2 text-muted-foreground">
                       <stat.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
-                      <span className="text-xs font-semibold uppercase tracking-wider">{stat.label}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider">
+                        {stat.label}
+                      </span>
                     </div>
                     <p className="font-display md:text-3xl text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
                       {stat.value}
@@ -356,64 +508,85 @@ export default function ProfilePage() {
 
                 <TabsContent value="interests" className="mt-0">
                   <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">Interests & creative pursuits</h3>
+                    <h3 className="text-2xl font-display font-bold">
+                      Interests & creative pursuits
+                    </h3>
                     <p className="text-muted-foreground text-sm">
-                      Creative, performance, skill-based, and more — what drives you.
+                      Creative, performance, skill-based, and more — what drives
+                      you.
                     </p>
                   </div>
-                  {user.interests.length > 0 ? (
+                  {wishbookUser.interests.length > 0 ? (
                     <div className="space-y-6">
-                      {Object.entries(interestsByCategory).map(([cat, interests]) => (
-                        interests &&
-                        interests.length > 0 && (
-                          <div
-                            key={cat}
-                            className="p-6 rounded-2xl bg-card/20 border border-white/5 hover:border-primary/20 transition-all"
-                          >
-                            <h4 className="text-lg font-semibold mb-3 text-primary capitalize">
-                              {categoryLabels[cat as InterestCategory] || cat}
-                            </h4>
+                      {Object.entries(interestsByCategory).map(
+                        ([cat, interests]) =>
+                          interests &&
+                          interests.length > 0 && (
+                            <div
+                              key={cat}
+                              className="p-6 rounded-2xl bg-card/20 border border-white/5 hover:border-primary/20 transition-all"
+                            >
+                              <h4 className="text-lg font-semibold mb-3 text-primary capitalize">
+                                {categoryLabels[cat as InterestCategory] || cat}
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {interests.map((i) => (
+                                  <Badge
+                                    key={i.id}
+                                    variant="secondary"
+                                    className="bg-primary/10 text-primary border-primary/20"
+                                  >
+                                    {i.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ),
+                      )}
+                    </div>
+                  ) : null}
+                  <div className="mt-6 p-6 rounded-2xl bg-card/20 border border-dashed border-white/10">
+                    <h4 className="text-lg font-semibold mb-3 text-muted-foreground">
+                      Explore more interests
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add from creative, performance, skill-based, intellectual,
+                      unique, and collaborative pursuits.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Object.entries(interestCategories).map(
+                        ([category, interests]) => (
+                          <div key={category} className="space-y-2">
+                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                              {categoryLabels[category as InterestCategory] ||
+                                category}
+                            </span>
                             <div className="flex flex-wrap gap-2">
-                              {interests.map((i) => (
-                                <Badge key={i.id} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                              {interests.slice(0, 6).map((i) => (
+                                <Badge
+                                  key={i.id}
+                                  variant="outline"
+                                  className="bg-background/50 cursor-pointer hover:border-primary/50"
+                                >
                                   {i.name}
                                 </Badge>
                               ))}
                             </div>
                           </div>
-                        )
-                      ))}
-                    </div>
-                  ) : null}
-                  <div className="mt-6 p-6 rounded-2xl bg-card/20 border border-dashed border-white/10">
-                    <h4 className="text-lg font-semibold mb-3 text-muted-foreground">Explore more interests</h4>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Add from creative, performance, skill-based, intellectual, unique, and collaborative pursuits.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {Object.entries(interestCategories).map(([category, interests]) => (
-                        <div key={category} className="space-y-2">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                            {categoryLabels[category as InterestCategory] || category}
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {interests.slice(0, 6).map((i) => (
-                              <Badge key={i.id} variant="outline" className="bg-background/50 cursor-pointer hover:border-primary/50">
-                                {i.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="talents" className="mt-0">
                   <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">Hidden talents</h3>
+                    <h3 className="text-2xl font-display font-bold">
+                      Hidden talents
+                    </h3>
                     <p className="text-muted-foreground text-sm">
-                      Reveal your secret skills — singing, dancing, writing, art, acting, stunts.
+                      Reveal your secret skills — singing, dancing, writing,
+                      art, acting, stunts.
                     </p>
                   </div>
                   {revealedTalents.length > 0 && (
@@ -425,20 +598,29 @@ export default function ProfilePage() {
                         >
                           <Mic2 className="w-5 h-5 text-secondary" />
                           <span className="font-medium">{t.name}</span>
-                          <Badge variant="secondary" className="text-xs">Revealed</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Revealed
+                          </Badge>
                         </div>
                       ))}
                     </div>
                   )}
                   <div className="p-8 rounded-3xl bg-secondary/5 border border-secondary/20 border-dashed">
                     <Sparkles className="w-12 h-12 text-secondary mx-auto mb-4" />
-                    <h4 className="text-xl font-bold mb-2 text-center">Unveil a talent</h4>
+                    <h4 className="text-xl font-bold mb-2 text-center">
+                      Unveil a talent
+                    </h4>
                     <p className="text-muted-foreground text-center mb-6 text-sm">
                       Share a hidden skill with your taste twin community.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       {talentOptions.map((name) => (
-                        <Button key={name} variant="outline" size="sm" className="rounded-full">
+                        <Button
+                          key={name}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                        >
                           {name}
                         </Button>
                       ))}
@@ -452,14 +634,22 @@ export default function ProfilePage() {
                 <TabsContent value="capsules" className="mt-0">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="text-2xl font-display font-bold">Time capsules</h3>
+                      <h3 className="text-2xl font-display font-bold">
+                        Time capsules
+                      </h3>
                       <p className="text-muted-foreground text-sm">
-                        Collections tied to a period — school days, breakup era, summer 2024.
+                        Collections tied to a period — school days, breakup era,
+                        summer 2024.
                       </p>
                     </div>
                     <Link href="/create-capsule">
-                      <Button variant="outline" size="sm" className="rounded-full border-dashed group hover:border-primary hover:text-primary">
-                        <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" /> Create capsule
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full border-dashed group hover:border-primary hover:text-primary"
+                      >
+                        <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
+                        Create capsule
                       </Button>
                     </Link>
                   </div>
@@ -467,9 +657,16 @@ export default function ProfilePage() {
                     <Link href="/create-capsule">
                       <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
                         <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50 group-hover:opacity-80" />
-                        <h4 className="text-lg font-semibold mb-2 text-foreground">No capsules yet</h4>
-                        <p className="text-sm mb-4">Capture a chapter of your life with favorites, emotions, and stories.</p>
-                        <Button variant="secondary" size="sm">Create your first capsule</Button>
+                        <h4 className="text-lg font-semibold mb-2 text-foreground">
+                          No capsules yet
+                        </h4>
+                        <p className="text-sm mb-4">
+                          Capture a chapter of your life with favorites,
+                          emotions, and stories.
+                        </p>
+                        <Button variant="secondary" size="sm">
+                          Create your first capsule
+                        </Button>
                       </div>
                     </Link>
                   ) : (
@@ -497,11 +694,18 @@ export default function ProfilePage() {
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
                                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                                  <h4 className="font-display font-semibold text-lg">{capsule.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{capsule.period}</p>
+                                  <h4 className="font-display font-semibold text-lg">
+                                    {capsule.title}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {capsule.period}
+                                  </p>
                                   <div className="flex flex-wrap gap-1 mt-2">
                                     {capsule.emotions.slice(0, 3).map((e) => (
-                                      <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                                      <span
+                                        key={e}
+                                        className="text-xs px-2 py-0.5 rounded-full bg-white/10"
+                                      >
                                         {e}
                                       </span>
                                     ))}
@@ -509,7 +713,9 @@ export default function ProfilePage() {
                                 </div>
                               </div>
                               <div className="p-4">
-                                <p className="text-sm text-muted-foreground line-clamp-2">{capsule.description}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {capsule.description}
+                                </p>
                               </div>
                             </div>
                           </Link>
@@ -521,7 +727,9 @@ export default function ProfilePage() {
                           className="aspect-video rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
                         >
                           <Plus className="w-10 h-10" />
-                          <span className="font-medium text-sm">New capsule</span>
+                          <span className="font-medium text-sm">
+                            New capsule
+                          </span>
                         </motion.div>
                       </Link>
                     </motion.div>
@@ -532,6 +740,68 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-displayName">Name</Label>
+              <Input
+                id="edit-displayName"
+                value={editForm.displayName}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    displayName: e.target.value,
+                  }))
+                }
+                placeholder="Your display name"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-bio">Bio</Label>
+              <Textarea
+                id="edit-bio"
+                value={editForm.bio}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, bio: e.target.value }))
+                }
+                placeholder="A short bio"
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-location">Location</Label>
+              <Input
+                id="edit-location"
+                value={editForm.location}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, location: e.target.value }))
+                }
+                placeholder="City or region"
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSubmitting}>
+                {editSubmitting ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

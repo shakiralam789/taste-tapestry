@@ -631,7 +631,7 @@ export function FavoriteEditor({
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
+                  className={`shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Film className="w-5 h-5 text-primary" />

@@ -7,8 +7,8 @@ export const currentUser: User = {
   avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face',
   bio: 'Curator of beautiful moments. Movie enthusiast, book lover, and eternal optimist.',
   location: 'San Francisco, CA',
-  followers: 1247,
-  following: 892,
+  followers: 0,
+  following: 0,
   interests: [
     { id: '1', name: 'Photography', category: 'creative' },
     { id: '2', name: 'Poetry', category: 'creative' },
@@ -31,7 +31,7 @@ export const sampleUsers: User[] = [
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face',
     bio: 'Finding magic in everyday stories.',
     location: 'Tokyo, Japan',
-    followers: 3421,
+    followers: 0,
     following: 567,
     interests: [
       { id: '1', name: 'Anime', category: 'creative' },
@@ -47,8 +47,8 @@ export const sampleUsers: User[] = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
     bio: 'Music producer. Night owl. Coffee addict.',
     location: 'London, UK',
-    followers: 8932,
-    following: 234,
+    followers: 0,
+    following: 0,
     interests: [
       { id: '1', name: 'Music Production', category: 'creative' },
       { id: '2', name: 'DJing', category: 'performance' },
@@ -63,8 +63,8 @@ export const sampleUsers: User[] = [
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face',
     bio: 'Bookworm | Film critic | Sunset chaser',
     location: 'Barcelona, Spain',
-    followers: 2156,
-    following: 1023,
+    followers: 0,
+    following: 0,
     interests: [
       { id: '1', name: 'Writing Stories', category: 'intellectual' },
       { id: '2', name: 'Filmmaking', category: 'creative' },
