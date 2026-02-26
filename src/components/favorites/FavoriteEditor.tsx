@@ -1414,12 +1414,17 @@ export function FavoriteEditor({
                     </div>
                   </div>
                   <div className="p-4">
-                    <div className="aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-white/5 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-muted border border-white/5 mb-4 block text-left cursor-pointer hover:ring-2 hover:ring-primary/30 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      aria-label="Go to cover & title section"
+                    >
                       {formData.image ? (
                         <img
                           src={formData.image}
                           alt=""
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover pointer-events-none"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
                           }}
@@ -1430,26 +1435,61 @@ export function FavoriteEditor({
                           <span className="text-sm">Cover image</span>
                         </div>
                       )}
-                    </div>
-                    <h3 className="font-display font-semibold text-lg truncate">
-                      {formData.title || "Your title"}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                      <Star className="w-4 h-4 text-secondary fill-secondary/50" />
-                      <span className="font-medium text-foreground">
-                        {formData.rating}/10
-                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-full text-left cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-0"
+                      aria-label="Go to title section"
+                    >
+                      <h3 className="font-display font-semibold text-lg truncate">
+                        {formData.title || "Your title"}
+                      </h3>
+                    </button>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="inline-flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="Go to rating section"
+                      >
+                        <Star className="w-4 h-4 text-secondary fill-secondary/50" />
+                        <span className="font-medium text-foreground">
+                          {formData.rating}/10
+                        </span>
+                      </button>
                       {formData.genre && (
-                        <span>· {formData.genre.split(",")[0]}</span>
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 rounded"
+                          aria-label="Go to genre section"
+                        >
+                          · {formData.genre.split(",")[0]}
+                        </button>
                       )}
                     </div>
                     {formData.whyILike && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
-                        {formData.whyILike}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="w-full text-left mt-2 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-0"
+                        aria-label="Go to your thoughts section"
+                      >
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {formData.whyILike}
+                        </p>
+                      </button>
                     )}
                     {(selectedMoods.length > 0 || tags.length > 0) && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStep(hasEmotionalJourney ? 4 : 3)
+                        }
+                        className="flex flex-wrap gap-1.5 mt-3 w-full text-left cursor-pointer hover:opacity-90 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-card"
+                        aria-label="Go to moods & tags section"
+                      >
                         {selectedMoods.slice(0, 3).map((m) => {
                           const opt = moodOptions.find((o) => o.id === m);
                           return (
@@ -1469,7 +1509,7 @@ export function FavoriteEditor({
                             #{t}
                           </span>
                         ))}
-                      </div>
+                      </button>
                     )}
                     {(() => {
                       const segs = isSeriesOrAnime
@@ -1514,14 +1554,19 @@ export function FavoriteEditor({
                             : `Ep ${selectedEpisodeIndex + 1}`
                           : null;
                       return (
-                        <div className="mt-3 pt-3 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => setStep(3)}
+                          className="mt-3 pt-3 border-t border-white/5 w-full text-left cursor-pointer hover:opacity-90 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-inset"
+                          aria-label="Go to emotional journey section"
+                        >
                           <p className="text-xs text-muted-foreground mb-1">
                             Emotional journey
                             {episodeLabel && (
                               <span className="ml-1">({episodeLabel})</span>
                             )}
                           </p>
-                          <div className="h-12 rounded-lg bg-muted/50 flex items-end overflow-hidden">
+                          <div className="h-12 rounded-lg bg-muted/50 flex items-end overflow-hidden pointer-events-none">
                             {sorted.map((s) => {
                               const widthPct =
                                 totalSec > 0
@@ -1546,7 +1591,7 @@ export function FavoriteEditor({
                               );
                             })}
                           </div>
-                        </div>
+                        </button>
                       );
                     })()}
                   </div>
