@@ -37,6 +37,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
 import type { Favorite } from "@/types/wishbook";
 import { AlbumForm, type AlbumFormValues } from "@/components/albums/AlbumForm";
+import { ClientOnly } from "@/components/common/ClientOnly";
 
 const DEFAULT_ALBUM_IMAGE = "/images/default-cover-image.jpg";
 const DEFAULT_ALBUM_IMAGE_DARK = "/images/default-cover-image-dark.jpg";
@@ -49,7 +50,7 @@ const CATEGORY_TABS = [
   { value: "books", label: "Book", icon: BookOpen },
 ] as const;
 
-export default function AlbumShowPage() {
+export function AlbumShowPageInner() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const router = useRouter();
@@ -460,6 +461,14 @@ export default function AlbumShowPage() {
         </DialogContent>
       </Dialog>
     </Layout>
+  );
+}
+
+export default function AlbumShowPage() {
+  return (
+    <ClientOnly>
+      <AlbumShowPageInner />
+    </ClientOnly>
   );
 }
 

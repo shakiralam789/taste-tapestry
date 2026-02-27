@@ -9,15 +9,17 @@ import {
   FavoriteEditor,
   type FavoriteEditorPayload,
 } from "@/components/favorites/FavoriteEditor";
+import { ClientOnly } from "@/components/common/ClientOnly";
 
-export default function AddFavoritePage() {
+export function AddFavoritePageInner() {
+  const router = useRouter();
+
   // During Next.js static export/prerender this legacy page can be rendered
   // outside of the React Query provider. Avoid rendering the editor on the server.
   if (typeof window === "undefined") {
     return null;
   }
 
-  const router = useRouter();
 
   const handleSubmit = async (payload: FavoriteEditorPayload) => {
     try {
@@ -41,3 +43,10 @@ export default function AddFavoritePage() {
   return <FavoriteEditor mode="create" onSubmit={handleSubmit} />;
 }
 
+export default function AddFavoritePage() {
+  return (
+    <ClientOnly>
+      <AddFavoritePageInner />
+    </ClientOnly>
+  );
+}

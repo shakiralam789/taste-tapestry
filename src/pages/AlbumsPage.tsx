@@ -7,7 +7,15 @@ import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { AlbumCard } from "@/components/albums/AlbumCard";
-import { Images, Plus, Sparkles, Trash2, Edit3, MoreHorizontal } from "lucide-react";
+import { ClientOnly } from "@/components/common/ClientOnly";
+import {
+  Images,
+  Plus,
+  Sparkles,
+  Trash2,
+  Edit3,
+  MoreHorizontal,
+} from "lucide-react";
 import {
   createAlbum,
   deleteAlbum,
@@ -27,8 +35,16 @@ import {
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Album } from "@/types/wishbook";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlbumForm, type AlbumFormValues } from "@/components/albums/AlbumForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlbumForm,
+  type AlbumFormValues,
+} from "@/components/albums/AlbumForm";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function AlbumsPage() {
+export function AlbumsPageInner() {
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   const [albumToDelete, setAlbumToDelete] = useState<Album | null>(null);
@@ -370,6 +386,14 @@ export default function AlbumsPage() {
         </DialogContent>
       </Dialog>
     </Layout>
+  );
+}
+
+export default function AlbumsPage() {
+  return (
+    <ClientOnly>
+      <AlbumsPageInner />
+    </ClientOnly>
   );
 }
 
