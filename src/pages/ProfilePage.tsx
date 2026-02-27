@@ -27,6 +27,7 @@ import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
 import { getFavorites } from "@/features/favorites/api";
+import { getCookie, setCookie } from "@/lib/cookies";
 import {
   MapPin,
   Calendar,
@@ -42,6 +43,8 @@ import {
   Lock,
   ChevronRight,
   Loader2,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -81,6 +84,10 @@ function ProfilePageInner() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
     string | "all"
   >("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    const stored = getCookie("profileCollectionView");
+    return stored === "list" || stored === "grid" ? stored : "grid";
+  });
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: "",
@@ -127,6 +134,13 @@ function ProfilePageInner() {
   const displaySinceYear = profile?.createdAt
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
+
+  useEffect(() => {
+    setCookie("profileCollectionView", viewMode, {
+      maxAgeSeconds: 60 * 60 * 24 * 365,
+      path: "/",
+    });
+  }, [viewMode]);
 
   useEffect(() => {
     if (editOpen && profile) {
@@ -437,16 +451,44 @@ function ProfilePageInner() {
                           taste, your story.
                         </p>
                       </div>
-                      <Link href="/add-favorite">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full border-dashed group hover:border-primary hover:text-primary"
-                        >
-                          <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
-                          Add new
-                        </Button>
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-1.5 py-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setViewMode("grid")}
+                            className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                              viewMode === "grid"
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-white/5"
+                            }`}
+                            aria-label="Grid view"
+                          >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode("list")}
+                            className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                              viewMode === "list"
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-white/5"
+                            }`}
+                            aria-label="List view"
+                          >
+                            <List className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <Link href="/add-favorite">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full border-dashed group hover:border-primary hover:text-primary"
+                          >
+                            <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
+                            Add new
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button
@@ -485,7 +527,11 @@ function ProfilePageInner() {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    className={
+                      viewMode === "grid"
+                        ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                        : "flex flex-col gap-3"
+                    }
                   >
                     {favoritesLoading && favorites.length === 0
                       ? Array.from({ length: 3 }).map((_, idx) => (
@@ -495,14 +541,18 @@ function ProfilePageInner() {
                           <Link
                             key={favorite.id}
                             href={`/favorites/${favorite.id}`}
+                            className={viewMode === "list" ? "w-full" : ""}
                           >
-                            <ProfilePostCard favorite={favorite} />
+                            <ProfilePostCard
+                              favorite={favorite}
+                              variant={viewMode}
+                            />
                           </Link>
                         ))}
-                    <Link href="/add-favorite">
+                    {/* <Link href="/add-favorite">
                       <motion.div
                         variants={itemVariants}
-                        className="aspect-[4/5] rounded-2xl border-2 border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center gap-4 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
+                        className={`${viewMode === "grid" ? "aspect-[4/5]" : "w-full"} py-4 rounded-2xl border-2 border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center gap-4 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group`}
                       >
                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Plus className="w-6 h-6" />
@@ -511,7 +561,7 @@ function ProfilePageInner() {
                           Add to collection
                         </span>
                       </motion.div>
-                    </Link>
+                    </Link> */}
                   </motion.div>
                 </TabsContent>
 
