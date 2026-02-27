@@ -535,7 +535,10 @@ function ProfilePageInner() {
                   >
                     {favoritesLoading && favorites.length === 0
                       ? Array.from({ length: 3 }).map((_, idx) => (
-                          <ProfilePostCardSkeleton key={idx} />
+                          <ProfilePostCardSkeleton
+                            key={idx}
+                            variant={viewMode}
+                          />
                         ))
                       : favorites.map((favorite) => (
                           <Link
