@@ -66,3 +66,22 @@ export async function updateFavorite(
   };
 }
 
+export async function uploadFavoriteMusic(
+  id: string,
+  file: File,
+): Promise<Favorite> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.post<Favorite>(
+    `/favorites/${id}/music`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+  };
+}
+

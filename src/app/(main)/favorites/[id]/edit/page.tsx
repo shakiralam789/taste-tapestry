@@ -1,19 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { Layout } from "@/components/layout/Layout";
-import { FavoriteEditor, type FavoriteEditorPayload } from "@/components/favorites/FavoriteEditor";
+import {
+  FavoriteEditor,
+  type FavoriteEditorPayload,
+} from "@/components/favorites/FavoriteEditor";
 import { getFavorite, updateFavorite } from "@/features/favorites/api";
 import type { Favorite } from "@/types/wishbook";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function EditFavoritePage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const router = useRouter();
+  const { user: authUser, loading } = useAuth();
 
   const {
     data: favorite,
@@ -25,6 +31,9 @@ export default function EditFavoritePage() {
       getFavorite(typeof id === "string" ? id : ""),
     enabled: typeof id === "string",
   });
+
+  const isOwner =
+    !!authUser && !!favorite && authUser.id === (favorite as Favorite).userId;
 
   const handleSubmit = async (payload: FavoriteEditorPayload) => {
     if (!id || typeof id !== "string") return;
@@ -44,7 +53,13 @@ export default function EditFavoritePage() {
     }
   };
 
-  if (isLoading || !favorite) {
+  useEffect(() => {
+    if (!loading && !isLoading && favorite && !isOwner && typeof id === "string") {
+      router.replace(`/favorites/${id}`);
+    }
+  }, [loading, isLoading, favorite, isOwner, router, id]);
+
+  if (loading || isLoading || !favorite || (!isOwner && typeof id === "string")) {
     return <FullScreenLoader />;
   }
 

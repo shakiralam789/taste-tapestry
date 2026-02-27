@@ -1,11 +1,17 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
-import { getFavorite } from "@/features/favorites/api";
+import {
+  getFavorite,
+  uploadFavoriteMusic,
+  updateFavorite,
+} from "@/features/favorites/api";
+import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
 import {
@@ -16,6 +22,11 @@ import {
   Clock,
   Tag,
   Sparkles,
+  Music2,
+  Trash2,
+  Pause,
+  Play,
+  RotateCcw,
 } from "lucide-react";
 
 type FavoriteFields = Favorite["fields"] & {
@@ -29,6 +40,7 @@ type FavoriteFields = Favorite["fields"] & {
   emotionalCurve?: { x: number; y: number }[];
   emotionalSegments?: EmotionalSegment[];
   momentPins?: { id: string; positionPercent: number; note: string; image?: string }[];
+  musicUrl?: string;
 };
 
 function hasEmotionalJourney(favorite: Favorite): boolean {
@@ -51,6 +63,12 @@ export default function FavoriteShowPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const router = useRouter();
+  const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
+  const [musicBusy, setMusicBusy] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const musicInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const {
     data: favorite,
@@ -62,6 +80,28 @@ export default function FavoriteShowPage() {
       getFavorite(typeof id === "string" ? id : ""),
     enabled: typeof id === "string",
   });
+  const fields = (favorite?.fields ?? {}) as FavoriteFields;
+  const genreStr =
+    Array.isArray(fields.genre) && fields.genre.length > 0
+      ? fields.genre.join(" · ")
+      : null;
+  const showMoodTags =
+    (favorite?.mood?.length ?? 0) > 0 ||
+    (favorite?.recommendedTime?.length ?? 0) > 0 ||
+    (favorite?.tags?.length ?? 0) > 0;
+  const showJourney = favorite ? hasEmotionalJourney(favorite) : false;
+  const musicUrl = fields.musicUrl;
+  const isOwner = favorite ? authUser?.id === favorite.userId : false;
+  const showThemeMusicSection = isOwner || !!musicUrl;
+
+  // Auto-play theme music when the page loads and musicUrl is present
+  useEffect(() => {
+    if (!musicUrl || !audioRef.current) return;
+    audioRef.current
+      .play()
+      .then(() => setMusicPlaying(true))
+      .catch(() => setMusicPlaying(false));
+  }, [musicUrl]);
 
   if (isLoading || !favorite) {
     return <FullScreenLoader />;
@@ -79,16 +119,36 @@ export default function FavoriteShowPage() {
     );
   }
 
-  const fields = (favorite.fields ?? {}) as FavoriteFields;
-  const genreStr =
-    Array.isArray(fields.genre) && fields.genre.length > 0
-      ? fields.genre.join(" · ")
-      : null;
-  const showMoodTags =
-    (favorite.mood?.length ?? 0) > 0 ||
-    (favorite.recommendedTime?.length ?? 0) > 0 ||
-    (favorite.tags?.length ?? 0) > 0;
-  const showJourney = hasEmotionalJourney(favorite);
+  const handleMusicChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) return;
+    if (typeof id !== "string") return;
+    setMusicBusy(true);
+    try {
+      const updated = await uploadFavoriteMusic(id, file);
+      queryClient.setQueryData(["favorite", id], updated);
+    } finally {
+      setMusicBusy(false);
+    }
+  };
+
+  const handleRemoveMusic = async () => {
+    if (!musicUrl) return;
+    if (typeof id !== "string") return;
+    setMusicBusy(true);
+    try {
+      const updated = await updateFavorite(id, {
+        fields: { musicUrl: null },
+      });
+      queryClient.setQueryData(["favorite", id], updated);
+    } finally {
+      setMusicBusy(false);
+    }
+  };
 
   return (
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
@@ -104,7 +164,7 @@ export default function FavoriteShowPage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Button
+         {isOwner && <Button
             variant="default"
             size="sm"
             className="rounded-full gap-1.5 shrink-0"
@@ -112,13 +172,13 @@ export default function FavoriteShowPage() {
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
-          </Button>
+          </Button>}
         </header>
 
-        <main className="max-w-3xl mx-auto px-4 py-6 pb-16">
+        <main className="max-w-4xl mx-auto px-4 py-6 pb-16">
           {/* Cover + title block — compact single row on larger screens */}
           <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
-            <div className="shrink-0 w-full sm:w-48 aspect-[3/4] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
+            <div className="shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[3/4] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
               {favorite.image ? (
                 <img
                   src={favorite.image}
@@ -131,7 +191,7 @@ export default function FavoriteShowPage() {
                 </div>
               )}
             </div>
-            <div className="min-w-0 flex-1 pt-4">
+            <div className="relative min-w-0 flex-1 pt-2">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="text-xs font-medium uppercase tracking-wider text-primary">
                   {favorite.categoryId}
@@ -154,7 +214,9 @@ export default function FavoriteShowPage() {
               <div className="flex items-center gap-3 mt-3 mb-4">
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
                   <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  {favorite.rating.toFixed(1)}/10
+                  {typeof favorite.rating === "number"
+                    ? `${favorite.rating.toFixed(1)}/10`
+                    : "—"}
                 </span>
                 {favorite.timePeriod && (
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -164,14 +226,156 @@ export default function FavoriteShowPage() {
                 )}
               </div>
               {fields.plotSummary && (
-            <p className="text-sm text-muted-foreground 2xl:mb-6 mb-4 leading-relaxed">
-              {fields.plotSummary}
-            </p>
-          )}
+                <p className="text-sm text-muted-foreground 2xl:mb-4 mb-3 leading-relaxed">
+                  {fields.plotSummary}
+                </p>
+              )}
+
+              {showThemeMusicSection && (
+                <section className="mt-1 space-y-2">
+                 {isOwner && <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
+                        <Music2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Theme music
+                        </p>
+                        {musicUrl && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Auto-plays when you open this page
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {isOwner && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={musicInputRef}
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={handleMusicChange}
+                        />
+                        {musicUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={handleRemoveMusic}
+                            disabled={musicBusy}
+                            aria-label="Remove track"
+                          >
+                            <Trash2 className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-[11px] rounded-full"
+                          onClick={() => musicInputRef.current?.click()}
+                          disabled={musicBusy}
+                        >
+                          {musicBusy
+                            ? "Working…"
+                            : musicUrl
+                              ? "Replace track"
+                              : "Upload track"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>}
+                  {musicUrl && (
+                    <div className={`${isOwner? "rounded-xl border border-white/10 bg-muted/40" : "absolute top-0 right-0"} px-3 py-2 flex flex-col gap-2`}>
+                      <div className={`flex ${isOwner? "" : "flex-row-reverse"} items-center justify-between gap-2`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-end gap-[3px] h-6 text-primary">
+                            <span
+                              className={`w-1.5 bg-primary/80 rounded-full h-3 ${
+                                musicPlaying ? "animate-pulse" : ""
+                              }`}
+                            />
+                            <span
+                              className={`w-1.5 bg-primary/70 rounded-full h-5 ${
+                                musicPlaying ? "animate-pulse delay-100" : ""
+                              }`}
+                            />
+                            <span
+                              className={`w-1.5 bg-primary/60 rounded-full h-4 ${
+                                musicPlaying ? "animate-pulse delay-200" : ""
+                              }`}
+                            />
+                            <span
+                              className={`w-1.5 bg-primary/70 rounded-full h-6 ${
+                                musicPlaying ? "animate-pulse delay-150" : ""
+                              }`}
+                            />
+                            <span
+                              className={`w-1.5 bg-primary/80 rounded-full h-4 ${
+                                musicPlaying ? "animate-pulse delay-75" : ""
+                              }`}
+                            />
+                          </div>
+                         {isOwner && <span className="text-[11px] text-muted-foreground">
+                            {musicPlaying ? "Now playing" : "Paused"}
+                          </span>}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              if (!audioRef.current) return;
+                              if (musicPlaying) {
+                                audioRef.current.pause();
+                                setMusicPlaying(false);
+                              } else {
+                                audioRef.current
+                                  .play()
+                                  .then(() => setMusicPlaying(true))
+                                  .catch(() => setMusicPlaying(false));
+                              }
+                            }}
+                            aria-label={musicPlaying ? "Pause" : "Play"}
+                          >
+                            {musicPlaying ? (
+                              <Pause className="w-3.5 h-3.5 text-primary" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 text-primary" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              if (!audioRef.current) return;
+                              audioRef.current.currentTime = 0;
+                              audioRef.current
+                                .play()
+                                .then(() => setMusicPlaying(true))
+                                .catch(() => setMusicPlaying(false));
+                            }}
+                            aria-label="Replay"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-primary" />
+                          </button>
+                        </div>
+                      </div>
+                      <audio
+                        ref={audioRef}
+                        src={musicUrl}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+                </section>
+              )}
             </div>
           </section>
 
-         
 
           {/* Why it matters — compact card */}
           <section className="rounded-xl border border-white/5 bg-card/40 p-4 2xl:mb-6 mb-4">
