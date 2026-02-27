@@ -191,7 +191,7 @@ export function FavoriteEditor({
   );
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
 
-  const [dropdownClosed, setDropdownClosed] = useState(false);
+  const [dropdownClosed, setDropdownClosed] = useState(!!initialFavorite);
   const [tmdbTvId, setTmdbTvId] = useState<number | null>(null);
   const [debouncedSearchTitle, setDebouncedSearchTitle] = useState("");
   const titleDropdownRef = useRef<HTMLDivElement>(null);
@@ -352,18 +352,22 @@ export function FavoriteEditor({
     selectedCategory === "series" ||
     selectedCategory === "anime";
 
-  // Debounce title for TMDb search; reopen dropdown only when user typed (not when title came from TMDb selection)
+  // Debounce title for TMDb search; reopen dropdown only when user typed (not when title came from TMDb selection or from edit load)
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearchTitle(formData.title.trim());
-      if (!skipDropdownOpenRef.current) {
-        setDropdownClosed(false);
+      const trimmed = formData.title.trim();
+      setDebouncedSearchTitle(trimmed);
+      const isInitialTitleFromEdit =
+        initialFavorite && trimmed === (initialFavorite.title ?? "").trim();
+      if (skipDropdownOpenRef.current || isInitialTitleFromEdit) {
+        if (skipDropdownOpenRef.current) skipDropdownOpenRef.current = false;
+        setDropdownClosed(true);
       } else {
-        skipDropdownOpenRef.current = false;
+        setDropdownClosed(false);
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [formData.title]);
+  }, [formData.title, initialFavorite]);
 
   // TMDb search (movies or TV) — via Next.js API proxy (API key server-side)
   const searchQuery = useQuery({
@@ -1036,7 +1040,7 @@ export function FavoriteEditor({
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(
+                  className={`shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(
                     1,
                   )}`}
                 >
@@ -1125,7 +1129,7 @@ export function FavoriteEditor({
                   ref={(el) => {
                     sectionRefs.current[2] = el;
                   }}
-                  className="elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl"
+                  className="shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl"
                 >
                   <div className="flex items-center gap-2 mb-4">
                     {step > 3 && (
@@ -1271,7 +1275,7 @@ export function FavoriteEditor({
                   }}
                   layout
                   transition={{ type: "spring", damping: 25 }}
-                  className={`elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(
+                  className={`shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(
                     hasEmotionalJourney ? 3 : 2,
                   )}`}
                 >
@@ -1436,7 +1440,7 @@ export function FavoriteEditor({
             {/* Right: Sticky preview */}
             <div className="lg:col-span-5">
               <div className="lg:sticky lg:top-4">
-                <div className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-sm overflow-hidden">
+                <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
                   <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
                     <p>Live preview</p>
                     <div className="flex items-center gap-2">
