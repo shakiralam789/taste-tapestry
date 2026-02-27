@@ -27,6 +27,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Volume2,
 } from "lucide-react";
 
 type FavoriteFields = Favorite["fields"] & {
@@ -39,7 +40,12 @@ type FavoriteFields = Favorite["fields"] & {
   seasonEpisodeCounts?: number[];
   emotionalCurve?: { x: number; y: number }[];
   emotionalSegments?: EmotionalSegment[];
-  momentPins?: { id: string; positionPercent: number; note: string; image?: string }[];
+  momentPins?: {
+    id: string;
+    positionPercent: number;
+    note: string;
+    image?: string;
+  }[];
   musicUrl?: string;
 };
 
@@ -67,8 +73,15 @@ export default function FavoriteShowPage() {
   const queryClient = useQueryClient();
   const [musicBusy, setMusicBusy] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
+  const [volume, setVolume] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    const stored = window.localStorage.getItem("favoriteThemeVolume");
+    const parsed = stored != null ? parseFloat(stored) : NaN;
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : 1;
+  });
   const musicInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const autoPlayRegisteredRef = useRef(false);
 
   const {
     data: favorite,
@@ -94,14 +107,52 @@ export default function FavoriteShowPage() {
   const isOwner = favorite ? authUser?.id === favorite.userId : false;
   const showThemeMusicSection = isOwner || !!musicUrl;
 
-  // Auto-play theme music when the page loads and musicUrl is present
+  // Best-effort auto-play:
+  // 1) try to play immediately when musicUrl changes
+  // 2) if blocked, fall back to first user interaction (pointerdown)
   useEffect(() => {
-    if (!musicUrl || !audioRef.current) return;
-    audioRef.current
-      .play()
-      .then(() => setMusicPlaying(true))
-      .catch(() => setMusicPlaying(false));
+    if (!musicUrl) return;
+    const el = audioRef.current;
+    if (!el) return;
+
+    const handleFirstInteraction = () => {
+      autoPlayRegisteredRef.current = true;
+      el.play()
+        .then(() => setMusicPlaying(true))
+        .catch(() => setMusicPlaying(false));
+      window.removeEventListener("pointerdown", handleFirstInteraction);
+    };
+
+    // Try to play immediately; if browser blocks, we rely on the interaction handler
+    el.play()
+      .then(() => {
+        autoPlayRegisteredRef.current = true;
+        setMusicPlaying(true);
+      })
+      .catch(() => {
+        // ignore, will try again on first interaction
+      });
+
+    if (!autoPlayRegisteredRef.current) {
+      window.addEventListener("pointerdown", handleFirstInteraction, {
+        once: true,
+      });
+    }
+
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstInteraction);
+    };
   }, [musicUrl]);
+
+  // Keep audio element volume in sync with UI state
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("favoriteThemeVolume", String(volume));
+    }
+  }, [volume]);
 
   if (isLoading || !favorite) {
     return <FullScreenLoader />;
@@ -119,9 +170,7 @@ export default function FavoriteShowPage() {
     );
   }
 
-  const handleMusicChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleMusicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -164,15 +213,17 @@ export default function FavoriteShowPage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-         {isOwner && <Button
-            variant="default"
-            size="sm"
-            className="rounded-full gap-1.5 shrink-0"
-            onClick={() => router.push(`/favorites/${id}/edit`)}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Edit
-          </Button>}
+          {isOwner && (
+            <Button
+              variant="default"
+              size="sm"
+              className="rounded-full gap-1.5 shrink-0"
+              onClick={() => router.push(`/favorites/${id}/edit`)}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </Button>
+          )}
         </header>
 
         <main className="max-w-4xl mx-auto px-4 py-6 pb-16">
@@ -233,95 +284,124 @@ export default function FavoriteShowPage() {
 
               {showThemeMusicSection && (
                 <section className="mt-1 space-y-2">
-                 {isOwner && <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
-                        <Music2 className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex flex-col">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Theme music
-                        </p>
-                        {musicUrl && (
-                          <p className="text-[11px] text-muted-foreground">
-                            Auto-plays when you open this page
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {isOwner && (
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={musicInputRef}
-                          type="file"
-                          accept="audio/*"
-                          className="hidden"
-                          onChange={handleMusicChange}
-                        />
-                        {musicUrl && (
+                  {
+                    <div className="flex items-center justify-between gap-2">
+                      {!isOwner && !musicUrl ? null : (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
+                            <Music2 className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Theme music
+                            </p>
+                            {musicUrl && (
+                              <p className="text-[11px] text-muted-foreground">
+                                Auto-plays when you open this page
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {isOwner && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={musicInputRef}
+                            type="file"
+                            accept="audio/*"
+                            className="hidden"
+                            onChange={handleMusicChange}
+                          />
+                          {musicUrl && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={handleRemoveMusic}
+                              disabled={musicBusy}
+                              aria-label="Remove track"
+                            >
+                              <Trash2 className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                          )}
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={handleRemoveMusic}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-[11px] rounded-full"
+                            onClick={() => musicInputRef.current?.click()}
                             disabled={musicBusy}
-                            aria-label="Remove track"
                           >
-                            <Trash2 className="w-4 h-4 text-muted-foreground" />
+                            {musicBusy
+                              ? "Working…"
+                              : musicUrl
+                                ? "Replace track"
+                                : "Upload track"}
                           </Button>
-                        )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-[11px] rounded-full"
-                          onClick={() => musicInputRef.current?.click()}
-                          disabled={musicBusy}
-                        >
-                          {musicBusy
-                            ? "Working…"
-                            : musicUrl
-                              ? "Replace track"
-                              : "Upload track"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>}
+                        </div>
+                      )}
+                    </div>
+                  }
                   {musicUrl && (
-                    <div className={`${isOwner? "rounded-xl border border-white/10 bg-muted/40" : "absolute top-0 right-0"} px-3 py-2 flex flex-col gap-2`}>
-                      <div className={`flex ${isOwner? "" : "flex-row-reverse"} items-center justify-between gap-2`}>
-                        <div className="flex items-center gap-2">
+                    <div
+                      className={` rounded-xl border border-white/10 bg-muted/40 px-3 py-2 flex flex-col gap-2`}
+                    >
+                      <div
+                        className={`flex items-center justify-between gap-2`}
+                      >
+                        <div className="flex items-center gap-3">
                           <div className="flex items-end gap-[3px] h-6 text-primary">
                             <span
-                              className={`w-1.5 bg-primary/80 rounded-full h-3 ${
-                                musicPlaying ? "animate-pulse" : ""
+                              className={`w-1.5 h-3 bg-primary/80 rounded-full ${
+                                musicPlaying ? "eq-bar" : ""
                               }`}
+                              style={{ animationDelay: "0s" }}
                             />
                             <span
-                              className={`w-1.5 bg-primary/70 rounded-full h-5 ${
-                                musicPlaying ? "animate-pulse delay-100" : ""
+                              className={`w-1.5 h-4 bg-primary/70 rounded-full ${
+                                musicPlaying ? "eq-bar" : ""
                               }`}
+                              style={{ animationDelay: "0.12s" }}
                             />
                             <span
-                              className={`w-1.5 bg-primary/60 rounded-full h-4 ${
-                                musicPlaying ? "animate-pulse delay-200" : ""
+                              className={`w-1.5 h-5 bg-primary/60 rounded-full ${
+                                musicPlaying ? "eq-bar" : ""
                               }`}
+                              style={{ animationDelay: "0.24s" }}
                             />
                             <span
-                              className={`w-1.5 bg-primary/70 rounded-full h-6 ${
-                                musicPlaying ? "animate-pulse delay-150" : ""
+                              className={`w-1.5 h-4 bg-primary/70 rounded-full ${
+                                musicPlaying ? "eq-bar" : ""
                               }`}
+                              style={{ animationDelay: "0.18s" }}
                             />
                             <span
-                              className={`w-1.5 bg-primary/80 rounded-full h-4 ${
-                                musicPlaying ? "animate-pulse delay-75" : ""
+                              className={`w-1.5 h-3 bg-primary/80 rounded-full ${
+                                musicPlaying ? "eq-bar" : ""
                               }`}
+                              style={{ animationDelay: "0.06s" }}
                             />
                           </div>
-                         {isOwner && <span className="text-[11px] text-muted-foreground">
-                            {musicPlaying ? "Now playing" : "Paused"}
-                          </span>}
+                          {isOwner && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {musicPlaying ? "Now playing" : "Paused"}
+                            </span>
+                          )}
+                          <div className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Volume2 className="w-3 h-3 text-primary" />
+                            <input
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              value={volume}
+                              onChange={(e) =>
+                                setVolume(parseFloat(e.target.value) || 0)
+                              }
+                              className="h-1 w-20 accent-primary"
+                            />
+                          </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <button
@@ -364,18 +444,13 @@ export default function FavoriteShowPage() {
                           </button>
                         </div>
                       </div>
-                      <audio
-                        ref={audioRef}
-                        src={musicUrl}
-                        className="hidden"
-                      />
+                      <audio ref={audioRef} src={musicUrl} className="hidden" />
                     </div>
                   )}
                 </section>
               )}
             </div>
           </section>
-
 
           {/* Why it matters — compact card */}
           <section className="rounded-xl border border-white/5 bg-card/40 p-4 2xl:mb-6 mb-4">
@@ -441,14 +516,21 @@ export default function FavoriteShowPage() {
                   Array.isArray(fields.emotionalCurve)
                     ? fields.emotionalCurve.map(
                         (p, i): { id: string; x: number; y: number } =>
-                          "id" in p && typeof (p as { id?: string }).id === "string"
+                          "id" in p &&
+                          typeof (p as { id?: string }).id === "string"
                             ? (p as { id: string; x: number; y: number })
                             : { id: `curve-${i}`, x: p.x, y: p.y },
                       )
                     : []
                 }
-                emotionalSegments={Array.isArray(fields.emotionalSegments) ? fields.emotionalSegments : []}
-                momentPins={Array.isArray(fields.momentPins) ? fields.momentPins : []}
+                emotionalSegments={
+                  Array.isArray(fields.emotionalSegments)
+                    ? fields.emotionalSegments
+                    : []
+                }
+                momentPins={
+                  Array.isArray(fields.momentPins) ? fields.momentPins : []
+                }
                 className="mt-1"
               />
             </section>
