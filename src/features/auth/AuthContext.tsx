@@ -116,6 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {
+    // During Next.js prerender/export, some legacy pages may be rendered
+    // outside of the AuthProvider. In that case, return a safe fallback
+    // instead of crashing the build; on the client we still enforce usage.
+    if (typeof window === "undefined") {
+      return {
+        user: null,
+        loading: true,
+        loginWithEmail: async () => {},
+        registerWithEmail: async () => {},
+        logout: async () => {},
+      };
+    }
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return ctx;

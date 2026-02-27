@@ -66,6 +66,15 @@ const talentOptions = [
 ];
 
 export default function ProfilePage() {
+  // During Next.js static export/prerender this legacy page can be rendered
+  // outside of the React Query provider. Avoid running React Query hooks on the server.
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return <ProfilePageInner />;
+}
+
+function ProfilePageInner() {
   const { user: authUser } = useAuth();
   const { user: wishbookUser, timeCapsules, categories } = useWishbook();
   const queryClient = useQueryClient();

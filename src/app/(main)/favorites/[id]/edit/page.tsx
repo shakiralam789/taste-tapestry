@@ -21,7 +21,8 @@ export default function EditFavoritePage() {
     isError,
   } = useQuery({
     queryKey: ["favorite", id],
-    queryFn: async (): Promise<Favorite> => getFavorite(id),
+    queryFn: async (): Promise<Favorite> =>
+      getFavorite(typeof id === "string" ? id : ""),
     enabled: typeof id === "string",
   });
 

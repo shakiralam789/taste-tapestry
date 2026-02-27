@@ -11,6 +11,12 @@ import {
 } from "@/components/favorites/FavoriteEditor";
 
 export default function AddFavoritePage() {
+  // During Next.js static export/prerender this legacy page can be rendered
+  // outside of the React Query provider. Avoid rendering the editor on the server.
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const router = useRouter();
 
   const handleSubmit = async (payload: FavoriteEditorPayload) => {

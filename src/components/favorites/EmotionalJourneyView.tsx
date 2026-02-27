@@ -486,46 +486,7 @@ export function EmotionalJourneyView({
                       </p>
                     </li>
                   ));
-                })()
-              : isNewFormat
-                ? pointsWithNotes.map((p) => (
-              <li
-                key={s.id}
-                className="flex items-center gap-3 rounded-xl border border-white/5 bg-card/40 px-3 py-2 text-sm hover:border-primary/50 hover:bg-card/70 transition-colors"
-              >
-                <div className="flex flex-col items-start gap-1 w-28 flex-shrink-0">
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                    {formatAxisTime(s.startSeconds)} –{" "}
-                    {formatAxisTime(s.endSeconds)}
-                  </span>
-                  {s.emotionColor && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: getEmotionFill(s.emotionColor) }}
-                      />
-                      {s.emotionColor}
-                    </span>
-                  )}
-                </div>
-                {(s.image || s.video) && (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
-                    {s.image ? (
-                      <img
-                        src={s.image}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Video className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                )}
-                <p className="text-xs md:text-sm text-muted-foreground line-clamp-3 flex-1 min-w-0">
-                  {s.note || "—"}
-                </p>
-              </li>
-            ))
+            })()
           : isNewFormat
             ? pointsWithNotes.map((p) => (
                 <li

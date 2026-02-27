@@ -15,10 +15,11 @@ export function Layout({ children, className }: LayoutProps) {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
   const isProfilePage = pathname === '/profile';
+  const isClient = typeof window !== 'undefined';
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row font-body selection:bg-primary/20 selection:text-primary">
-      <Sidebar />
+      {isClient && <Sidebar />}
 
       <main
         className={cn(
