@@ -19,16 +19,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader as UiDialogHeader,
+  DialogTitle as UiDialogTitle,
+} from "@/components/ui/dialog";
+import {
   getAlbum,
   getAlbumItemCounts,
   getAlbumItems,
   updateAlbum,
+  deleteAlbum,
 } from "@/features/albums/api";
 import { ArrowLeft, Edit3, Film, Music, BookOpen, Tv, Trash2 } from "lucide-react";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
 import type { Favorite } from "@/types/wishbook";
+import { AlbumForm, type AlbumFormValues } from "@/components/albums/AlbumForm";
 
 const DEFAULT_ALBUM_IMAGE = "/images/default-cover-image.jpg";
 const DEFAULT_ALBUM_IMAGE_DARK = "/images/default-cover-image-dark.jpg";
@@ -49,6 +57,8 @@ export default function AlbumShowPage() {
   const { user: authUser } = useAuth();
   const [activeTab, setActiveTab] = useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const [favoriteToRemove, setFavoriteToRemove] = useState<Favorite | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const {
     data: album,
@@ -111,12 +121,20 @@ export default function AlbumShowPage() {
     },
   });
 
-  useEffect(() => {
-    if (!visibleTabs.length) return;
-    if (!visibleTabs.some((tab) => tab.value === activeTab)) {
-      setActiveTab(visibleTabs[0].value);
-    }
-  }, [visibleTabs, activeTab]);
+  const deleteAlbumMutation = useMutation({
+    mutationFn: async () => {
+      if (!album) throw new Error("Album not loaded");
+      await deleteAlbum(album.id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Album deleted");
+      router.push("/albums");
+    },
+    onError: () => {
+      toast.error("Could not delete album");
+    },
+  });
 
   if (albumLoading || !album || !counts) {
     return <FullScreenLoader />;
@@ -147,18 +165,28 @@ export default function AlbumShowPage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="flex items-center gap-2 ml-auto">
-            <Link href={`/albums/${album.id}/edit`}>
+          {authUser && authUser.id === album.userId && (
+            <div className="flex items-center gap-2 ml-auto">
               <Button
                 variant="outline"
                 size="icon"
                 className="rounded-full"
                 aria-label="Edit album"
+                onClick={() => setEditOpen(true)}
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
-            </Link>
-          </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
+                aria-label="Delete album"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </header>
 
         <main className="max-w-5xl mx-auto px-4 py-6 pb-16">
@@ -343,6 +371,94 @@ export default function AlbumShowPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this album?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <span className="font-medium">{album.name}</span> and remove it
+              from your albums list. Your favorites will remain in your
+              collection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-3 rounded-xl border border-white/10 bg-card/40 p-3 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+              <img
+                src={album.coverImage || DEFAULT_ALBUM_IMAGE}
+                alt={album.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{album.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {counts.all} {counts.all === 1 ? "item" : "items"}
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteAlbumMutation.isPending}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteAlbumMutation.isPending}
+              onClick={async () => {
+                await deleteAlbumMutation.mutateAsync();
+              }}
+            >
+              {deleteAlbumMutation.isPending ? "Deleting..." : "Delete album"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <UiDialogHeader className="sr-only">
+            <UiDialogTitle>Edit album</UiDialogTitle>
+          </UiDialogHeader>
+          <AlbumForm
+            mode="edit"
+            initialValues={{
+              name: album.name,
+              description: album.description ?? "",
+              coverImage: album.coverImage ?? "",
+            }}
+            submitting={false}
+            onSubmit={async (values: AlbumFormValues) => {
+              try {
+                await updateAlbum(album.id, values);
+                void queryClient.invalidateQueries({ queryKey: ["album", id] });
+                toast.success("Album updated", {
+                  description: "Your changes have been saved.",
+                });
+                setEditOpen(false);
+              } catch {
+                toast.error("Could not update album");
+              }
+            }}
+            onCancel={() => setEditOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

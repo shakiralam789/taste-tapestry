@@ -2,14 +2,48 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { AlbumCard } from "@/components/albums/AlbumCard";
-import { Images, Plus, Sparkles } from "lucide-react";
-import { getAlbums } from "@/features/albums/api";
+import { Images, Plus, Sparkles, Trash2, Edit3, MoreHorizontal } from "lucide-react";
+import {
+  createAlbum,
+  deleteAlbum,
+  getAlbums,
+  updateAlbum,
+} from "@/features/albums/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/features/auth/AuthContext";
+import type { Album } from "@/types/wishbook";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlbumForm, type AlbumFormValues } from "@/components/albums/AlbumForm";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function AlbumsPage() {
+  const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
+  const [albumToDelete, setAlbumToDelete] = useState<Album | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [albumToEdit, setAlbumToEdit] = useState<Album | null>(null);
+
   const {
     data: albums = [],
     isLoading: albumsLoading,
@@ -19,7 +53,48 @@ export default function AlbumsPage() {
     queryFn: getAlbums,
   });
 
+  const createAlbumMutation = useMutation({
+    mutationFn: createAlbum,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Album created");
+      setCreateOpen(false);
+    },
+    onError: () => {
+      toast.error("Could not create album");
+    },
+  });
+
+  const deleteAlbumMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteAlbum(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Album deleted");
+      setAlbumToDelete(null);
+    },
+    onError: () => {
+      toast.error("Could not delete album");
+    },
+  });
+
   const staggerDelay = 0.08;
+
+  const updateAlbumMutation = useMutation({
+    mutationFn: async (payload: { id: string; values: AlbumFormValues }) => {
+      await updateAlbum(payload.id, payload.values);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Album updated");
+      setEditOpen(false);
+      setAlbumToEdit(null);
+    },
+    onError: () => {
+      toast.error("Could not update album");
+    },
+  });
 
   return (
     <Layout>
@@ -53,12 +128,15 @@ export default function AlbumsPage() {
             transition={{ delay: 0.08 }}
             className="flex justify-center mb-10"
           >
-            <Link href="/create-album">
-              <Button variant="gradient" size="lg" className="rounded-full">
-                <Plus className="w-5 h-5" />
-                Create New Album
-              </Button>
-            </Link>
+            <Button
+              variant="gradient"
+              size="lg"
+              className="rounded-full"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="w-5 h-5" />
+              Create New Album
+            </Button>
           </motion.div>
 
           {/* Albums Grid / Empty State */}
@@ -78,10 +156,57 @@ export default function AlbumsPage() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * staggerDelay, duration: 0.25 }}
+                  className="relative group"
                 >
-                  <Link href={`/albums/${album.id}`} className="block">
+                  <Link href={`/albums/${album.id}`} className="block h-full">
                     <AlbumCard album={album} />
                   </Link>
+                  {authUser && authUser.id === album.userId && (
+                    <div className="absolute top-3 right-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center rounded-full bg-background/90 border border-white/20 p-1 text-[11px] text-muted-foreground hover:text-primary hover:border-primary/60 backdrop-blur-sm shadow-sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            aria-label="Album actions"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-32 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenuItem
+                            className="flex items-center gap-2"
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              setAlbumToEdit(album);
+                              setEditOpen(true);
+                            }}
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 hover:text-white text-destructive"
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              setAlbumToDelete(album);
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </motion.div>
               ))}
 
@@ -94,19 +219,21 @@ export default function AlbumsPage() {
                   duration: 0.25,
                 }}
               >
-                <Link href="/create-album">
-                  <div className="group h-full rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 bg-card/30 flex flex-col items-center justify-center gap-4 px-6 py-8 cursor-pointer transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Plus className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-semibold">Start a new album</p>
-                      <p className="text-sm text-muted-foreground">
-                        Combine any favorites into a themed collection.
-                      </p>
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="group h-full w-full rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 bg-card/30 flex flex-col items-center justify-center gap-4 px-6 py-8 cursor-pointer transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Plus className="w-6 h-6 text-primary" />
                   </div>
-                </Link>
+                  <div className="text-center">
+                    <p className="font-semibold">Start a new album</p>
+                    <p className="text-sm text-muted-foreground">
+                      Combine any favorites into a themed collection.
+                    </p>
+                  </div>
+                </button>
               </motion.div>
             </div>
           ) : (
@@ -126,16 +253,122 @@ export default function AlbumsPage() {
                 Create your first album to bundle your comfort movies, favorite
                 series, healing songs, and unforgettable books in one place.
               </p>
-              <Link href="/create-album">
-                <Button variant="gradient" className="rounded-full">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Create an album
-                </Button>
-              </Link>
+              <Button
+                variant="gradient"
+                className="rounded-full"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Create an album
+              </Button>
             </motion.div>
           )}
         </div>
       </div>
+
+      <AlertDialog
+        open={!!albumToDelete}
+        onOpenChange={(open) => {
+          if (!open) setAlbumToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this album?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the album from your list but{" "}
+              <span className="font-medium">won&apos;t delete</span> any of the
+              favorites inside.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {albumToDelete && (
+            <div className="mt-3 rounded-xl border border-white/10 bg-card/40 p-3 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {albumToDelete.name}
+                </p>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel
+              onClick={() => setAlbumToDelete(null)}
+              disabled={deleteAlbumMutation.isPending}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteAlbumMutation.isPending || !albumToDelete}
+              onClick={async () => {
+                if (!albumToDelete) return;
+                await deleteAlbumMutation.mutateAsync(albumToDelete.id);
+              }}
+            >
+              {deleteAlbumMutation.isPending ? "Deleting..." : "Delete album"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          if (createAlbumMutation.isPending) return;
+          setCreateOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Create album</DialogTitle>
+          </DialogHeader>
+          <AlbumForm
+            mode="create"
+            submitting={createAlbumMutation.isPending}
+            onSubmit={async (values) => {
+              await createAlbumMutation.mutateAsync({
+                ...values,
+                favoriteIds: [],
+              });
+            }}
+            onCancel={() => setCreateOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          if (updateAlbumMutation.isPending) return;
+          setEditOpen(open);
+          if (!open) setAlbumToEdit(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Edit album</DialogTitle>
+          </DialogHeader>
+          {albumToEdit && (
+            <AlbumForm
+              mode="edit"
+              initialValues={{
+                name: albumToEdit.name,
+                description: albumToEdit.description ?? "",
+                coverImage: albumToEdit.coverImage ?? "",
+              }}
+              submitting={updateAlbumMutation.isPending}
+              onSubmit={async (values) => {
+                await updateAlbumMutation.mutateAsync({
+                  id: albumToEdit.id,
+                  values,
+                });
+              }}
+              onCancel={() => setEditOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
