@@ -41,7 +41,7 @@ export function ProfilePostCard({
               {favorite.categoryId}
             </span>
             {favorite.rating != null && (
-              <span className="flex items-center gap-1 text-[11px] text-yellow-500 font-semibold">
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 text-[11px] text-yellow-500 font-semibold">
                 <Star className="w-3 h-3 fill-yellow-500" />
                 {favorite.rating}
               </span>

@@ -164,6 +164,18 @@ export interface TimeCapsule {
   createdAt: Date;
 }
 
+// Album Types
+export interface Album {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  coverImage?: string;
+  /** IDs of favorites (movies, series, songs, books, etc.) that belong to this album */
+  favoriteIds: string[];
+  createdAt: Date;
+}
+
 // Taste Matching Types
 export interface TasteMatch {
   userId: string;

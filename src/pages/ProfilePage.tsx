@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,7 +26,9 @@ import {
 import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
+import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
 import { getFavorites } from "@/features/favorites/api";
+import { getAlbums, updateAlbum } from "@/features/albums/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
   MapPin,
@@ -45,6 +47,7 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  Images,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -100,6 +103,9 @@ function ProfilePageInner() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
+  const [albumPickerFavorite, setAlbumPickerFavorite] =
+    useState<Favorite | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
@@ -114,6 +120,14 @@ function ProfilePageInner() {
         selectedCategoryFilter === "all" ? undefined : selectedCategoryFilter;
       return getFavorites(categoryId);
     },
+  });
+
+  const {
+    data: albums = [],
+    isLoading: albumsLoading,
+  } = useQuery({
+    queryKey: ["albums"],
+    queryFn: getAlbums,
   });
 
   const displayName =
@@ -134,6 +148,24 @@ function ProfilePageInner() {
   const displaySinceYear = profile?.createdAt
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
+
+  const addToAlbumMutation = useMutation({
+    mutationFn: async (args: { albumId: string; favoriteId: string }) => {
+      const currentAlbum = albums.find((a) => a.id === args.albumId);
+      if (!currentAlbum) throw new Error("Album not found");
+      const currentIds = currentAlbum.favoriteIds ?? [];
+      if (currentIds.includes(args.favoriteId)) return currentAlbum;
+      const nextIds = [...currentIds, args.favoriteId];
+      return updateAlbum(args.albumId, { favoriteIds: nextIds });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Added to album");
+    },
+    onError: () => {
+      toast.error("Could not add to album");
+    },
+  });
 
   useEffect(() => {
     setCookie("profileCollectionView", viewMode, {
@@ -478,6 +510,17 @@ function ProfilePageInner() {
                             <List className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                        <Link href="/albums">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
+                          >
+                            <Images className="w-3.5 h-3.5" />
+                            Albums
+                          </Button>
+                        </Link>
                         <Link href="/add-favorite">
                           <Button
                             variant="outline"
@@ -541,30 +584,33 @@ function ProfilePageInner() {
                           />
                         ))
                       : favorites.map((favorite) => (
-                          <Link
+                          <div
                             key={favorite.id}
-                            href={`/favorites/${favorite.id}`}
-                            className={viewMode === "list" ? "w-full" : ""}
+                            className={`relative ${
+                              viewMode === "list" ? "w-full" : ""
+                            }`}
                           >
-                            <ProfilePostCard
-                              favorite={favorite}
-                              variant={viewMode}
-                            />
-                          </Link>
+                            <Link href={`/favorites/${favorite.id}`}>
+                              <ProfilePostCard
+                                favorite={favorite}
+                                variant={viewMode}
+                              />
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setAlbumPickerFavorite(favorite);
+                                setAlbumPickerOpen(true);
+                              }}
+                              className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-background/80 border border-white/10 px-2 py-1 text-[11px] text-muted-foreground hover:text-primary hover:border-primary/60 backdrop-blur-sm"
+                            >
+                              <Images className="w-3 h-3 mr-1" />
+                              Add to album
+                            </button>
+                          </div>
                         ))}
-                    {/* <Link href="/add-favorite">
-                      <motion.div
-                        variants={itemVariants}
-                        className={`${viewMode === "grid" ? "aspect-[4/5]" : "w-full"} py-4 rounded-2xl border-2 border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center gap-4 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group`}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Plus className="w-6 h-6" />
-                        </div>
-                        <span className="font-medium text-sm">
-                          Add to collection
-                        </span>
-                      </motion.div>
-                    </Link> */}
                   </motion.div>
                 </TabsContent>
 
@@ -862,6 +908,61 @@ function ProfilePageInner() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={albumPickerOpen}
+        onOpenChange={(open) => {
+          setAlbumPickerOpen(open);
+          if (!open) setAlbumPickerFavorite(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Add to album</DialogTitle>
+          </DialogHeader>
+          {albumsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading albums...</p>
+          ) : albums.length === 0 ? (
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>You don&apos;t have any albums yet.</p>
+              <Link href="/create-album">
+                <Button size="sm" className="rounded-full">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Create album
+                </Button>
+              </Link>
+            </div>
+          ) : !albumPickerFavorite ? (
+            <p className="text-sm text-muted-foreground">
+              Select a favorite to add to an album.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Choose an album for{" "}
+                <span className="font-medium">
+                  {albumPickerFavorite.title}
+                </span>
+              </p>
+              <AddToAlbumDropdown
+                albums={albums}
+                favoriteId={albumPickerFavorite.id}
+                onSelect={async (albumId) => {
+                  await addToAlbumMutation.mutateAsync({
+                    albumId,
+                    favoriteId: albumPickerFavorite.id,
+                  });
+                  setAlbumPickerOpen(false);
+                  setAlbumPickerFavorite(null);
+                }}
+                disabled={addToAlbumMutation.isPending}
+                loading={albumsLoading}
+                placeholder="Search albums..."
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

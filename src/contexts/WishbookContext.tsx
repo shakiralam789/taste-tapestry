@@ -1,14 +1,21 @@
 "use client";
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, Category, Favorite, TimeCapsule, Mood, TasteMatch } from '@/types/wishbook';
-import { 
-  currentUser as initialUser, 
-  defaultCategories, 
-  sampleFavorites, 
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import {
+  User,
+  Category,
+  Favorite,
+  TimeCapsule,
+  Mood,
+  TasteMatch,
+} from "@/types/wishbook";
+import {
+  currentUser as initialUser,
+  defaultCategories,
+  sampleFavorites,
   sampleTimeCapsules,
   sampleTasteMatches,
-  sampleUsers
-} from '@/data/mockData';
+  sampleUsers,
+} from "@/data/mockData";
 
 interface WishbookContextType {
   user: User;
@@ -54,7 +61,8 @@ export function WishbookProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(initialUser);
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [favorites, setFavorites] = useState<Favorite[]>(sampleFavorites);
-  const [timeCapsules, setTimeCapsules] = useState<TimeCapsule[]>(sampleTimeCapsules);
+  const [timeCapsules, setTimeCapsules] =
+    useState<TimeCapsule[]>(sampleTimeCapsules);
   const [tasteMatches] = useState<TasteMatch[]>(sampleTasteMatches);
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [allUsers] = useState<User[]>([initialUser, ...sampleUsers]);
@@ -72,7 +80,7 @@ export function WishbookProvider({ children }: { children: ReactNode }) {
   };
 
   const addTimeCapsule = (capsule: TimeCapsule) => {
-    setTimeCapsules(prev => [...prev, capsule]);
+    setTimeCapsules((prev) => [...prev, capsule]);
   };
 
   const getFavoritesByMood = (mood: Mood) => {

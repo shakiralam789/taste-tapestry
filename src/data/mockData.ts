@@ -1,4 +1,13 @@
-import { User, Category, Favorite, TimeCapsule, MoodOption, Interest, TasteMatch } from '@/types/wishbook';
+import {
+  User,
+  Category,
+  Favorite,
+  TimeCapsule,
+  Album,
+  MoodOption,
+  Interest,
+  TasteMatch,
+} from "@/types/wishbook";
 
 export const currentUser: User = {
   id: '1',
@@ -202,6 +211,31 @@ export const sampleTimeCapsules: TimeCapsule[] = [
     emotions: ['adventurous', 'free', 'peaceful'],
     story: 'Quit my job and spent three months exploring Asia. Best decision ever.',
     createdAt: new Date('2023-09-01'),
+  },
+];
+
+export const sampleAlbums: Album[] = [
+  {
+    id: "a1",
+    userId: "1",
+    name: "Comfort Movies & Songs",
+    description:
+      "My go-to collection for cozy nights when I need emotional comfort and nostalgia.",
+    coverImage:
+      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?w=600&h=400&fit=crop",
+    favoriteIds: ["1", "2"],
+    createdAt: new Date("2024-01-20"),
+  },
+  {
+    id: "a2",
+    userId: "1",
+    name: "Quiet Reading Vibes",
+    description:
+      "Books and songs that make me want to curl up with a blanket and a warm drink.",
+    coverImage:
+      "https://images.unsplash.com/photo-1513475382585-d06e58bcb0ea?w=600&h=400&fit=crop",
+    favoriteIds: ["2", "3"],
+    createdAt: new Date("2024-02-10"),
   },
 ];
 

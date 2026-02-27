@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -42,6 +36,7 @@ import { Slider } from "@/components/ui/slider";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
 import type { Favorite, Mood, EmotionalSegment } from "@/types/wishbook";
 import { getEmotionFill } from "@/data/emotionColors";
+import { CoverImageField } from "@/components/ui/cover-image-field";
 
 export type FavoriteEditorPayload = Omit<
   Favorite,
@@ -210,7 +205,7 @@ export function FavoriteEditor({
   useEffect(() => {
     if (!initialFavorite) return;
     if (!isSeriesOrAnime) return;
-    const fields = initialFavorite.fields as any;
+    const fields = initialFavorite.fields as Record<string, unknown>;
 
     if (Array.isArray(fields?.seasonEpisodeCounts)) {
       setSeasonEpisodeCounts(fields.seasonEpisodeCounts);
@@ -345,7 +340,6 @@ export function FavoriteEditor({
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const isInitialMount = useRef(true);
-  const coverImageInputRef = useRef<HTMLInputElement>(null);
 
   const tmdbEnabled =
     selectedCategory === "movies" ||
@@ -595,21 +589,6 @@ export function FavoriteEditor({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleCoverImageFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !file.type.startsWith("image/")) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        setFormData((prev) => ({ ...prev, image: dataUrl }));
-      };
-      reader.readAsDataURL(file);
-      e.target.value = "";
-    },
-    [],
-  );
-
   const goNext = () => setStep((s) => Math.min(totalSteps, s + 1));
   const goBack = () => setStep((s) => Math.max(1, s - 1));
 
@@ -779,94 +758,13 @@ export function FavoriteEditor({
                     </div>
                     <div>
                       <Label className="mb-2 block">Cover Image</Label>
-                      <div className="border-2 border-dashed border-border rounded-xl p-6 hover:border-primary/50 transition-colors flex flex-wrap justify-center gap-6">
-                        <div className="text-center space-y-3">
-                          <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Upload a file or paste an image URL
-                          </p>
-                          <div className="flex flex-wrap items-center justify-center gap-2">
-                            <input
-                              ref={coverImageInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleCoverImageFile}
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() =>
-                                coverImageInputRef.current?.click()
-                              }
-                              className="gap-1.5"
-                            >
-                              <Upload className="w-4 h-4" />
-                              Upload
-                            </Button>
-                            <span className="text-muted-foreground text-sm">
-                              or
-                            </span>
-                            <Input
-                              placeholder="Paste image URL"
-                              value={
-                                formData.image.startsWith("data:")
-                                  ? ""
-                                  : formData.image
-                              }
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  image: e.target.value.trim(),
-                                }))
-                              }
-                              className="w-64 bg-transparent"
-                            />
-                          </div>
-                          {formData.image.startsWith("data:") && (
-                            <p className="text-xs text-muted-foreground">
-                              Image set from upload
-                            </p>
-                          )}
-                        </div>
-                        {formData.image ? (
-                          <div className="w-fit relative flex-shrink-0">
-                            <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex items-center justify-center">
-                              <img
-                                src={formData.image}
-                                alt="Cover preview"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    DEFAULT_IMAGE;
-                                }}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  image: "",
-                                }));
-                                if (coverImageInputRef.current)
-                                  coverImageInputRef.current.value = "";
-                              }}
-                              className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground p-1 shadow-md hover:bg-destructive/90 transition-colors focus:outline-none focus:ring-2 focus:ring-destructive"
-                              title="Remove image"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex flex-col items-center justify-center">
-                            <FilmIcon className="w-5 h-5 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground mt-4">
-                              Preview
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      <CoverImageField
+                        image={formData.image}
+                        onImageChange={(value) =>
+                          setFormData((prev) => ({ ...prev, image: value }))
+                        }
+                        fallbackImageUrl={DEFAULT_IMAGE}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
