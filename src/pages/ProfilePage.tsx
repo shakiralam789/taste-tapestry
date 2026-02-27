@@ -52,6 +52,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { toast } from "sonner";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 
 const categoryLabels: Record<InterestCategory, string> = {
   creative: "Creative pursuits",
@@ -72,8 +73,6 @@ const talentOptions = [
 ];
 
 export default function ProfilePage() {
-  // During Next.js static export/prerender this legacy page can be rendered
-  // outside of the React Query provider. Avoid running React Query hooks on the server.
   if (typeof window === "undefined") {
     return null;
   }
@@ -82,7 +81,7 @@ export default function ProfilePage() {
 
 function ProfilePageInner() {
   const { user: authUser } = useAuth();
-  const { user: wishbookUser, timeCapsules, categories } = useWishbook();
+  const { user: wishbookUser, timeCapsules } = useWishbook();
   const queryClient = useQueryClient();
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
     string | "all"
@@ -122,10 +121,7 @@ function ProfilePageInner() {
     },
   });
 
-  const {
-    data: albums = [],
-    isLoading: albumsLoading,
-  } = useQuery({
+  const { data: albums = [], isLoading: albumsLoading } = useQuery({
     queryKey: ["albums"],
     queryFn: getAlbums,
   });
@@ -143,8 +139,7 @@ function ProfilePageInner() {
     profile?.bio?.trim() ||
     "" ||
     "Digital explorer navigating the neon tides. Curator of moments and memories.";
-  const displayLocation =
-    profile?.location?.trim() || "" || "Neo Tokyo";
+  const displayLocation = profile?.location?.trim() || "" || "Neo Tokyo";
   const displaySinceYear = profile?.createdAt
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
@@ -484,38 +479,12 @@ function ProfilePageInner() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-1.5 py-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setViewMode("grid")}
-                            className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                              viewMode === "grid"
-                                ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-white/5"
-                            }`}
-                            aria-label="Grid view"
-                          >
-                            <LayoutGrid className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setViewMode("list")}
-                            className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                              viewMode === "list"
-                                ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-white/5"
-                            }`}
-                            aria-label="List view"
-                          >
-                            <List className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
                         <Link href="/albums">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
+                            className="border rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
                           >
                             <Images className="w-3.5 h-3.5" />
                             Albums
@@ -533,37 +502,74 @@ function ProfilePageInner() {
                         </Link>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={
-                          selectedCategoryFilter === "all"
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => setSelectedCategoryFilter("all")}
-                        className="rounded-full"
-                      >
-                        All
-                      </Button>
-                      {categories.map((cat) => (
-                        <Button
-                          key={cat.id}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-wrap gap-2">
+                        {/* <Button
                           type="button"
                           size="sm"
                           variant={
-                            selectedCategoryFilter === cat.id
+                            selectedCategoryFilter === "all"
                               ? "default"
                               : "outline"
                           }
-                          onClick={() => setSelectedCategoryFilter(cat.id)}
-                          className="rounded-full gap-1"
+                          onClick={() => setSelectedCategoryFilter("all")}
+                          className="rounded-full"
                         >
-                          <span aria-hidden>{cat.icon}</span>
-                          {cat.name}
-                        </Button>
-                      ))}
+                          All
+                        </Button> */}
+                        {CATEGORY_TABS.map((cat) => {
+
+                          const Icon = "icon" in cat ? cat.icon : undefined;
+
+                          return (
+                            <Button
+                              key={cat.value}
+                              type="button"
+                              size="sm"
+                              variant={
+                                selectedCategoryFilter === cat.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setSelectedCategoryFilter(cat.value)
+                              }
+                              className={`rounded-full ${cat.value === "all" ? "gap-0" : "gap-2"}`}
+                            >
+                              <span aria-hidden>
+                                {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
+                              </span>
+                              {cat.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setViewMode("grid")}
+                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                            viewMode === "grid"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-white/5"
+                          }`}
+                          aria-label="Grid view"
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewMode("list")}
+                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                            viewMode === "list"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-white/5"
+                          }`}
+                          aria-label="List view"
+                        >
+                          <List className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <motion.div
@@ -918,7 +924,7 @@ function ProfilePageInner() {
           if (!open) setAlbumPickerFavorite(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md overflow-visible">
           <DialogHeader>
             <DialogTitle className="text-base">Add to album</DialogTitle>
           </DialogHeader>
@@ -942,9 +948,7 @@ function ProfilePageInner() {
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
                 Choose an album for{" "}
-                <span className="font-medium">
-                  {albumPickerFavorite.title}
-                </span>
+                <span className="font-medium">{albumPickerFavorite.title}</span>
               </p>
               <AddToAlbumDropdown
                 albums={albums}

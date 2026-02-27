@@ -1,17 +1,17 @@
 "use client";
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { FavoriteCard } from "@/components/favorites/FavoriteCard";
 import { CategoryChip } from "@/components/categories/CategoryChip";
 import { useWishbook } from "@/contexts/WishbookContext";
 import { Button } from "@/components/ui/button";
-import { PenSquare } from "lucide-react";
 import Link from "next/link";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 
 export default function HomePage() {
-  const { favorites, categories } = useWishbook();
+  const { favorites } = useWishbook();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [feedType, setFeedType] = useState<"foryou" | "following">("foryou");
 
   const filteredFavorites = selectedCategory
     ? favorites.filter((f) => f.categoryId === selectedCategory)
@@ -22,50 +22,26 @@ export default function HomePage() {
       <div className="min-h-screen">
         {/* Header / Tabs */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-black/10 dark:border-white/5 px-4 mb-4 md:mx-0">
-          {/* <div className="flex items-center justify-center pb-3 pt-3">
-            <div className="flex gap-6">
-              <button
-                onClick={() => setFeedType("foryou")}
-                className={`text-sm font-bold relative pb-2 transition-colors ${feedType === "foryou" ? "text-foreground" : "text-muted-foreground"}`}
-              >
-                For You
-                {feedType === "foryou" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />
-                )}
-              </button>
-              <button
-                onClick={() => setFeedType("following")}
-                className={`text-sm font-bold relative pb-2 transition-colors ${feedType === "following" ? "text-foreground" : "text-muted-foreground"}`}
-              >
-                Following
-                {feedType === "following" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full" />
-                )}
-              </button>
-            </div>
-          </div> */}
-
           {/* Categories Filter */}
           <div className="flex justify-center items-center gap-1.5 md:gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 py-3">
-            <CategoryChip
-              category={{
-                id: "all",
-                name: "All",
-                icon: "✨",
-                color: "primary",
-                isDefault: true,
-              }}
-              isSelected={selectedCategory === null}
-              onClick={() => setSelectedCategory(null)}
-            />
-            {categories.map((category) => (
+           
+            {CATEGORY_TABS.map((category) => {
+              const Icon = "icon" in category ? category.icon : undefined;
+              return (
               <CategoryChip
-                key={category.id}
-                category={category}
-                isSelected={selectedCategory === category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                key={category.value}
+                category={{
+                  id: category.value,
+                  name: category.label,
+                  icon: Icon ? <Icon className="w-4 h-4" /> : "✨",
+                  color: "primary",
+                  isDefault: true,
+                }}
+                isSelected={selectedCategory === category.value}
+                onClick={() => setSelectedCategory(category.value)}
               />
-            ))}
+            );
+          })}
           </div>
         </header>
         <div className="max-w-2xl mx-auto md:px-4">

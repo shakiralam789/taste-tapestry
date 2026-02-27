@@ -18,25 +18,22 @@ import {
   Upload,
   Star,
   Sparkles,
-  Clock,
   Tag,
   X,
   Plus,
   Check,
   Film,
   Heart,
-  TrendingUp,
   Palette,
-  FilmIcon,
   AlertCircle,
   ChevronRight,
-  Loader2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
 import type { Favorite, Mood, EmotionalSegment } from "@/types/wishbook";
 import { getEmotionFill } from "@/data/emotionColors";
 import { CoverImageField } from "@/components/ui/cover-image-field";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 
 export type FavoriteEditorPayload = Omit<
   Favorite,
@@ -104,13 +101,16 @@ function buildPartialUpdatePayload(
   full: FavoriteEditorPayload,
 ): Partial<FavoriteEditorPayload> {
   const payload: Partial<FavoriteEditorPayload> = {};
-  if (!isEqual(initial.categoryId, full.categoryId)) payload.categoryId = full.categoryId;
+  if (!isEqual(initial.categoryId, full.categoryId))
+    payload.categoryId = full.categoryId;
   if (!isEqual(initial.title, full.title)) payload.title = full.title;
   if (!isEqual(initial.image, full.image)) payload.image = full.image;
   if (!isEqual(initial.rating, full.rating)) payload.rating = full.rating;
   if (!isEqual(initial.mood, full.mood)) payload.mood = full.mood;
-  if (!isEqual(initial.whyILike, full.whyILike)) payload.whyILike = full.whyILike;
-  if (!isEqual(initial.timePeriod, full.timePeriod)) payload.timePeriod = full.timePeriod;
+  if (!isEqual(initial.whyILike, full.whyILike))
+    payload.whyILike = full.whyILike;
+  if (!isEqual(initial.timePeriod, full.timePeriod))
+    payload.timePeriod = full.timePeriod;
   if (!isEqual(initial.recommendedTime, full.recommendedTime))
     payload.recommendedTime = full.recommendedTime;
   if (!isEqual(initial.tags, full.tags)) payload.tags = full.tags;
@@ -294,13 +294,17 @@ export function FavoriteEditor({
       totalDurationSeconds: isSeries
         ? undefined
         : totalDurationSeconds || undefined,
-      totalEpisodes: isSeriesOrAnime ? totalEpisodesDerived || undefined : undefined,
+      totalEpisodes: isSeriesOrAnime
+        ? totalEpisodesDerived || undefined
+        : undefined,
       seasonEpisodeCounts:
         isSeriesOrAnime && seasonEpisodeCounts.length > 0
           ? seasonEpisodeCounts
           : undefined,
       emotionalSegments:
-        !isSeries && emotionalSegments.length > 0 ? emotionalSegments : undefined,
+        !isSeries && emotionalSegments.length > 0
+          ? emotionalSegments
+          : undefined,
       episodeDurations:
         isSeriesOrAnime && episodeDurations.length > 0
           ? episodeDurations
@@ -388,7 +392,7 @@ export function FavoriteEditor({
             poster_path?: string | null;
           }) => ({
             id: r.id,
-            title: isMovie ? r.title ?? "" : r.name ?? "",
+            title: isMovie ? (r.title ?? "") : (r.name ?? ""),
             year:
               (r.release_date || r.first_air_date || "").slice(0, 4) ||
               undefined,
@@ -469,7 +473,7 @@ export function FavoriteEditor({
         : "";
       setFormData((prev) => ({
         ...prev,
-        title: isMovie ? data.title ?? prev.title : data.name ?? prev.title,
+        title: isMovie ? (data.title ?? prev.title) : (data.name ?? prev.title),
         genre: genreStr || prev.genre,
         releaseYear: year || prev.releaseYear,
         plotSummary: overview || prev.plotSummary,
@@ -620,8 +624,7 @@ export function FavoriteEditor({
   const sectionTransitionClass =
     "transition-[filter,opacity] duration-500 ease-out";
 
-  const headerTitle =
-    mode === "create" ? "Add New Favorite" : "Edit Favorite";
+  const headerTitle = mode === "create" ? "Add New Favorite" : "Edit Favorite";
 
   return (
     <Layout>
@@ -648,16 +651,12 @@ export function FavoriteEditor({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-            {/* Left: Form sections — only show sections up to current step */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Section 1: Category + Cover + Basic info (visible from step 1) */}
               {step > 0 && (
-                <motion.section
+                <div
                   ref={(el) => {
                     sectionRefs.current[0] = el;
                   }}
-                  layout
-                  transition={{ type: "spring", damping: 25 }}
                   className={`shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl ${sectionTransitionClass} ${sectionBlur(0)}`}
                 >
                   <div className="flex items-center gap-2 mb-4">
@@ -675,14 +674,25 @@ export function FavoriteEditor({
                     <div>
                       <Label className="mb-2 block">Category</Label>
                       <div className="flex flex-wrap gap-1 md:gap-2">
-                        {categories.map((cat) => (
-                          <CategoryChip
-                            key={cat.id}
-                            category={cat}
-                            isSelected={selectedCategory === cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                          />
-                        ))}
+                        {CATEGORY_TABS.filter((cat) => cat.value !== "all").map((cat) => {
+                          const Icon = "icon" in cat ? cat.icon : undefined;
+                          return (
+                            <CategoryChip
+                              key={cat.value}
+                              category={{
+                                id: cat.value,
+                                name: cat.label,
+                                icon: Icon ? (
+                                  <Icon className="w-4 h-4" />
+                                ) : undefined,
+                                color: "primary",
+                                isDefault: true,
+                              }}
+                              isSelected={selectedCategory === cat.value}
+                              onClick={() => setSelectedCategory(cat.value)}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                     <div ref={titleDropdownRef} className="relative">
@@ -927,7 +937,7 @@ export function FavoriteEditor({
                       </Button>
                     </div>
                   )}
-                </motion.section>
+                </div>
               )}
 
               {/* Section 2: Rating + Why + Time period (appears after step 1 complete) */}
@@ -1278,7 +1288,8 @@ export function FavoriteEditor({
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-foreground">
-                                Almost there — complete these to add to favorites
+                                Almost there — complete these to add to
+                                favorites
                               </p>
                               <ul className="mt-1.5 flex flex-wrap gap-2 text-muted-foreground">
                                 {!formData.title?.trim() && (
@@ -1430,9 +1441,7 @@ export function FavoriteEditor({
                     {(selectedMoods.length > 0 || tags.length > 0) && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setStep(hasEmotionalJourney ? 4 : 3)
-                        }
+                        onClick={() => setStep(hasEmotionalJourney ? 4 : 3)}
                         className="flex flex-wrap gap-1.5 mt-3 w-full text-left cursor-pointer hover:opacity-90 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-card"
                         aria-label="Go to moods & tags section"
                       >
@@ -1459,14 +1468,11 @@ export function FavoriteEditor({
                     )}
                     {(() => {
                       const segs = isSeriesOrAnime
-                        ? episodeSegments[selectedEpisodeIndex] ?? []
+                        ? (episodeSegments[selectedEpisodeIndex] ?? [])
                         : emotionalSegments;
                       const totalSec = isSeriesOrAnime
                         ? (episodeDurations[selectedEpisodeIndex] ?? 0) ||
-                          Math.max(
-                            1,
-                            ...(segs.map((s) => s.endSeconds) || [0]),
-                          )
+                          Math.max(1, ...(segs.map((s) => s.endSeconds) || [0]))
                         : totalDurationSeconds ||
                           Math.max(
                             1,
@@ -1550,4 +1556,3 @@ export function FavoriteEditor({
     </Layout>
   );
 }
-

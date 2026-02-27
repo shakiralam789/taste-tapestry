@@ -31,24 +31,17 @@ import {
   updateAlbum,
   deleteAlbum,
 } from "@/features/albums/api";
-import { ArrowLeft, Edit3, Film, Music, BookOpen, Tv, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
 import type { Favorite } from "@/types/wishbook";
 import { AlbumForm, type AlbumFormValues } from "@/components/albums/AlbumForm";
 import { ClientOnly } from "@/components/common/ClientOnly";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 
 const DEFAULT_ALBUM_IMAGE = "/images/default-cover-image.jpg";
 const DEFAULT_ALBUM_IMAGE_DARK = "/images/default-cover-image-dark.jpg";
-
-const CATEGORY_TABS = [
-  { value: "all", label: "All" },
-  { value: "movies", label: "Movie", icon: Film },
-  { value: "series", label: "Series", icon: Tv },
-  { value: "songs", label: "Song", icon: Music },
-  { value: "books", label: "Book", icon: BookOpen },
-] as const;
 
 export function AlbumShowPageInner() {
   const params = useParams<{ id: string }>();
@@ -242,6 +235,7 @@ export function AlbumShowPageInner() {
                 className="w-full"
               >
                 <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none gap-0">
+                
                   {visibleTabs.map((tab) => {
                     const Icon = "icon" in tab ? tab.icon : undefined;
                     return (

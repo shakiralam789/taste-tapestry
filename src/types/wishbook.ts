@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 // User Types
 export interface User {
   id: string;
@@ -38,7 +40,8 @@ export interface Talent {
 export interface Category {
   id: string;
   name: string;
-  icon: string;
+  /** Display: emoji string or React node (e.g. Lucide icon element) */
+  icon: string | ReactNode;
   color: string;
   isDefault: boolean;
   fields?: CustomField[];
