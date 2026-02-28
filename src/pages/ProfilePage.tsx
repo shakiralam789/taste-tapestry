@@ -34,7 +34,6 @@ import {
   MapPin,
   Calendar,
   Edit3,
-  Share2,
   Sparkles,
   Plus,
   Rocket,
@@ -321,6 +320,18 @@ function ProfilePageInner() {
               animate={{ opacity: 1, y: 0 }}
               className="lg:sticky top-4 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
+               <div className="w-fit absolute top-4 right-4">
+                <Button
+                  type="button"
+                  className="w-fit rounded-xl"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit
+                </Button>
+              </div>
               <div className="relative md:mb-6 mb-4 group">
                 <input
                   ref={avatarInputRef}
@@ -384,25 +395,7 @@ function ProfilePageInner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Button
-                  type="button"
-                  className="w-full rounded-xl"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit profile
-                </Button>
-                <Button
-                  className="w-full rounded-xl"
-                  variant="outline"
-                  size="sm"
-                >
-                  <Share2 className="w-4 h-4 mr-2" /> Share
-                </Button>
-              </div>
+             
 
               {/* Quick discovery links */}
               <div className="md:mt-6 mt-4 w-full space-y-2">
