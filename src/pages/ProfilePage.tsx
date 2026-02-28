@@ -457,12 +457,12 @@ function ProfilePageInner() {
                   },
                   {
                     label: "Stars",
-                    value: favorites.length,
+                    value: 0,
                     icon: Sparkles,
                   },
                   {
                     label: "Capsules",
-                    value: timeCapsules.length,
+                    value: 0,
                     icon: Rocket,
                   },
                 ].map((stat, i) => (

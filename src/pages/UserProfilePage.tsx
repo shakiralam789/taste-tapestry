@@ -258,7 +258,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                     </span>
                   </div>
                   <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
-                    {favorites.length}
+                    0
                   </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
