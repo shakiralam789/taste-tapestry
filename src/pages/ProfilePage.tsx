@@ -20,6 +20,7 @@ import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSke
 import { useAuth } from "@/features/auth/AuthContext";
 import {
   getProfile,
+  PROFILE_QUERY_STALE_MS,
   updateProfile,
   uploadAvatar,
 } from "@/features/profile/api";
@@ -129,6 +130,7 @@ function ProfilePageInner() {
     queryKey: ["profile"],
     queryFn: getProfile,
     enabled: !!authUser,
+    staleTime: PROFILE_QUERY_STALE_MS,
   });
 
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({

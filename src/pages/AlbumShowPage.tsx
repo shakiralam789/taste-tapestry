@@ -25,9 +25,7 @@ import {
   DialogTitle as UiDialogTitle,
 } from "@/components/ui/dialog";
 import {
-  getAlbum,
-  getAlbumItemCounts,
-  getAlbumItems,
+  getAlbumShow,
   updateAlbum,
   deleteAlbum,
 } from "@/features/albums/api";
@@ -54,35 +52,22 @@ export function AlbumShowPageInner() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  const {
-    data: album,
-    isLoading: albumLoading,
-    isError: albumError,
-  } = useQuery({
-    queryKey: ["album", id],
-    queryFn: () => getAlbum(typeof id === "string" ? id : ""),
-    enabled: typeof id === "string",
-  });
+  const albumId = typeof id === "string" ? id : "";
+  const categoryParam = activeTab === "all" ? undefined : activeTab;
 
   const {
-    data: counts,
+    data: showData,
+    isLoading: showLoading,
+    isError: showError,
   } = useQuery({
-    queryKey: ["album-item-counts", id],
-    queryFn: () => getAlbumItemCounts(typeof id === "string" ? id : ""),
-    enabled: typeof id === "string",
+    queryKey: ["album-show", albumId, activeTab],
+    queryFn: () => getAlbumShow(albumId, categoryParam),
+    enabled: !!albumId,
   });
 
-  const {
-    data: albumItems = [],
-  } = useQuery({
-    queryKey: ["album-items", id, activeTab],
-    queryFn: () =>
-      getAlbumItems(
-        typeof id === "string" ? id : "",
-        activeTab === "all" ? undefined : activeTab,
-      ),
-    enabled: typeof id === "string",
-  });
+  const album = showData?.album;
+  const counts = showData?.itemCounts;
+  const albumItems = showData?.items ?? [];
 
   const visibleTabs = CATEGORY_TABS.filter((tab) => {
     if (!counts) return tab.value === "all";
@@ -105,9 +90,7 @@ export function AlbumShowPageInner() {
       return updateAlbum(album.id, { favoriteIds: nextIds });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["album", id] });
-      void queryClient.invalidateQueries({ queryKey: ["album-item-counts", id] });
-      void queryClient.invalidateQueries({ queryKey: ["album-items", id, activeTab] });
+      void queryClient.invalidateQueries({ queryKey: ["album-show", id] });
       toast.success("Removed from album");
     },
     onError: () => {
@@ -136,18 +119,18 @@ export function AlbumShowPageInner() {
       await updateAlbum(album.id, { isPublic });
     },
     onSuccess: (_, isPublic) => {
-      void queryClient.invalidateQueries({ queryKey: ["album", id] });
+      void queryClient.invalidateQueries({ queryKey: ["album-show", id] });
       void queryClient.invalidateQueries({ queryKey: ["albums"] });
       toast.success(isPublic ? "Album is now public" : "Album is now private");
     },
     onError: () => toast.error("Could not update visibility"),
   });
 
-  if (albumLoading || !album || !counts) {
+  if (showLoading || !showData || !album || !counts) {
     return <FullScreenLoader />;
   }
 
-  if (albumError) {
+  if (showError) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
@@ -471,7 +454,7 @@ export function AlbumShowPageInner() {
             onSubmit={async (values: AlbumFormValues) => {
               try {
                 await updateAlbum(album.id, values);
-                void queryClient.invalidateQueries({ queryKey: ["album", id] });
+                void queryClient.invalidateQueries({ queryKey: ["album-show", id] });
                 toast.success("Album updated", {
                   description: "Your changes have been saved.",
                 });

@@ -46,6 +46,36 @@ export async function getAlbum(id: string): Promise<Album> {
   };
 }
 
+export type AlbumShowResponse = {
+  album: Album;
+  itemCounts: AlbumItemCounts;
+  items: Favorite[];
+};
+
+/** Single call for the album show page: album + itemCounts + items. Optional categoryId filters items on the backend. */
+export async function getAlbumShow(
+  id: string,
+  categoryId?: string,
+): Promise<AlbumShowResponse> {
+  const params = categoryId ? { categoryId } : undefined;
+  const { data } = await apiClient.get<{
+    album: Album;
+    itemCounts: AlbumItemCounts;
+    items: Favorite[];
+  }>(`/albums/${id}/show`, { params });
+  return {
+    album: {
+      ...data.album,
+      createdAt: new Date(data.album.createdAt),
+    },
+    itemCounts: data.itemCounts,
+    items: (data.items ?? []).map((fav) => ({
+      ...fav,
+      createdAt: new Date(fav.createdAt),
+    })),
+  };
+}
+
 export async function getAlbumItemCounts(
   id: string,
 ): Promise<AlbumItemCounts> {

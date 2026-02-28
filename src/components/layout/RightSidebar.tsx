@@ -86,7 +86,7 @@ export function RightSidebar() {
           className="pl-10 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 h-12 rounded-full transition-all"
         />
         {dropdownOpen && (searchQuery.trim() || searchResults.length > 0) && (
-          <div className="absolute top-full left-0 right-0 mt-1 py-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-72 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-72 overflow-y-auto">
             {searching ? (
               <p className="px-3 py-4 text-sm text-muted-foreground text-center">Searching...</p>
             ) : searchResults.length === 0 ? (
@@ -99,7 +99,7 @@ export function RightSidebar() {
                   key={user.id}
                   type="button"
                   onClick={() => handleSelectUser(user.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-accent transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <Avatar className="w-9 h-9 shrink-0">
                     <AvatarImage src={user.avatar ?? undefined} />

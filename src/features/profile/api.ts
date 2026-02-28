@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/api-client";
 
+/** Keep profile in cache so /users/me isn't called on every page navigation. */
+export const PROFILE_QUERY_STALE_MS = 5 * 60 * 1000; // 5 minutes
+
 export interface Profile {
   id: string;
   email: string;

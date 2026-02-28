@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/AuthContext";
-import { getProfile } from "@/features/profile/api";
+import { getProfile, PROFILE_QUERY_STALE_MS } from "@/features/profile/api";
 import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
@@ -36,6 +36,7 @@ export function Sidebar() {
     queryKey: ["profile"],
     queryFn: getProfile,
     enabled: !!authUser,
+    staleTime: PROFILE_QUERY_STALE_MS,
   });
 
   return (
