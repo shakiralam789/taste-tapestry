@@ -9,6 +9,8 @@ export interface Profile {
   bio: string | null;
   location: string | null;
   createdAt: string;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export type UpdateProfilePayload = Partial<

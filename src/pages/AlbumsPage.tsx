@@ -15,6 +15,8 @@ import {
   Trash2,
   Edit3,
   MoreHorizontal,
+  Lock,
+  Globe,
 } from "lucide-react";
 import {
   createAlbum,
@@ -110,6 +112,19 @@ export function AlbumsPageInner() {
     onError: () => {
       toast.error("Could not update album");
     },
+  });
+
+  const toggleAlbumVisibilityMutation = useMutation({
+    mutationFn: async ({
+      id,
+      isPublic,
+    }: { id: string; isPublic: boolean }) =>
+      updateAlbum(id, { isPublic }),
+    onSuccess: (_, { isPublic }) => {
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success(isPublic ? "Album is now public" : "Album is now private");
+    },
+    onError: () => toast.error("Could not update visibility"),
   });
 
   return (
@@ -208,6 +223,29 @@ export function AlbumsPageInner() {
                           >
                             <Edit3 className="w-3 h-3" />
                             <span>Edit</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="flex items-center gap-2"
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              if (toggleAlbumVisibilityMutation.isPending) return;
+                              toggleAlbumVisibilityMutation.mutate({
+                                id: album.id,
+                                isPublic: !(album.isPublic ?? true),
+                              });
+                            }}
+                          >
+                            {(album.isPublic ?? true) ? (
+                              <>
+                                <Lock className="w-3 h-3" />
+                                <span>Make private</span>
+                              </>
+                            ) : (
+                              <>
+                                <Globe className="w-3 h-3" />
+                                <span>Make public</span>
+                              </>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="flex items-center gap-2 hover:text-white text-destructive"

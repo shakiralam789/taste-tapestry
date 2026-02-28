@@ -16,6 +16,8 @@ export interface PublicProfile {
   bio: string | null;
   location: string | null;
   createdAt: string;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export async function searchUsers(
@@ -50,4 +52,19 @@ export async function getPublicAlbums(userId: string): Promise<Album[]> {
     ...album,
     createdAt: new Date(album.createdAt),
   }));
+}
+
+export async function getFollowStatus(userId: string): Promise<{ isFollowing: boolean }> {
+  const { data } = await apiClient.get<{ isFollowing: boolean }>(
+    `/users/${userId}/follow-status`,
+  );
+  return data ?? { isFollowing: false };
+}
+
+export async function followUser(userId: string): Promise<void> {
+  await apiClient.post(`/users/${userId}/follow`);
+}
+
+export async function unfollowUser(userId: string): Promise<void> {
+  await apiClient.delete(`/users/${userId}/follow`);
 }

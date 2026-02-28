@@ -2,6 +2,7 @@
 import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Star } from "lucide-react";
+import { PrivateBadge } from "@/components/common/PrivateBadge";
 
 interface ProfilePostCardProps {
   favorite: Favorite;
@@ -50,6 +51,9 @@ export function ProfilePostCard({
           <h3 className="font-display text-sm sm:text-base font-semibold text-foreground truncate">
             {favorite.title}
           </h3>
+          {favorite.isPublic === false && (
+            <PrivateBadge className="absolute top-2 left-2 w-fit mt-0.5" />
+          )}
           <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Heart className="w-3.5 h-3.5 fill-white/10" /> 24
@@ -89,6 +93,9 @@ export function ProfilePostCard({
 
       {/* Content */}
       <div className="absolute inset-0 p-3 md:p-5 flex flex-col justify-end">
+        {favorite.isPublic === false && (
+          <PrivateBadge className="absolute top-3 left-3" />
+        )}
         <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
           <div className="flex items-center gap-2 mb-2 text-primary text-xs font-semibold tracking-wider uppercase opacity-90 group-hover:opacity-100 transition-opacity delay-100">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />

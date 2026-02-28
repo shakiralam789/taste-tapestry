@@ -125,6 +125,8 @@ export interface Favorite {
   tags: string[];
   createdAt: Date;
   fields: Record<string, any>;
+  /** If false, other users cannot see this item on your profile. */
+  isPublic?: boolean;
 }
 
 export interface MovieFavorite extends Favorite {
@@ -177,6 +179,8 @@ export interface Album {
   /** IDs of favorites (movies, series, songs, books, etc.) that belong to this album */
   favoriteIds: string[];
   createdAt: Date;
+  /** If false, other users cannot see this album on your profile. */
+  isPublic?: boolean;
 }
 
 // Taste Matching Types

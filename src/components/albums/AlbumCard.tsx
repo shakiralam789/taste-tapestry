@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Images } from "lucide-react";
+import { PrivateBadge } from "@/components/common/PrivateBadge";
 import type { Album } from "@/types/wishbook";
 
 const DEFAULT_ALBUM_IMAGE = "/images/default-cover-image.jpg";
@@ -30,7 +30,7 @@ export function AlbumCard({ album, onClick }: AlbumCardProps) {
             (e.target as HTMLImageElement).src = DEFAULT_ALBUM_IMAGE_DARK;
           }}
         />
-         <img
+        <img
           src={album.coverImage || DEFAULT_ALBUM_IMAGE}
           alt={album.name}
           className="dark:hidden w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -41,11 +41,14 @@ export function AlbumCard({ album, onClick }: AlbumCardProps) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80" />
       </div>
 
+      {album.isPublic === false && <PrivateBadge className="absolute top-3 left-3" />}
       {/* Content */}
       <div className="relative p-5 -mt-10">
-        <h3 className="font-display text-xl font-bold text-white mb-1 drop-shadow-lg">
-          {album.name}
-        </h3>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h3 className="font-display text-xl font-bold text-white drop-shadow-lg">
+            {album.name}
+          </h3>
+        </div>
         {album.description && (
           <p className="text-sm text-gray-300 line-clamp-2 mb-3">
             {album.description}

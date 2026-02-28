@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,8 +10,16 @@ import { Button } from "@/components/ui/button";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
-import { getPublicProfile, getPublicFavorites } from "@/features/users/api";
+import {
+  getPublicProfile,
+  getPublicFavorites,
+  getFollowStatus,
+  followUser,
+  unfollowUser,
+} from "@/features/users/api";
+import { useAuth } from "@/features/auth/AuthContext";
 import { CATEGORY_TABS } from "@/features/albums/constants";
+import { toast } from "sonner";
 import {
   MapPin,
   Share2,
@@ -32,6 +40,10 @@ type UserProfilePageProps = { id: string };
 const staggerDelay = 0.08;
 
 function UserProfilePageInner({ id }: UserProfilePageProps) {
+  const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
+  const isOwnProfile = authUser?.id === id;
+
   const {
     data: profile,
     isLoading: profileLoading,
@@ -41,6 +53,36 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
     queryFn: () => getPublicProfile(id),
     enabled: !!id,
   });
+
+  const { data: followStatus, isLoading: followStatusLoading } = useQuery({
+    queryKey: ["user-follow-status", id],
+    queryFn: () => getFollowStatus(id),
+    enabled: !!id && !!authUser && !isOwnProfile,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: () => followUser(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["user-follow-status", id] });
+      void queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Following");
+    },
+    onError: () => toast.error("Could not follow"),
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: () => unfollowUser(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["user-follow-status", id] });
+      void queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Unfollowed");
+    },
+    onError: () => toast.error("Could not unfollow"),
+  });
+
+  const isFollowing = followStatus?.isFollowing ?? false;
 
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["user-favorites", id],
@@ -146,10 +188,30 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
               </div>
 
               <div className="grid grid-cols-2 gap-3 w-full">
-                <Button className="w-full rounded-xl" variant="default" size="sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Follow
-                </Button>
+                {!isOwnProfile && authUser && (
+                  <Button
+                    className="w-full rounded-xl"
+                    variant={isFollowing ? "outline" : "default"}
+                    size="sm"
+                    disabled={
+                      followStatusLoading ||
+                      followMutation.isPending ||
+                      unfollowMutation.isPending
+                    }
+                    onClick={() =>
+                      isFollowing
+                        ? unfollowMutation.mutate()
+                        : followMutation.mutate()
+                    }
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {followMutation.isPending || unfollowMutation.isPending
+                      ? "..."
+                      : isFollowing
+                        ? "Following"
+                        : "Follow"}
+                  </Button>
+                )}
                 <Button className="w-full rounded-xl" variant="outline" size="sm">
                   <Share2 className="w-4 h-4 mr-2" /> Share
                 </Button>
@@ -172,7 +234,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                     </span>
                   </div>
                   <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
-                    0
+                    {profile.followersCount ?? 0}
                   </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
@@ -183,7 +245,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                     </span>
                   </div>
                   <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
-                    0
+                    {profile.followingCount ?? 0}
                   </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">

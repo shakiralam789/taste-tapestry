@@ -27,7 +27,7 @@ import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
 import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
-import { getFavorites, deleteFavorite } from "@/features/favorites/api";
+import { getFavorites, deleteFavorite, updateFavorite } from "@/features/favorites/api";
 import { getAlbums, updateAlbum } from "@/features/albums/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
@@ -50,6 +50,7 @@ import {
   Images,
   Trash2,
   MoreHorizontal,
+  Globe,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -192,6 +193,19 @@ function ProfilePageInner() {
     onError: () => {
       toast.error("Could not delete item");
     },
+  });
+
+  const toggleFavoriteVisibilityMutation = useMutation({
+    mutationFn: async ({
+      id,
+      isPublic,
+    }: { id: string; isPublic: boolean }) =>
+      updateFavorite(id, { isPublic }),
+    onSuccess: (_, { isPublic }) => {
+      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast.success(isPublic ? "Item is now public" : "Item is now private");
+    },
+    onError: () => toast.error("Could not update visibility"),
   });
 
   useEffect(() => {
@@ -434,12 +448,12 @@ function ProfilePageInner() {
                 {[
                   {
                     label: "Followers",
-                    value: wishbookUser.followers.toLocaleString(),
+                    value: (profile?.followersCount ?? 0).toLocaleString(),
                     icon: Users,
                   },
                   {
                     label: "Following",
-                    value: wishbookUser.following.toLocaleString(),
+                    value: (profile?.followingCount ?? 0).toLocaleString(),
                     icon: Users,
                   },
                   {
@@ -668,6 +682,29 @@ function ProfilePageInner() {
                                     >
                                       <Images className="w-4 h-4" />
                                       Add to album
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 cursor-pointer"
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        if (toggleFavoriteVisibilityMutation.isPending) return;
+                                        toggleFavoriteVisibilityMutation.mutate({
+                                          id: favorite.id,
+                                          isPublic: !(favorite.isPublic ?? true),
+                                        });
+                                      }}
+                                    >
+                                      {(favorite.isPublic ?? true) ? (
+                                        <>
+                                          <Lock className="w-4 h-4" />
+                                          Make private
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Globe className="w-4 h-4" />
+                                          Make public
+                                        </>
+                                      )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"

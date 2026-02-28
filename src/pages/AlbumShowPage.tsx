@@ -31,7 +31,7 @@ import {
   updateAlbum,
   deleteAlbum,
 } from "@/features/albums/api";
-import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Lock, Globe } from "lucide-react";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
@@ -130,6 +130,19 @@ export function AlbumShowPageInner() {
     },
   });
 
+  const toggleAlbumVisibilityMutation = useMutation({
+    mutationFn: async (isPublic: boolean) => {
+      if (!album) throw new Error("Album not loaded");
+      await updateAlbum(album.id, { isPublic });
+    },
+    onSuccess: (_, isPublic) => {
+      void queryClient.invalidateQueries({ queryKey: ["album", id] });
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success(isPublic ? "Album is now public" : "Album is now private");
+    },
+    onError: () => toast.error("Could not update visibility"),
+  });
+
   if (albumLoading || !album || !counts) {
     return <FullScreenLoader />;
   }
@@ -161,6 +174,23 @@ export function AlbumShowPageInner() {
           </Button>
           {authUser && authUser.id === album.userId && (
             <div className="flex items-center gap-2 ml-auto">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                aria-label={album.isPublic !== false ? "Make private" : "Make public"}
+                title={album.isPublic !== false ? "Make private" : "Make public"}
+                disabled={toggleAlbumVisibilityMutation.isPending}
+                onClick={() =>
+                  toggleAlbumVisibilityMutation.mutate(!(album.isPublic ?? true))
+                }
+              >
+                {album.isPublic !== false ? (
+                  <Lock className="w-4 h-4" />
+                ) : (
+                  <Globe className="w-4 h-4" />
+                )}
+              </Button>
               <Button
                 variant="outline"
                 size="icon"
