@@ -28,7 +28,12 @@ import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
 import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
-import { getFavorites, deleteFavorite, updateFavorite } from "@/features/favorites/api";
+import {
+  getFavorites,
+  deleteFavorite,
+  updateFavorite,
+  PROFILE_PREVIEW_LIMIT,
+} from "@/features/favorites/api";
 import { getAlbums, updateAlbum } from "@/features/albums/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
@@ -174,13 +179,12 @@ function ProfilePageInner() {
       const nextIds = [...currentIds, args.favoriteId];
       return updateAlbum(args.albumId, { favoriteIds: nextIds });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      void queryClient.invalidateQueries({ queryKey: ["album-show", variables.albumId] });
       toast.success("Added to album");
     },
-    onError: () => {
-      toast.error("Could not add to album");
-    },
+    onError: () => toast.error("Could not add to album"),
   });
 
   const deleteFavoriteMutation = useMutation({
@@ -633,7 +637,7 @@ function ProfilePageInner() {
                               </Link>
                             </div>
                           )
-                        : favorites.map((favorite) => (
+                        : favorites.slice(0, PROFILE_PREVIEW_LIMIT).map((favorite) => (
                           <div
                             key={favorite.id}
                             className={`relative ${
@@ -718,6 +722,22 @@ function ProfilePageInner() {
                             )}
                           </div>
                         ))}
+                        {favorites.length > PROFILE_PREVIEW_LIMIT && (
+                          <div className="col-span-full flex justify-center pt-4">
+                            <Link
+                              href={
+                                selectedCategoryFilter === "all"
+                                  ? "/profile/collection"
+                                  : `/profile/collection?category=${selectedCategoryFilter}`
+                              }
+                            >
+                              <Button variant="outline" size="sm" className="rounded-full gap-2">
+                                See all ({favorites.length})
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
                   </motion.div>
                 </TabsContent>
 

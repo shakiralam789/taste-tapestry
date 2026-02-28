@@ -32,6 +32,9 @@ export async function createFavorite(
   };
 }
 
+const PROFILE_PREVIEW_LIMIT = 6;
+const COLLECTION_PAGE_SIZE = 12;
+
 export async function getFavorites(
   categoryId?: string,
 ): Promise<Favorite[]> {
@@ -42,6 +45,39 @@ export async function getFavorites(
     createdAt: new Date(fav.createdAt),
   }));
 }
+
+export type FavoritesPageResponse = {
+  items: Favorite[];
+  hasMore: boolean;
+  nextOffset: number;
+};
+
+/** Paginated favorites for owner collection page (infinite scroll). */
+export async function getFavoritesPage(
+  offset: number,
+  categoryId?: string,
+  search?: string,
+): Promise<FavoritesPageResponse> {
+  const params: Record<string, string> = {
+    limit: String(COLLECTION_PAGE_SIZE),
+    offset: String(offset),
+  };
+  if (categoryId) params.categoryId = categoryId;
+  if (search?.trim()) params.q = search.trim();
+  const { data } = await apiClient.get<FavoritesPageResponse>("/favorites", {
+    params,
+  });
+  return {
+    items: (data.items ?? []).map((fav) => ({
+      ...fav,
+      createdAt: new Date(fav.createdAt),
+    })),
+    hasMore: data.hasMore ?? false,
+    nextOffset: data.nextOffset ?? offset + (data.items?.length ?? 0),
+  };
+}
+
+export { PROFILE_PREVIEW_LIMIT, COLLECTION_PAGE_SIZE };
 
 export async function getFavorite(id: string): Promise<Favorite> {
   const { data } = await apiClient.get<Favorite>(`/favorites/${id}`);

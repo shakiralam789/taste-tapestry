@@ -52,6 +52,23 @@ export type AlbumShowResponse = {
   items: Favorite[];
 };
 
+export type AlbumShowPageResponse = {
+  album: Album | null;
+  itemCounts: AlbumItemCounts | null;
+  items: Favorite[];
+  hasMore: boolean;
+  nextOffset: number;
+};
+
+const PAGE_SIZE = 12;
+
+function mapFavorite(fav: Favorite & { createdAt?: string }): Favorite {
+  return {
+    ...fav,
+    createdAt: new Date((fav as Favorite).createdAt ?? 0),
+  };
+}
+
 /** Single call for the album show page: album + itemCounts + items. Optional categoryId filters items on the backend. */
 export async function getAlbumShow(
   id: string,
@@ -69,12 +86,40 @@ export async function getAlbumShow(
       createdAt: new Date(data.album.createdAt),
     },
     itemCounts: data.itemCounts,
-    items: (data.items ?? []).map((fav) => ({
-      ...fav,
-      createdAt: new Date(fav.createdAt),
-    })),
+    items: (data.items ?? []).map(mapFavorite),
   };
 }
+
+/** Paginated page for infinite scroll. First page includes album + itemCounts. */
+export async function getAlbumShowPage(
+  id: string,
+  categoryId: string | undefined,
+  offset: number,
+): Promise<AlbumShowPageResponse> {
+  const params: Record<string, string> = {
+    limit: String(PAGE_SIZE),
+    offset: String(offset),
+  };
+  if (categoryId) params.categoryId = categoryId;
+  const { data } = await apiClient.get<{
+    album: Album | null;
+    itemCounts: AlbumItemCounts | null;
+    items: Favorite[];
+    hasMore: boolean;
+    nextOffset: number;
+  }>(`/albums/${id}/show`, { params });
+  return {
+    album: data.album
+      ? { ...data.album, createdAt: new Date(data.album.createdAt) }
+      : null,
+    itemCounts: data.itemCounts ?? null,
+    items: (data.items ?? []).map(mapFavorite),
+    hasMore: data.hasMore ?? false,
+    nextOffset: data.nextOffset ?? offset + (data.items?.length ?? 0),
+  };
+}
+
+export { PAGE_SIZE as ALBUM_SHOW_PAGE_SIZE };
 
 export async function getAlbumItemCounts(
   id: string,

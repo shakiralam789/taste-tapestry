@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
@@ -20,7 +20,7 @@ export default function EditFavoritePage() {
   const id = params?.id;
   const router = useRouter();
   const { user: authUser, loading } = useAuth();
-
+  const queryClient = useQueryClient(); 
   const {
     data: favorite,
     isLoading,
@@ -42,6 +42,9 @@ export default function EditFavoritePage() {
       toast.success("Favorite updated", {
         description: "Your collection has been refreshed.",
       });
+      void queryClient.invalidateQueries({ queryKey: ["favorite", id] });
+      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
       router.push(`/favorites/${id}`);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;

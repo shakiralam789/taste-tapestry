@@ -78,9 +78,7 @@ export function AlbumsPageInner() {
       toast.success("Album created");
       setCreateOpen(false);
     },
-    onError: () => {
-      toast.error("Could not create album");
-    },
+    onError: () => toast.error("Could not create album"),
   });
 
   const deleteAlbumMutation = useMutation({
@@ -103,15 +101,14 @@ export function AlbumsPageInner() {
     mutationFn: async (payload: { id: string; values: AlbumFormValues }) => {
       await updateAlbum(payload.id, payload.values);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      void queryClient.invalidateQueries({ queryKey: ["album-show", variables.id] });
       toast.success("Album updated");
       setEditOpen(false);
       setAlbumToEdit(null);
     },
-    onError: () => {
-      toast.error("Could not update album");
-    },
+    onError: () => toast.error("Could not update album"),
   });
 
   const toggleAlbumVisibilityMutation = useMutation({
@@ -120,9 +117,10 @@ export function AlbumsPageInner() {
       isPublic,
     }: { id: string; isPublic: boolean }) =>
       updateAlbum(id, { isPublic }),
-    onSuccess: (_, { isPublic }) => {
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["albums"] });
-      toast.success(isPublic ? "Album is now public" : "Album is now private");
+      void queryClient.invalidateQueries({ queryKey: ["album-show", variables.id] });
+      toast.success(variables.isPublic ? "Album is now public" : "Album is now private");
     },
     onError: () => toast.error("Could not update visibility"),
   });

@@ -19,6 +19,7 @@ import {
 } from "@/features/users/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { CATEGORY_TABS } from "@/features/albums/constants";
+import { PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
 import { toast } from "sonner";
 import {
   MapPin,
@@ -31,6 +32,7 @@ import {
   LayoutGrid,
   List,
   Images,
+  ChevronRight,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientOnly } from "@/components/common/ClientOnly";
@@ -405,33 +407,57 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       </p>
                     </div>
                   ) : (
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                          : "flex flex-col gap-3"
-                      }
-                    >
-                      {filteredFavorites.map((favorite, index) => (
-                        <motion.div
-                          key={favorite.id}
-                          initial={{ opacity: 0, y: 14 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            delay: index * staggerDelay,
-                            duration: 0.25,
-                          }}
-                          className={viewMode === "list" ? "w-full" : ""}
-                        >
-                          <Link href={`/favorites/${favorite.id}`}>
-                            <ProfilePostCard
-                              favorite={favorite}
-                              variant={viewMode}
-                            />
+                    <>
+                      <div
+                        className={
+                          viewMode === "grid"
+                            ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                            : "flex flex-col gap-3"
+                        }
+                      >
+                        {filteredFavorites
+                          .slice(0, PROFILE_PREVIEW_LIMIT)
+                          .map((favorite, index) => (
+                            <motion.div
+                              key={favorite.id}
+                              initial={{ opacity: 0, y: 14 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{
+                                delay: index * staggerDelay,
+                                duration: 0.25,
+                              }}
+                              className={viewMode === "list" ? "w-full" : ""}
+                            >
+                              <Link href={`/favorites/${favorite.id}`}>
+                                <ProfilePostCard
+                                  favorite={favorite}
+                                  variant={viewMode}
+                                />
+                              </Link>
+                            </motion.div>
+                          ))}
+                      </div>
+                      {filteredFavorites.length > PROFILE_PREVIEW_LIMIT && (
+                        <div className="flex justify-center pt-4">
+                          <Link
+                            href={
+                              selectedCategoryFilter === "all"
+                                ? `/users/${id}/collection`
+                                : `/users/${id}/collection?category=${selectedCategoryFilter}`
+                            }
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full gap-2"
+                            >
+                              See all ({filteredFavorites.length})
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
                           </Link>
-                        </motion.div>
-                      ))}
-                    </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </TabsContent>
 

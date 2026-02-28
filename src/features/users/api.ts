@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/api-client";
 import type { Favorite, Album } from "@/types/wishbook";
+import {
+  COLLECTION_PAGE_SIZE,
+  type FavoritesPageResponse,
+} from "@/features/favorites/api";
 
 export interface UserSearchHit {
   id: string;
@@ -44,6 +48,33 @@ export async function getPublicFavorites(userId: string): Promise<Favorite[]> {
     ...fav,
     createdAt: new Date(fav.createdAt),
   }));
+}
+
+/** Paginated public favorites for another user's collection page. */
+export async function getPublicFavoritesPage(
+  userId: string,
+  offset: number,
+  categoryId?: string,
+  search?: string,
+): Promise<FavoritesPageResponse> {
+  const params: Record<string, string> = {
+    limit: String(COLLECTION_PAGE_SIZE),
+    offset: String(offset),
+  };
+  if (categoryId) params.categoryId = categoryId;
+  if (search?.trim()) params.q = search.trim();
+  const { data } = await apiClient.get<FavoritesPageResponse>(
+    `/users/${userId}/favorites`,
+    { params },
+  );
+  return {
+    items: (data.items ?? []).map((fav) => ({
+      ...fav,
+      createdAt: new Date(fav.createdAt),
+    })),
+    hasMore: data.hasMore ?? false,
+    nextOffset: data.nextOffset ?? offset + (data.items?.length ?? 0),
+  };
 }
 
 export async function getPublicAlbums(userId: string): Promise<Album[]> {

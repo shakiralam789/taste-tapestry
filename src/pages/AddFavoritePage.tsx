@@ -10,12 +10,11 @@ import {
   type FavoriteEditorPayload,
 } from "@/components/favorites/FavoriteEditor";
 import { ClientOnly } from "@/components/common/ClientOnly";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AddFavoritePageInner() {
   const router = useRouter();
-
-  // During Next.js static export/prerender this legacy page can be rendered
-  // outside of the React Query provider. Avoid rendering the editor on the server.
+  const queryClient = useQueryClient();
   if (typeof window === "undefined") {
     return null;
   }
@@ -29,6 +28,8 @@ export function AddFavoritePageInner() {
       toast.success("Added to your collection", {
         description: "Your favorite has been saved.",
       });
+      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
       router.push("/profile");
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;

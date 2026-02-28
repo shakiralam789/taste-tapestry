@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
@@ -25,11 +30,11 @@ import {
   DialogTitle as UiDialogTitle,
 } from "@/components/ui/dialog";
 import {
-  getAlbumShow,
+  getAlbumShowPage,
   updateAlbum,
   deleteAlbum,
 } from "@/features/albums/api";
-import { ArrowLeft, Edit3, Trash2, Lock, Globe } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Lock, Globe, Loader2 } from "lucide-react";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
@@ -54,20 +59,43 @@ export function AlbumShowPageInner() {
 
   const albumId = typeof id === "string" ? id : "";
   const categoryParam = activeTab === "all" ? undefined : activeTab;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
-    data: showData,
+    data: infiniteData,
     isLoading: showLoading,
     isError: showError,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["album-show", albumId, activeTab],
-    queryFn: () => getAlbumShow(albumId, categoryParam),
+    queryFn: ({ pageParam }) =>
+      getAlbumShowPage(albumId, categoryParam, pageParam as number),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextOffset : undefined,
+    initialPageParam: 0,
     enabled: !!albumId,
+    placeholderData: keepPreviousData,
   });
 
-  const album = showData?.album;
-  const counts = showData?.itemCounts;
-  const albumItems = showData?.items ?? [];
+  const firstPage = infiniteData?.pages[0];
+  const album = firstPage?.album ?? null;
+  const counts = firstPage?.itemCounts ?? null;
+  const albumItems = infiniteData?.pages.flatMap((p) => p.items) ?? [];
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void fetchNextPage();
+      },
+      { rootMargin: "200px", threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const visibleTabs = CATEGORY_TABS.filter((tab) => {
     if (!counts) return tab.value === "all";
@@ -126,7 +154,8 @@ export function AlbumShowPageInner() {
     onError: () => toast.error("Could not update visibility"),
   });
 
-  if (showLoading || !showData || !album || !counts) {
+  // Only full-screen loader when we have no data yet (initial load). Tab switches use placeholderData.
+  if (!infiniteData?.pages?.length || !album || !counts) {
     return <FullScreenLoader />;
   }
 
@@ -274,37 +303,44 @@ export function AlbumShowPageInner() {
                         No {tab.label.toLowerCase()} in this album.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {albumItems.map((favorite) => (
-                          <div key={favorite.id} className="relative group">
-                            <Link
-                              href={`/favorites/${favorite.id}`}
-                              className="block"
-                            >
-                              <ProfilePostCard
-                                favorite={favorite}
-                                variant="grid"
-                              />
-                            </Link>
-                            {authUser && authUser.id === album.userId && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (removeFromAlbumMutation.isPending) return;
-                                  setFavoriteToRemove(favorite);
-                                }}
-                                className=" absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-background/90 border border-white/20 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive hover:border-destructive/60 backdrop-blur-sm shadow-sm"
-                                aria-label="Remove from album"
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {albumItems.map((favorite) => (
+                            <div key={favorite.id} className="relative group">
+                              <Link
+                                href={`/favorites/${favorite.id}`}
+                                className="block"
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                                <ProfilePostCard
+                                  favorite={favorite}
+                                  variant="grid"
+                                />
+                              </Link>
+                              {authUser && authUser.id === album.userId && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (removeFromAlbumMutation.isPending) return;
+                                    setFavoriteToRemove(favorite);
+                                  }}
+                                  className=" absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-background/90 border border-white/20 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-destructive hover:border-destructive/60 backdrop-blur-sm shadow-sm"
+                                  aria-label="Remove from album"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div ref={loadMoreRef} className="min-h-12 flex items-center justify-center py-6">
+                          {isFetchingNextPage && (
+                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                          )}
+                        </div>
+                      </>
                     )}
                   </TabsContent>
                 ))}
