@@ -27,7 +27,7 @@ import { useWishbook } from "@/contexts/WishbookContext";
 import { interestCategories } from "@/data/mockData";
 import type { InterestCategory, Favorite } from "@/types/wishbook";
 import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
-import { getFavorites } from "@/features/favorites/api";
+import { getFavorites, deleteFavorite } from "@/features/favorites/api";
 import { getAlbums, updateAlbum } from "@/features/albums/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
@@ -48,8 +48,26 @@ import {
   LayoutGrid,
   List,
   Images,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { toast } from "sonner";
 import { CATEGORY_TABS } from "@/features/albums/constants";
@@ -105,6 +123,7 @@ function ProfilePageInner() {
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [albumPickerFavorite, setAlbumPickerFavorite] =
     useState<Favorite | null>(null);
+  const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
@@ -159,6 +178,19 @@ function ProfilePageInner() {
     },
     onError: () => {
       toast.error("Could not add to album");
+    },
+  });
+
+  const deleteFavoriteMutation = useMutation({
+    mutationFn: deleteFavorite,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      void queryClient.invalidateQueries({ queryKey: ["albums"] });
+      toast.success("Item deleted");
+      setFavoriteToDelete(null);
+    },
+    onError: () => {
+      toast.error("Could not delete item");
     },
   });
 
@@ -504,19 +536,6 @@ function ProfilePageInner() {
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-wrap gap-2">
-                        {/* <Button
-                          type="button"
-                          size="sm"
-                          variant={
-                            selectedCategoryFilter === "all"
-                              ? "default"
-                              : "outline"
-                          }
-                          onClick={() => setSelectedCategoryFilter("all")}
-                          className="rounded-full"
-                        >
-                          All
-                        </Button> */}
                         {CATEGORY_TABS.map((cat) => {
 
                           const Icon = "icon" in cat ? cat.icon : undefined;
@@ -589,7 +608,23 @@ function ProfilePageInner() {
                             variant={viewMode}
                           />
                         ))
-                      : favorites.map((favorite) => (
+                      : favorites.length === 0
+                        ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
+                              <p className="text-muted-foreground text-sm mb-2">
+                                {selectedCategoryFilter === "all"
+                                  ? "No items in your collection yet."
+                                  : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in your collection.`}
+                              </p>
+                              <Link href="/add-favorite">
+                                <Button variant="outline" size="sm" className="rounded-full mt-2">
+                                  <Plus className="w-4 h-4" />
+                                  Add your first
+                                </Button>
+                              </Link>
+                            </div>
+                          )
+                        : favorites.map((favorite) => (
                           <div
                             key={favorite.id}
                             className={`relative ${
@@ -602,19 +637,53 @@ function ProfilePageInner() {
                                 variant={viewMode}
                               />
                             </Link>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAlbumPickerFavorite(favorite);
-                                setAlbumPickerOpen(true);
-                              }}
-                              className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-background/80 border border-white/10 px-2 py-1 text-[11px] text-muted-foreground hover:text-primary hover:border-primary/60 backdrop-blur-sm"
-                            >
-                              <Images className="w-3 h-3 mr-1" />
-                              Add to album
-                            </button>
+                            {authUser && (
+                              <div className="absolute top-2 right-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="inline-flex items-center justify-center size-8 rounded-full bg-background/95 border border-white/20 shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-white/30 backdrop-blur-sm"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }}
+                                      aria-label="Item actions"
+                                    >
+                                      <MoreHorizontal className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40 text-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 cursor-pointer"
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        setAlbumPickerFavorite(favorite);
+                                        setAlbumPickerOpen(true);
+                                      }}
+                                    >
+                                      <Images className="w-4 h-4" />
+                                      Add to album
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        if (deleteFavoriteMutation.isPending) return;
+                                        setFavoriteToDelete(favorite);
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </div>
                         ))}
                   </motion.div>
@@ -658,7 +727,11 @@ function ProfilePageInner() {
                           ),
                       )}
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
+                      No interests added yet.
+                    </div>
+                  )}
                   <div className="mt-6 p-6 rounded-2xl bg-card/20 border border-dashed border-white/10">
                     <h4 className="text-lg font-semibold mb-3 text-muted-foreground">
                       Explore more interests
@@ -703,7 +776,7 @@ function ProfilePageInner() {
                       art, acting, stunts.
                     </p>
                   </div>
-                  {revealedTalents.length > 0 && (
+                  {revealedTalents.length > 0 ? (
                     <div className="flex flex-wrap gap-3 mb-6">
                       {revealedTalents.map((t) => (
                         <div
@@ -717,6 +790,10 @@ function ProfilePageInner() {
                           </Badge>
                         </div>
                       ))}
+                    </div>
+                  ) : (
+                    <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
+                      No talents revealed yet.
                     </div>
                   )}
                   <div className="p-8 rounded-3xl bg-secondary/5 border border-secondary/20 border-dashed">
@@ -969,6 +1046,65 @@ function ProfilePageInner() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!favoriteToDelete}
+        onOpenChange={(open) => {
+          if (!open) setFavoriteToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove it from your collection. It will also
+              be removed from any albums it was added to.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {favoriteToDelete && (
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-card/40 p-3 mt-2">
+              <div className="w-12 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                {favoriteToDelete.image ? (
+                  <img
+                    src={favoriteToDelete.image}
+                    alt={favoriteToDelete.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
+                    {favoriteToDelete.title}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {favoriteToDelete.title}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {favoriteToDelete.categoryId}
+                </p>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel onClick={() => setFavoriteToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={
+                deleteFavoriteMutation.isPending || !favoriteToDelete
+              }
+              onClick={async () => {
+                if (!favoriteToDelete) return;
+                await deleteFavoriteMutation.mutateAsync(favoriteToDelete.id);
+              }}
+            >
+              {deleteFavoriteMutation.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

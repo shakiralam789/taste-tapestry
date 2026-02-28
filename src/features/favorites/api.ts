@@ -66,6 +66,10 @@ export async function updateFavorite(
   };
 }
 
+export async function deleteFavorite(id: string): Promise<void> {
+  await apiClient.delete(`/favorites/${id}`);
+}
+
 export async function uploadFavoriteMusic(
   id: string,
   file: File,

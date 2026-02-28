@@ -1,15 +1,17 @@
 "use client";
-import { useMemo } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Layout } from '@/components/layout/Layout';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ProfilePostCard } from '@/components/profile/ProfilePostCard';
-import { useWishbook } from '@/contexts/WishbookContext';
-import { TasteMatchCard } from '@/components/matching/TasteMatchCard';
-import type { InterestCategory, TasteMatch } from '@/types/wishbook';
+
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Layout } from "@/components/layout/Layout";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
+import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
+import { FullScreenLoader } from "@/components/ui/full-screen-loader";
+import { getPublicProfile, getPublicFavorites } from "@/features/users/api";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 import {
   MapPin,
   Share2,
@@ -17,95 +19,58 @@ import {
   Sparkles,
   Users,
   Rocket,
-  Mic2,
-  Palette,
-} from 'lucide-react';
-
-const categoryLabels: Record<InterestCategory, string> = {
-  creative: 'Creative pursuits',
-  performance: 'Performance-based',
-  skill: 'Skill-based',
-  intellectual: 'Intellectual / technical',
-  unique: 'Unique / unconventional',
-  collaborative: 'Collaborative',
-};
+  Calendar,
+  LayoutGrid,
+  List,
+  Images,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClientOnly } from "@/components/common/ClientOnly";
 
 type UserProfilePageProps = { id: string };
 
-export default function UserProfilePage({ id }: UserProfilePageProps) {
-  const { user: currentUser, favorites, timeCapsules, tasteMatches, allUsers } = useWishbook();
+const staggerDelay = 0.08;
 
-  const profileUser = useMemo(
-    () => allUsers.find((u) => u.id === id),
-    [allUsers, id]
-  );
+function UserProfilePageInner({ id }: UserProfilePageProps) {
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+  } = useQuery({
+    queryKey: ["user-profile", id],
+    queryFn: () => getPublicProfile(id),
+    enabled: !!id,
+  });
 
-  const match = useMemo(
-    () => (profileUser ? tasteMatches.find((m) => m.userId === profileUser.id) : null),
-    [tasteMatches, profileUser]
-  );
+  const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
+    queryKey: ["user-favorites", id],
+    queryFn: () => getPublicFavorites(id),
+    enabled: !!id && !!profile,
+  });
 
-  const userFavorites = useMemo(
-    () => (profileUser ? favorites.filter((f) => f.userId === profileUser.id) : []),
-    [favorites, profileUser]
-  );
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
+    (typeof CATEGORY_TABS)[number]["value"]
+  >("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const userCapsules = useMemo(
-    () => (profileUser ? timeCapsules.filter((t) => t.userId === profileUser.id) : []),
-    [timeCapsules, profileUser]
-  );
+  const filteredFavorites = useMemo(() => {
+    if (selectedCategoryFilter === "all") return favorites;
+    return favorites.filter((f) => f.categoryId === selectedCategoryFilter);
+  }, [favorites, selectedCategoryFilter]);
 
-  const revealedTalents = useMemo(
-    () => (profileUser ? profileUser.talents.filter((t) => t.isPublic) : []),
-    [profileUser]
-  );
+  if (profileLoading && !profile) {
+    return <FullScreenLoader />;
+  }
 
-  const interestsByCategory = useMemo(() => {
-    if (!profileUser) return {};
-    const map: Partial<Record<InterestCategory, typeof profileUser.interests>> = {};
-    profileUser.interests.forEach((i) => {
-      if (!map[i.category]) map[i.category] = [];
-      map[i.category]!.push(i);
-    });
-    return map;
-  }, [profileUser]);
-
-  const displayMatch = useMemo((): TasteMatch | null => {
-    if (!profileUser) return null;
-    return (
-      match ?? {
-        userId: profileUser.id,
-        user: profileUser,
-        compatibilityScore: 0,
-        sharedFavorites: [],
-        recommendations: [],
-        breakdown: [],
-      }
-    );
-  }, [profileUser, match]);
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  if (!profileUser) {
+  if (profileError || !profile) {
     return (
       <Layout>
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
           <p className="text-lg text-muted-foreground">User not found.</p>
-          <Link href="/matches">
+          <Link href="/profile">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to matches
+              Back to profile
             </Button>
           </Link>
         </div>
@@ -113,233 +78,361 @@ export default function UserProfilePage({ id }: UserProfilePageProps) {
     );
   }
 
-  const hasInterests = profileUser.interests.length > 0;
+  const displayName =
+    profile.displayName?.trim() || profile.username?.trim() || "User";
+  const displayUsername = profile.username?.trim()
+    ? `@${profile.username}`
+    : "";
+  const displayBio =
+    profile.bio?.trim() ||
+    "This user hasn't added a bio yet.";
+  const displayLocation = profile.location?.trim() || "";
+  const displaySinceYear = profile.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : new Date().getFullYear();
 
   return (
     <Layout className="md:px-0 px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
-        {/* Header: Back + cover + profile row */}
-        <div className="relative">
-          <div className="relative h-44 md:h-52 w-full overflow-hidden border-b border-white/10">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 flex flex-wrap items-end gap-4">
-              <Avatar className="w-20 h-20 md:w-24 md:h-24 ring-4 ring-background shadow-xl">
-                <AvatarImage src={profileUser.avatar} alt={profileUser.name} className="object-cover" />
-                <AvatarFallback className="text-2xl md:text-3xl bg-primary/20 text-foreground">
-                  {profileUser.name[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0 pb-1">
-                <h1 className="font-display text-2xl md:text-3xl font-bold truncate">
-                  {profileUser.name}
-                </h1>
-                <p className="text-primary font-medium truncate">@{profileUser.username}</p>
-                {profileUser.location && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {profileUser.location}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <Button size="sm" variant="default" className="rounded-full gap-2">
-                  <Users className="w-4 h-4" />
-                  Follow
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-full">
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+        {/* Banner - same as ProfilePage */}
+        <div className="relative h-64 md:h-80 w-full overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 mix-blend-overlay" />
         </div>
 
-        <div className="container mx-auto px-4 mt-6 space-y-8">
-          {/* Bio */}
-          {profileUser.bio && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-muted-foreground text-sm md:text-base max-w-2xl leading-relaxed"
-            >
-              {profileUser.bio}
-            </motion.p>
-          )}
-
-          {/* Taste Match – reuse TasteMatchCard from MatchesPage */}
-          {displayMatch && (
+        <div className="container mx-auto px-4 -mt-32 relative z-10">
+          <div className="flex flex-col lg:flex-row md:gap-6 gap-4 items-start">
+            {/* Left: Profile card - same structure as ProfilePage */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              className="lg:sticky top-4 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
-              <TasteMatchCard match={displayMatch} />
-            </motion.div>
-          )}
+              <Avatar className="w-40 h-40 ring-4 ring-background relative mb-4 md:mb-6">
+                <AvatarImage
+                  src={profile.avatar ?? undefined}
+                  alt={displayName}
+                  className="object-cover"
+                />
+                <AvatarFallback className="text-4xl bg-background text-foreground">
+                  {displayName[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
 
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
-            className="grid grid-cols-3 gap-4"
-          >
-            <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
-                {profileUser.followers.toLocaleString()}
+              <h1 className="font-display md:text-4xl text-2xl font-bold mb-2 flex items-center gap-2">
+                {displayName}
+                <Sparkles className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+              </h1>
+              <p className="text-primary font-medium mb-4 md:text-lg text-base">
+                {displayUsername}
               </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Followers</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
-                {profileUser.following.toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Following</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-card/30 border border-white/5 text-center">
-              <p className="font-display md:text-2xl text-xl font-bold text-foreground">
-                {userFavorites.length}
-              </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Favorites</p>
-            </div>
-          </motion.div>
 
-          {/* Interests (only if they have any) */}
-          {hasInterests && (
-            <section>
-              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
-                <Palette className="w-5 h-5 text-primary" />
-                Interests & pursuits
-              </h2>
-              <div className="space-y-4">
-                {Object.entries(interestsByCategory).map(
-                  ([cat, interests]) =>
-                    interests &&
-                    interests.length > 0 && (
-                      <div
-                        key={cat}
-                        className="p-4 rounded-2xl bg-card/20 border border-white/5"
-                      >
-                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block mb-2">
-                          {categoryLabels[cat as InterestCategory] || cat}
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {interests.map((i) => (
-                            <Badge key={i.id} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                              {i.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                )}
-              </div>
-            </section>
-          )}
+              <p className="text-sm md:text-base text-muted-foreground md:mb-6 mb-4 leading-relaxed max-w-xs">
+                {displayBio}
+              </p>
 
-          {/* Revealed talents (only public) */}
-          {revealedTalents.length > 0 && (
-            <section>
-              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
-                <Mic2 className="w-5 h-5 text-secondary" />
-                Revealed talents
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                {revealedTalents.map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/10 border border-secondary/20"
-                  >
-                    <Sparkles className="w-4 h-4 text-secondary" />
-                    <span className="font-medium text-sm">{t.name}</span>
+              <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
+                {displayLocation && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {displayLocation}
                   </div>
-                ))}
+                )}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Since {displaySinceYear}
+                </div>
               </div>
-            </section>
-          )}
 
-          {/* Their Collection */}
-          <section>
-            <div className="mb-6">
-              <h2 className="md:text-2xl text-xl font-display font-bold">Their collection</h2>
-              <p className="text-muted-foreground text-sm">
-                A peek into {profileUser.name}&apos;s taste universe — movies, songs, books, places.
-              </p>
-            </div>
-
-            {userFavorites.length === 0 ? (
-              <div className="elevated-card p-12 text-center text-muted-foreground">
-                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No favorites shared yet.</p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Button className="w-full rounded-xl" variant="default" size="sm">
+                  <Users className="w-4 h-4 mr-2" />
+                  Follow
+                </Button>
+                <Button className="w-full rounded-xl" variant="outline" size="sm">
+                  <Share2 className="w-4 h-4 mr-2" /> Share
+                </Button>
               </div>
-            ) : (
+            </motion.div>
+
+            {/* Right: Stats + Tabs - same as ProfilePage */}
+            <div className="flex-1 w-full space-y-8 pt-8 lg:pt-0">
               <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-4"
               >
-                {userFavorites.map((favorite) => (
-                  <motion.div key={favorite.id} variants={itemVariants}>
-                    <ProfilePostCard favorite={favorite} />
-                  </motion.div>
-                ))}
+                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                    <Users className="w-4 h-4 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">
+                      Followers
+                    </span>
+                  </div>
+                  <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
+                    0
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                    <Users className="w-4 h-4 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">
+                      Following
+                    </span>
+                  </div>
+                  <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
+                    0
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                    <Sparkles className="w-4 h-4 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">
+                      Stars
+                    </span>
+                  </div>
+                  <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
+                    {favorites.length}
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                    <Rocket className="w-4 h-4 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">
+                      Capsules
+                    </span>
+                  </div>
+                  <p className="font-display md:text-3xl text-2xl font-bold text-foreground">
+                    0
+                  </p>
+                </div>
               </motion.div>
-            )}
-          </section>
 
-          {/* Time capsules (if any) */}
-          {userCapsules.length > 0 && (
-            <section>
-              <h2 className="md:text-xl text-lg font-display font-bold mb-3 flex items-center gap-2">
-                <Rocket className="w-5 h-5 text-primary" />
-                Time capsules
-              </h2>
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              >
-                {userCapsules.map((capsule) => (
-                  <motion.div key={capsule.id} variants={itemVariants}>
-                    <div className="rounded-2xl overflow-hidden border border-white/10 bg-card/30 hover:border-primary/20 transition-all">
-                      <div className="aspect-video relative overflow-hidden">
-                        {capsule.image ? (
-                          <img
-                            src={capsule.image}
-                            alt={capsule.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                            <Rocket className="w-12 h-12 text-primary/50" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <h4 className="font-display font-semibold">{capsule.title}</h4>
-                          <p className="text-xs text-muted-foreground">{capsule.period}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {capsule.emotions.slice(0, 3).map((e) => (
-                              <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-white/10">
-                                {e}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+              <Tabs defaultValue="favorites" className="w-full">
+                <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                  <TabsTrigger
+                    value="favorites"
+                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
+                  >
+                    Collection
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="interests"
+                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
+                  >
+                    Interests & pursuits
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="talents"
+                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
+                  >
+                    Hidden talents
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="capsules"
+                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
+                  >
+                    Time capsules
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="favorites" className="mt-0">
+                  <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <h3 className="text-2xl font-display font-bold">
+                          {displayName}&apos;s collection
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                          Movies, songs, books, places — their taste in one place.
+                        </p>
                       </div>
-                      <div className="p-4">
-                        <p className="text-sm text-muted-foreground line-clamp-2">{capsule.description}</p>
+                      <Link href={`/users/${id}/albums`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="border rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
+                        >
+                          <Images className="w-3.5 h-3.5" />
+                          Albums
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex flex-wrap gap-2">
+                        {CATEGORY_TABS.map((cat) => {
+                          const Icon = "icon" in cat ? cat.icon : undefined;
+                          return (
+                            <Button
+                              key={cat.value}
+                              type="button"
+                              size="sm"
+                              variant={
+                                selectedCategoryFilter === cat.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setSelectedCategoryFilter(cat.value)
+                              }
+                              className={`rounded-full ${cat.value === "all" ? "gap-0" : "gap-2"}`}
+                            >
+                              <span aria-hidden>
+                                {Icon ? (
+                                  <Icon className="w-3.5 h-3.5" />
+                                ) : null}
+                              </span>
+                              {cat.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setViewMode("grid")}
+                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                            viewMode === "grid"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-white/5"
+                          }`}
+                          aria-label="Grid view"
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewMode("list")}
+                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
+                            viewMode === "list"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-white/5"
+                          }`}
+                          aria-label="List view"
+                        >
+                          <List className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </section>
-          )}
+                  </div>
+
+                  {favoritesLoading ? (
+                    <div
+                      className={
+                        viewMode === "grid"
+                          ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                          : "flex flex-col gap-3"
+                      }
+                    >
+                      {Array.from({ length: 3 }).map((_, idx) => (
+                        <ProfilePostCardSkeleton
+                          key={idx}
+                          variant={viewMode}
+                        />
+                      ))}
+                    </div>
+                  ) : filteredFavorites.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
+                      <p className="text-muted-foreground text-sm mb-2">
+                        {selectedCategoryFilter === "all"
+                          ? "No items in their collection yet."
+                          : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in their collection.`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className={
+                        viewMode === "grid"
+                          ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                          : "flex flex-col gap-3"
+                      }
+                    >
+                      {filteredFavorites.map((favorite, index) => (
+                        <motion.div
+                          key={favorite.id}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: index * staggerDelay,
+                            duration: 0.25,
+                          }}
+                          className={viewMode === "list" ? "w-full" : ""}
+                        >
+                          <Link href={`/favorites/${favorite.id}`}>
+                            <ProfilePostCard
+                              favorite={favorite}
+                              variant={viewMode}
+                            />
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="interests" className="mt-0">
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-display font-bold">
+                      Interests & creative pursuits
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Creative, performance, skill-based, and more — what drives them.
+                    </p>
+                  </div>
+                  <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
+                    No interests added yet.
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="talents" className="mt-0">
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-display font-bold">
+                      Hidden talents
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Reveal your secret skills — singing, dancing, writing, art, acting, stunts.
+                    </p>
+                  </div>
+                  <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
+                    No talents revealed yet.
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="capsules" className="mt-0">
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-display font-bold">
+                      Time capsules
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Collections tied to a period — school days, breakup era, summer 2024.
+                    </p>
+                  </div>
+                  <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
+                    <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50" />
+                    <h4 className="text-lg font-semibold mb-2 text-foreground">
+                      No capsules yet
+                    </h4>
+                    <p className="text-sm">
+                      {displayName} hasn&apos;t created any time capsules yet.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
+  );
+}
+
+export default function UserProfilePage(props: UserProfilePageProps) {
+  return (
+    <ClientOnly>
+      <UserProfilePageInner {...props} />
+    </ClientOnly>
   );
 }
