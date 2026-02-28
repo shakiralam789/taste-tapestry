@@ -986,7 +986,7 @@ export function FavoriteEditor({
                         Your thoughts about{" "}
                         {CATEGORY_SINGULAR[selectedCategory]
                           ? `this ${CATEGORY_SINGULAR[selectedCategory]}`
-                          : "it"}
+                          : "it"} <span className="text-red-500">*</span>
                       </Label>
                       <Textarea
                         id="why"
