@@ -68,9 +68,8 @@ function ProfileCollectionPageInner() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const { user: authUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    (typeof CATEGORY_TABS)[number]["value"]
-  >("all");
+  const [activeTab, setActiveTab] =
+    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(
@@ -109,7 +108,11 @@ function ProfileCollectionPageInner() {
   } = useInfiniteQuery({
     queryKey: ["favorites-page", activeTab, debouncedSearch],
     queryFn: ({ pageParam }) =>
-      getFavoritesPage(pageParam as number, categoryParam, debouncedSearch || undefined),
+      getFavoritesPage(
+        pageParam as number,
+        categoryParam,
+        debouncedSearch || undefined,
+      ),
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextOffset : undefined,
     initialPageParam: 0,
@@ -176,16 +179,13 @@ function ProfileCollectionPageInner() {
     onError: () => toast.error("Could not update visibility"),
   });
 
-  const handleTabChange = useCallback(
-    (value: string) => {
-      setActiveTab(value as (typeof CATEGORY_TABS)[number]["value"]);
-      const url = new URL(window.location.href);
-      if (value === "all") url.searchParams.delete("category");
-      else url.searchParams.set("category", value);
-      window.history.replaceState({}, "", url.pathname + url.search);
-    },
-    [],
-  );
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as (typeof CATEGORY_TABS)[number]["value"]);
+    const url = new URL(window.location.href);
+    if (value === "all") url.searchParams.delete("category");
+    else url.searchParams.set("category", value);
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }, []);
 
   if (isLoading && allItems.length === 0) {
     return (
@@ -201,25 +201,28 @@ function ProfileCollectionPageInner() {
     <Layout>
       <div className="min-h-screen py-8">
         <div className="container mx-auto px-4">
-          <div className="mb-6 flex flex-wrap items-center gap-4">
-            <Link href="/profile">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border border-border/60 shadow-sm"
-                aria-label="Back to profile"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <h1 className="font-display text-2xl md:text-3xl font-bold">
-                Collection
-              </h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                All your favorites with filters and search
-              </p>
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link href="/profile">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full border border-border/60 shadow-sm"
+                  aria-label="Back to profile"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-display text-2xl md:text-3xl font-bold">
+                  Collection
+                </h1>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  All your favorites with filters and search
+                </p>
+              </div>
             </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <Link href="/add-favorite">
                 <Button
@@ -256,7 +259,11 @@ function ProfileCollectionPageInner() {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
             <TabsList className="bg-background sticky top-0 z-10 w-full justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none gap-0">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = "icon" in tab ? tab.icon : undefined;
@@ -288,10 +295,7 @@ function ProfileCollectionPageInner() {
                     {allItems.map((favorite) => (
                       <div key={favorite.id} className="relative group">
                         <Link href={`/favorites/${favorite.id}`}>
-                          <ProfilePostCard
-                            favorite={favorite}
-                            variant="grid"
-                          />
+                          <ProfilePostCard favorite={favorite} variant="grid" />
                         </Link>
                         {authUser && (
                           <div className="absolute top-2 right-2">
@@ -329,7 +333,8 @@ function ProfileCollectionPageInner() {
                                   className="flex items-center gap-2 cursor-pointer"
                                   onSelect={(e) => {
                                     e.preventDefault();
-                                    if (toggleVisibilityMutation.isPending) return;
+                                    if (toggleVisibilityMutation.isPending)
+                                      return;
                                     toggleVisibilityMutation.mutate({
                                       id: favorite.id,
                                       isPublic: !(favorite.isPublic ?? true),
@@ -352,7 +357,8 @@ function ProfileCollectionPageInner() {
                                   className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                                   onSelect={(e) => {
                                     e.preventDefault();
-                                    if (deleteFavoriteMutation.isPending) return;
+                                    if (deleteFavoriteMutation.isPending)
+                                      return;
                                     setFavoriteToDelete(favorite);
                                   }}
                                 >

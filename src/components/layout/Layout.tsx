@@ -14,7 +14,7 @@ interface LayoutProps {
 export function Layout({ children, className }: LayoutProps) {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
-  const isProfilePage = pathname === '/profile';
+  const isProfilePage = false;
   const isClient = typeof window !== 'undefined';
 
   return (

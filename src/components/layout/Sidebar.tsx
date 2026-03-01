@@ -31,7 +31,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user: authUser } = useAuth();
-  const collapsed = pathname === "/profile";
+  const collapsed = false;
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,

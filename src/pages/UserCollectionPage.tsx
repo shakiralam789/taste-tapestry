@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPublicFavoritesPage, getPublicProfile } from "@/features/users/api";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
-import { ArrowLeft, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Images, Loader2, Search } from "lucide-react";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -25,9 +25,8 @@ type UserCollectionPageProps = { id: string };
 
 function UserCollectionPageInner({ id }: UserCollectionPageProps) {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<
-    (typeof CATEGORY_TABS)[number]["value"]
-  >("all");
+  const [activeTab, setActiveTab] =
+    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -94,16 +93,13 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleTabChange = useCallback(
-    (value: string) => {
-      setActiveTab(value as (typeof CATEGORY_TABS)[number]["value"]);
-      const url = new URL(window.location.href);
-      if (value === "all") url.searchParams.delete("category");
-      else url.searchParams.set("category", value);
-      window.history.replaceState({}, "", url.pathname + url.search);
-    },
-    [],
-  );
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as (typeof CATEGORY_TABS)[number]["value"]);
+    const url = new URL(window.location.href);
+    if (value === "all") url.searchParams.delete("category");
+    else url.searchParams.set("category", value);
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }, []);
 
   const displayName =
     profile?.displayName?.trim() || profile?.username?.trim() || "User";
@@ -122,25 +118,37 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
     <Layout>
       <div className="min-h-screen py-8">
         <div className="container mx-auto px-4">
-          <div className="mb-6 flex flex-wrap items-center gap-4">
-            <Link href={`/users/${id}`}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border border-border/60 shadow-sm"
-                aria-label="Back to profile"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <h1 className="font-display text-2xl md:text-3xl font-bold">
-                {displayName}&apos;s Collection
-              </h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                All their favorites with filters and search
-              </p>
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href={`/users/${id}`}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full border border-border/60 shadow-sm"
+                  aria-label="Back to profile"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-display text-2xl md:text-3xl font-bold">
+                  {displayName}&apos;s Collection
+                </h1>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  All their favorites with filters and search
+                </p>
+              </div>
             </div>
+              <Link href={`/users/${id}/albums`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-2"
+                >
+                  <Images className="w-4 h-4" />
+                  View albums
+                </Button>
+              </Link>
           </div>
 
           <div className="relative mb-4">
@@ -155,7 +163,11 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
             <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none gap-0">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = "icon" in tab ? tab.icon : undefined;
@@ -190,10 +202,7 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
                         href={`/favorites/${favorite.id}`}
                         className="block"
                       >
-                        <ProfilePostCard
-                          favorite={favorite}
-                          variant="grid"
-                        />
+                        <ProfilePostCard favorite={favorite} variant="grid" />
                       </Link>
                     ))}
                   </div>
