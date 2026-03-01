@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { TimeCapsule } from '@/types/wishbook';
+import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 
 export default function CreateCapsulePage() {
   const router = useRouter();
@@ -230,8 +231,8 @@ export default function CreateCapsulePage() {
                       />
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                          <img 
-                            src={fav.image} 
+                          <img
+                            src={getFavoriteCoverImage(fav.image, fav.categoryId)}
                             alt={fav.title}
                             className="w-full h-full object-cover"
                           />

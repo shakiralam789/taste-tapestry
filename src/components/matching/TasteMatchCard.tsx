@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { TasteMatch } from '@/types/wishbook';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Sparkles } from 'lucide-react';
 
@@ -89,7 +90,7 @@ export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
                     key={fav.id}
                     className="w-8 h-8 rounded-lg border-2 border-background overflow-hidden"
                   >
-                    <img src={fav.image} alt={fav.title} className="w-full h-full object-cover" />
+                    <img src={getFavoriteCoverImage(fav.image, fav.categoryId)} alt={fav.title} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>

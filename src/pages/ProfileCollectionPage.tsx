@@ -235,7 +235,7 @@ function ProfileCollectionPageInner() {
           </div>
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none gap-0">
+            <TabsList className="bg-background sticky top-0 z-10 w-full justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none gap-0">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = "icon" in tab ? tab.icon : undefined;
                 return (

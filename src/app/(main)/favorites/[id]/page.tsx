@@ -14,6 +14,8 @@ import {
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
+import { CATEGORY_EXTRA_FIELDS } from "@/features/favorites/category-fields";
+import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
 import {
   ArrowLeft,
   Pencil,
@@ -230,17 +232,14 @@ export default function FavoriteShowPage() {
           {/* Cover + title block — compact single row on larger screens */}
           <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
             <div className="shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[3/4] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
-              {favorite.image ? (
-                <img
-                  src={favorite.image}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                  <Sparkles className="w-8 h-8 opacity-50" />
-                </div>
-              )}
+              <img
+                src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+                alt=""
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+                }}
+              />
             </div>
             <div className="relative min-w-0 flex-1 pt-2">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -261,6 +260,30 @@ export default function FavoriteShowPage() {
               </h1>
               {genreStr && (
                 <p className="text-sm text-muted-foreground mt-1">{genreStr}</p>
+              )}
+              {CATEGORY_EXTRA_FIELDS[favorite.categoryId] && (
+                <div className="mt-2 p-3 rounded-xl bg-muted/40 border border-white/5">
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    {CATEGORY_EXTRA_FIELDS[favorite.categoryId].map((def) => {
+                      const value = (fields as Record<string, unknown>)[def.key];
+                      if (value == null || value === "") return null;
+                      const display =
+                        typeof value === "number"
+                          ? String(value)
+                          : Array.isArray(value)
+                            ? value.join(", ")
+                            : String(value);
+                      return (
+                        <div key={def.key}>
+                          <dt className="text-muted-foreground font-medium capitalize">
+                            {def.label}
+                          </dt>
+                          <dd className="text-foreground mt-0.5">{display}</dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                </div>
               )}
               <div className="flex items-center gap-3 mt-3 mb-4">
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold">

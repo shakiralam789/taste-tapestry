@@ -3,6 +3,8 @@ import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Star } from "lucide-react";
 import { PrivateBadge } from "@/components/common/PrivateBadge";
+import { getCategoryCardSubtitle } from "@/features/favorites/category-fields";
+import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
 
 interface ProfilePostCardProps {
   favorite: Favorite;
@@ -21,19 +23,14 @@ export function ProfilePostCard({
         className="group relative flex rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
       >
         <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden">
-          {favorite.image ? (
-            <img
-              src={favorite.image}
-              alt={favorite.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-2">
-              <p className="font-display text-xs font-bold text-white/20 text-center uppercase tracking-widest break-words">
-                {favorite.title}
-              </p>
-            </div>
-          )}
+          <img
+            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+            alt={favorite.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => {
+              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+            }}
+          />
         </div>
         <div className="flex-1 flex flex-col justify-center px-3 py-2 sm:px-4 sm:py-3">
           <div className="flex items-center justify-between gap-2 mb-1">
@@ -42,12 +39,20 @@ export function ProfilePostCard({
               {favorite.categoryId}
             </span>
             {favorite.rating != null && (
-              <span className="absolute bottom-2 right-2 flex items-center gap-1 text-[11px] text-yellow-500 font-semibold">
+              <span className="flex items-center gap-1 text-[11px] text-yellow-500 font-semibold">
                 <Star className="w-3 h-3 fill-yellow-500" />
                 {favorite.rating}
               </span>
             )}
           </div>
+          {(() => {
+            const sub = getCategoryCardSubtitle(favorite.categoryId, favorite.fields);
+            return sub ? (
+              <p className="text-[11px] text-muted-foreground truncate mb-0.5">
+                {sub}
+              </p>
+            ) : null;
+          })()}
           <h3 className="font-display text-sm sm:text-base font-semibold text-foreground truncate">
             {favorite.title}
           </h3>
@@ -74,34 +79,36 @@ export function ProfilePostCard({
       className="group relative aspect-[4/6] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
     >
       {/* Background Image */}
-      {favorite.image ? (
-        <img
-          src={favorite.image}
-          alt={favorite.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4 md:p-6">
-          <p className="font-display md:text-2xl text-xl font-bold text-white/20 text-center uppercase tracking-widest break-words">
-            {favorite.title}
-          </p>
-        </div>
-      )}
+      <img
+        src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+        alt={favorite.title}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        onError={(e) => {
+          e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+        }}
+      />
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
       {/* Content */}
-      <div className="absolute inset-0 p-3 md:p-5 flex flex-col justify-end">
+        <div className="absolute inset-0 p-3 md:p-5 flex flex-col justify-end">
         {favorite.isPublic === false && (
           <PrivateBadge className="absolute top-3 left-3" />
         )}
         <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-          <div className="flex items-center gap-2 mb-2 text-primary text-xs font-semibold tracking-wider uppercase opacity-90 group-hover:opacity-100 transition-opacity delay-100">
+          <div className="flex items-center gap-2 mb-1 text-primary text-xs font-semibold tracking-wider uppercase opacity-90 group-hover:opacity-100 transition-opacity delay-100">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             {favorite.categoryId}
           </div>
-
+          {(() => {
+            const sub = getCategoryCardSubtitle(favorite.categoryId, favorite.fields);
+            return sub ? (
+              <p className="text-[11px] text-white/80 truncate mb-1 drop-shadow-md">
+                {sub}
+              </p>
+            ) : null;
+          })()}
           <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md">
             {favorite.title}
           </h3>

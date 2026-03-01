@@ -34,6 +34,11 @@ import type { Favorite, Mood, EmotionalSegment } from "@/types/wishbook";
 import { getEmotionFill } from "@/data/emotionColors";
 import { CoverImageField } from "@/components/ui/cover-image-field";
 import { CATEGORY_TABS } from "@/features/albums/constants";
+import {
+  CATEGORY_EXTRA_FIELDS,
+  type CategoryFieldDef,
+} from "@/features/favorites/category-fields";
+import { getDefaultCoverForCategory } from "@/features/favorites/default-covers";
 
 export type FavoriteEditorPayload = Omit<
   Favorite,
@@ -60,10 +65,9 @@ const CATEGORY_SINGULAR: Record<string, string> = {
   series: "series",
   anime: "anime",
   songs: "song",
+  books: "book",
+  games: "game",
 };
-const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop";
-
 /** Next.js API proxy for TMDb (keeps API key server-side). Set TMDB_API_KEY or VITE_TMDB_API_KEY in .env */
 const TMDB_PROXY_BASE = "/api/tmdb";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
@@ -186,6 +190,21 @@ export function FavoriteEditor({
   );
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
 
+  /** Category-specific fields for songs, books, games (key -> string or number). */
+  const [categoryExtra, setCategoryExtra] = useState<Record<string, string | number>>(() => {
+    const cat = initialFavorite?.categoryId ?? "movies";
+    const defs = CATEGORY_EXTRA_FIELDS[cat];
+    if (!defs || !initialFavorite?.fields) return {};
+    const raw = initialFavorite.fields as Record<string, unknown>;
+    const out: Record<string, string | number> = {};
+    for (const d of defs) {
+      const v = raw[d.key];
+      if (v != null && v !== "")
+        out[d.key] = typeof v === "number" ? v : String(v);
+    }
+    return out;
+  });
+
   const [dropdownClosed, setDropdownClosed] = useState(!!initialFavorite);
   const [tmdbTvId, setTmdbTvId] = useState<number | null>(null);
   const [debouncedSearchTitle, setDebouncedSearchTitle] = useState("");
@@ -200,6 +219,23 @@ export function FavoriteEditor({
   const hasEmotionalJourney =
     EMOTIONAL_JOURNEY_CATEGORIES.includes(selectedCategory);
   const totalSteps = hasEmotionalJourney ? TOTAL_STEPS : TOTAL_STEPS - 1;
+
+  // Hydrate category-specific fields (songs, books, games) when editing or switching category
+  useEffect(() => {
+    const defs = CATEGORY_EXTRA_FIELDS[selectedCategory];
+    if (!defs) return;
+    const raw =
+      (initialFavorite?.categoryId === selectedCategory
+        ? (initialFavorite.fields as Record<string, unknown>)
+        : {}) ?? {};
+    const next: Record<string, string | number> = {};
+    for (const d of defs) {
+      const v = raw[d.key];
+      if (v != null && v !== "")
+        next[d.key] = typeof v === "number" ? v : String(v);
+    }
+    setCategoryExtra(next);
+  }, [selectedCategory, initialFavorite?.id, initialFavorite?.categoryId, initialFavorite?.fields]);
 
   // Hydrate series/anime episode structure from existing favorite when editing
   useEffect(() => {
@@ -283,14 +319,39 @@ export function FavoriteEditor({
       return;
     }
 
-    const currentFields = {
-      genre: formData.genre
-        .split(",")
-        .map((g) => g.trim())
-        .filter(Boolean),
-      releaseYear:
-        parseInt(formData.releaseYear, 10) || new Date().getFullYear(),
-      plotSummary: formData.plotSummary,
+    const extraDefs = CATEGORY_EXTRA_FIELDS[selectedCategory];
+    const isCategoryWithExtra = !!extraDefs;
+
+    const currentFields: Record<string, unknown> = isCategoryWithExtra
+      ? {}
+      : {
+          genre: formData.genre
+            .split(",")
+            .map((g) => g.trim())
+            .filter(Boolean),
+          releaseYear:
+            parseInt(formData.releaseYear, 10) || new Date().getFullYear(),
+          plotSummary: formData.plotSummary,
+        };
+
+    if (isCategoryWithExtra && extraDefs) {
+      for (const d of extraDefs) {
+        const v = categoryExtra[d.key];
+        if (v === undefined || v === "") continue;
+        if (d.type === "number") {
+          const n = typeof v === "number" ? v : parseInt(String(v), 10);
+          if (!Number.isNaN(n)) currentFields[d.key] = n;
+        } else {
+          currentFields[d.key] = String(v).trim();
+        }
+      }
+      const genreVal = currentFields.genre;
+      if (typeof genreVal === "string" && genreVal.includes(",")) {
+        currentFields.genre = genreVal.split(",").map((g) => g.trim()).filter(Boolean);
+      }
+    }
+
+    Object.assign(currentFields, {
       totalDurationSeconds: isSeries
         ? undefined
         : totalDurationSeconds || undefined,
@@ -314,12 +375,12 @@ export function FavoriteEditor({
           ? episodeSegments
           : undefined,
       tmdbTvId: isSeriesOrAnime && tmdbTvId != null ? tmdbTvId : undefined,
-    };
+    });
 
     const fullPayload: FavoriteEditorPayload = {
       categoryId: selectedCategory,
       title: formData.title,
-      image: formData.image || DEFAULT_IMAGE,
+      image: formData.image || getDefaultCoverForCategory(selectedCategory),
       rating: formData.rating,
       mood: selectedMoods,
       whyILike: formData.whyILike,
@@ -705,7 +766,13 @@ export function FavoriteEditor({
                             : selectedCategory === "series" ||
                                 selectedCategory === "anime"
                               ? "e.g., Breaking Bad"
-                              : "Enter title..."
+                              : selectedCategory === "songs"
+                                ? "e.g., Blinding Lights"
+                                : selectedCategory === "books"
+                                  ? "e.g., Norwegian Wood"
+                                  : selectedCategory === "games"
+                                    ? "e.g., Elden Ring"
+                                    : "Enter title..."
                         }
                         value={formData.title}
                         onChange={(e) =>
@@ -773,59 +840,105 @@ export function FavoriteEditor({
                         onImageChange={(value) =>
                           setFormData((prev) => ({ ...prev, image: value }))
                         }
-                        fallbackImageUrl={DEFAULT_IMAGE}
+                        fallbackImageUrl={getDefaultCoverForCategory(selectedCategory)}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="genre">Genre</Label>
-                        <Input
-                          id="genre"
-                          placeholder="Romance, Drama"
-                          value={formData.genre}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              genre: e.target.value,
-                            }))
-                          }
-                          className="mt-1"
-                        />
+                    {CATEGORY_EXTRA_FIELDS[selectedCategory] ? (
+                      <div className="space-y-4">
+                        {CATEGORY_EXTRA_FIELDS[selectedCategory].map((def: CategoryFieldDef) => (
+                          <div key={def.key}>
+                            <Label htmlFor={def.key}>{def.label}</Label>
+                            {def.type === "textarea" ? (
+                              <Textarea
+                                id={def.key}
+                                placeholder={def.placeholder}
+                                value={String(categoryExtra[def.key] ?? "")}
+                                onChange={(e) =>
+                                  setCategoryExtra((prev) => ({
+                                    ...prev,
+                                    [def.key]: e.target.value,
+                                  }))
+                                }
+                                rows={3}
+                                className="mt-1"
+                              />
+                            ) : (
+                              <Input
+                                id={def.key}
+                                type={def.type}
+                                placeholder={def.placeholder}
+                                value={categoryExtra[def.key] ?? ""}
+                                onChange={(e) =>
+                                  setCategoryExtra((prev) => ({
+                                    ...prev,
+                                    [def.key]:
+                                      def.type === "number"
+                                        ? e.target.value === ""
+                                          ? ""
+                                          : parseInt(e.target.value, 10) || 0
+                                        : e.target.value,
+                                  }))
+                                }
+                                className="mt-1"
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <Label htmlFor="year">Release Year</Label>
-                        <Input
-                          id="year"
-                          type="number"
-                          placeholder="Release year"
-                          value={formData.releaseYear}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              releaseYear: e.target.value,
-                            }))
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="plot">Plot Summary</Label>
-                      <Textarea
-                        id="plot"
-                        placeholder="Brief description..."
-                        value={formData.plotSummary}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            plotSummary: e.target.value,
-                          }))
-                        }
-                        rows={5}
-                        className="mt-1"
-                      />
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="genre">Genre</Label>
+                            <Input
+                              id="genre"
+                              placeholder="Romance, Drama"
+                              value={formData.genre}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  genre: e.target.value,
+                                }))
+                              }
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="year">Release Year</Label>
+                            <Input
+                              id="year"
+                              type="number"
+                              placeholder="Release year"
+                              value={formData.releaseYear}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  releaseYear: e.target.value,
+                                }))
+                              }
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="plot">Plot Summary</Label>
+                          <Textarea
+                            id="plot"
+                            placeholder="Brief description..."
+                            value={formData.plotSummary}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                plotSummary: e.target.value,
+                              }))
+                            }
+                            rows={5}
+                            className="mt-1"
+                          />
+                        </div>
+                      </>
+                    )}
                     {isSeriesOrAnime && (
                       <div className="space-y-3">
                         <div>
@@ -1383,7 +1496,7 @@ export function FavoriteEditor({
                           alt=""
                           className="w-full h-full object-cover pointer-events-none"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                            (e.target as HTMLImageElement).src = getDefaultCoverForCategory(selectedCategory);
                           }}
                         />
                       ) : (

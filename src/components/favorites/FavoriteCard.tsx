@@ -2,6 +2,7 @@
 import { Favorite } from '@/types/wishbook';
 import { useWishbook } from '@/contexts/WishbookContext';
 import { EmotionalJourneyView } from '@/components/favorites/EmotionalJourneyView';
+import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star } from 'lucide-react';
@@ -84,15 +85,16 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
         </p>
 
         {/* Media */}
-        {favorite.image && (
-          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/20 relative group cursor-pointer">
-            <img 
-              src={favorite.image} 
-              alt={favorite.title} 
-              className="w-full max-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          </div>
-        )}
+        <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/20 relative group cursor-pointer">
+          <img
+            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+            alt={favorite.title}
+            className="w-full max-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+            }}
+          />
+        </div>
 
         {/* Emotional journey (read-only) when present */}
         {((favorite.fields?.emotionalSegments?.length > 0 && favorite.categoryId !== 'series' && favorite.categoryId !== 'anime') ||
