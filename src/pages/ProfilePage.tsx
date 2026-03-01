@@ -527,9 +527,9 @@ function ProfilePageInner() {
                         <Link href="/albums">
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="border rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
+                            className="rounded-full"
                           >
                             <Images className="w-3.5 h-3.5" />
                             Albums
@@ -539,7 +539,7 @@ function ProfilePageInner() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-full border-dashed group hover:border-primary hover:text-primary"
+                            className="rounded-full"
                           >
                             <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
                             Add new

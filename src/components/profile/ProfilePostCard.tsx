@@ -76,7 +76,7 @@ export function ProfilePostCard({
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className="group relative aspect-[4/6] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
+      className="group relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
     >
       {/* Background Image */}
       <img

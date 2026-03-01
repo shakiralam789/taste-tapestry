@@ -316,9 +316,9 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       <Link href={`/users/${id}/albums`}>
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          className="border rounded-full gap-1 text-xs text-muted-foreground hover:text-primary"
+                          className="rounded-full"
                         >
                           <Images className="w-3.5 h-3.5" />
                           Albums

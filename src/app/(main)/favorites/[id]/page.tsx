@@ -231,7 +231,7 @@ export default function FavoriteShowPage() {
         <main className="max-w-4xl mx-auto px-4 py-6 pb-16">
           {/* Cover + title block — compact single row on larger screens */}
           <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
-            <div className="shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[3/4] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
+            <div className="shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[2/3] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
               <img
                 src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
                 alt=""

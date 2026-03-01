@@ -220,6 +220,28 @@ function ProfileCollectionPageInner() {
                 All your favorites with filters and search
               </p>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href="/add-favorite">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-2 border-dashed"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add new
+                </Button>
+              </Link>
+              <Link href="/albums">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-2"
+                >
+                  <Images className="w-4 h-4" />
+                  View albums
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="relative mb-4">
