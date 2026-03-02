@@ -69,12 +69,7 @@ export function ProfilePostCard({
         whileHover={{ y: -3 }}
         className="group relative flex rounded-2xl overflow-hidden bg-muted border border-white/5"
       >
-        <div
-          onClick={(e) => {
-            onTitleClick?.();
-          }}
-          className="cursor-pointer w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden"
-        >
+        <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden">
           <img
             src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
             alt={favorite.title}
@@ -159,7 +154,6 @@ export function ProfilePostCard({
   // Default grid variant
   return (
     <motion.div
-      onClick={() => onTitleClick?.()}
       whileHover={{ y: -5 }}
       className="group relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
     >
@@ -198,9 +192,18 @@ export function ProfilePostCard({
                 </p>
               ) : null;
             })()}
-            <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
-              {favorite.title}
-            </h3>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTitleClick?.();
+              }}
+              className="text-left w-fit"
+            >
+              <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
+                {favorite.title}
+              </h3>
+            </button>
           </div>
           <div
             onClick={(e) => {

@@ -308,15 +308,13 @@ export function AlbumShowPageInner() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {albumItems.map((favorite) => (
                             <div key={favorite.id} className="relative group">
-                              <Link
-                                href={`/favorites/${favorite.id}`}
-                                className="block"
-                              >
-                                <ProfilePostCard
-                                  favorite={favorite}
-                                  variant="grid"
-                                />
-                              </Link>
+                              <ProfilePostCard
+                                favorite={favorite}
+                                variant="grid"
+                                onTitleClick={() =>
+                                  router.push(`/favorites/${favorite.id}`)
+                                }
+                              />
                               {authUser && authUser.id === album.userId && (
                                 <button
                                   type="button"
