@@ -1,7 +1,7 @@
-import { Film, Music, BookOpen, Tv, Gamepad } from "lucide-react";
+import { Film, Music, BookOpen, Tv, Gamepad, Globe } from "lucide-react";
 
 export const CATEGORY_TABS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All", icon: Globe },
   { value: "movies", label: "Movie", icon: Film },
   { value: "series", label: "Series", icon: Tv },
   { value: "songs", label: "Song", icon: Music },

@@ -566,7 +566,7 @@ function ProfilePageInner() {
                               onClick={() =>
                                 setSelectedCategoryFilter(cat.value)
                               }
-                              className={`rounded-full ${cat.value === "all" ? "gap-0" : "gap-2"}`}
+                              className={`rounded-full`}
                             >
                               <span aria-hidden>
                                 {Icon ? <Icon className="w-3.5 h-3.5" /> : null}

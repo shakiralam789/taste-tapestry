@@ -1,25 +1,27 @@
 "use client";
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Layout } from '@/components/layout/Layout';
-import { FavoriteCard } from '@/components/favorites/FavoriteCard';
-import { CategoryChip } from '@/components/categories/CategoryChip';
-import { UserCard } from '@/components/users/UserCard';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useWishbook } from '@/contexts/WishbookContext';
-import { Search, Filter, TrendingUp, Users, Bookmark } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Layout } from "@/components/layout/Layout";
+import { FavoriteCard } from "@/components/favorites/FavoriteCard";
+import { CategoryChip } from "@/components/categories/CategoryChip";
+import { UserCard } from "@/components/users/UserCard";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useWishbook } from "@/contexts/WishbookContext";
+import { Search, Filter, Bookmark } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CATEGORY_TABS } from "@/features/albums/constants";
 export default function DiscoverPage() {
-  const { categories, favorites, allUsers, user } = useWishbook();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { favorites, allUsers, user } = useWishbook();
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const filteredFavorites = favorites.filter(f => {
-    const matchesSearch = f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredFavorites = favorites.filter((f) => {
+    const matchesSearch =
+      f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.whyILike.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || f.categoryId === selectedCategory;
+    const matchesCategory =
+      !selectedCategory || f.categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -27,13 +29,13 @@ export default function DiscoverPage() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.08 }
-    }
+      transition: { staggerChildren: 0.08 },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+    visible: { opacity: 1, y: 0 },
   };
 
   return (
@@ -46,11 +48,11 @@ export default function DiscoverPage() {
           className="text-center md:mb-12 mb-6"
         >
           <h1 className="font-display text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-            Discover{' '}
-            <span className="gradient-text">New Favorites</span>
+            Discover <span className="gradient-text">New Favorites</span>
           </h1>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore recommendations from people with similar taste and find your next obsession.
+            Explore recommendations from people with similar taste and find your
+            next obsession.
           </p>
         </motion.div>
 
@@ -70,7 +72,11 @@ export default function DiscoverPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-14 pr-14 h-16 md:text-lg text-base rounded-full border-2 bg-card/50 backdrop-blur-xl focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-lg"
             />
-            <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-primary/10 hover:text-primary rounded-full w-10 h-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-primary/10 hover:text-primary rounded-full w-10 h-10"
+            >
               <Filter className="w-5 h-5" />
             </Button>
           </div>
@@ -83,31 +89,44 @@ export default function DiscoverPage() {
           transition={{ delay: 0.2 }}
           className="flex justify-center items-center gap-1.5 md:gap-3 overflow-x-auto pb-4 md:mb-10 mb-4 scrollbar-hide px-1 py-1"
         >
-          <CategoryChip
-            category={{ id: 'all', name: 'All', icon: '✨', color: 'primary', isDefault: true }}
-            isSelected={selectedCategory === null}
-            onClick={() => setSelectedCategory(null)}
-          />
-          {categories.map((category) => (
-            <CategoryChip
-              key={category.id}
-              category={category}
-              isSelected={selectedCategory === category.id}
-              onClick={() => setSelectedCategory(category.id)}
-            />
-          ))}
+          {CATEGORY_TABS.map((category) => {
+            const Icon = "icon" in category ? category.icon : undefined;
+            return (
+              <CategoryChip
+                key={category.value}
+                category={{
+                  id: category.value,
+                  name: category.label,
+                  icon: Icon ? <Icon className="w-4 h-4" /> : "✨",
+                  color: "primary",
+                  isDefault: true,
+                }}
+                isSelected={selectedCategory === category.value}
+                onClick={() => setSelectedCategory(category.value)}
+              />
+            );
+          })}
         </motion.div>
 
         {/* Tabs */}
         <Tabs defaultValue="trending" className="space-y-8">
           <TabsList className="mx-auto grid w-full max-w-md grid-cols-3 bg-secondary/10 p-1 rounded-full border border-white/5">
-            <TabsTrigger value="trending" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="trending"
+              className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               Trending
             </TabsTrigger>
-            <TabsTrigger value="people" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="people"
+              className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               People
             </TabsTrigger>
-            <TabsTrigger value="collections" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger
+              value="collections"
+              className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
               Collections
             </TabsTrigger>
           </TabsList>
@@ -132,7 +151,9 @@ export default function DiscoverPage() {
                 <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-card flex items-center justify-center border border-white/5 animate-pulse">
                   <Search className="w-10 h-10 text-muted-foreground" />
                 </div>
-                <h3 className="font-display text-2xl font-bold mb-2">No results found</h3>
+                <h3 className="font-display text-2xl font-bold mb-2">
+                  No results found
+                </h3>
                 <p className="text-muted-foreground">
                   Try adjusting your search or filters to explore the cosmos.
                 </p>
@@ -148,11 +169,13 @@ export default function DiscoverPage() {
               animate="visible"
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {allUsers.filter(u => u.id !== user.id).map((u) => (
-                <motion.div key={u.id} variants={itemVariants}>
-                  <UserCard user={u} />
-                </motion.div>
-              ))}
+              {allUsers
+                .filter((u) => u.id !== user.id)
+                .map((u) => (
+                  <motion.div key={u.id} variants={itemVariants}>
+                    <UserCard user={u} />
+                  </motion.div>
+                ))}
             </motion.div>
           </TabsContent>
 
@@ -162,9 +185,12 @@ export default function DiscoverPage() {
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <Bookmark className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">Curated Collections</h3>
+              <h3 className="font-display text-xl font-semibold mb-2">
+                Curated Collections
+              </h3>
               <p className="text-sm md:text-base text-muted-foreground mb-6 max-w-sm mx-auto">
-                Explore hand-picked collections from our top tastemakers. Coming soon to a galaxy near you.
+                Explore hand-picked collections from our top tastemakers. Coming
+                soon to a galaxy near you.
               </p>
               <Button variant="outline">Notify Me</Button>
             </div>
