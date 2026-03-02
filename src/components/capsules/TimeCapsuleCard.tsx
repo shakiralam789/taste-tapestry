@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
-import { TimeCapsule } from '@/types/wishbook';
-import { Calendar, Lock, Unlock } from 'lucide-react';
+import { motion } from "framer-motion";
+import { TimeCapsule } from "@/types/wishbook";
+import { Calendar, Globe2, Lock, Unlock, Film } from "lucide-react";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -8,6 +8,16 @@ interface TimeCapsuleCardProps {
 }
 
 export function TimeCapsuleCard({ capsule, onClick }: TimeCapsuleCardProps) {
+  const visibility = capsule.visibility ?? "public";
+  const unlockLabel =
+    visibility === "future" && capsule.unlockAt
+      ? `Opens ${capsule.unlockAt.toLocaleDateString()}`
+      : "Future";
+
+  const coverUrl =
+    capsule.image || capsule.images?.[0] || capsule.videos?.[0] || "";
+  const isVideoCover = !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -16,26 +26,65 @@ export function TimeCapsuleCard({ capsule, onClick }: TimeCapsuleCardProps) {
       onClick={onClick}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 z-10" />
-      
-      {/* Image Header */}
+
+      {/* Media Header */}
       <div className="relative h-48 overflow-hidden">
-        <img
-          src={capsule.image}
-          alt={capsule.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
-        />
-        
+        {isVideoCover ? (
+          <video
+            src={coverUrl}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
+            autoPlay
+            muted
+            loop
+          />
+        ) : (
+          <img
+            src={coverUrl}
+            alt={capsule.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
+          />
+        )}
+
         {/* Period Badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20">
           <Calendar className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-medium text-white">{capsule.period}</span>
+          <span className="text-xs font-medium text-white">
+            {capsule.period}
+          </span>
+        </div>
+        {/* Visibility Badge */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20 text-[11px]">
+          {visibility === "public" && (
+            <>
+              <Globe2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-xs font-medium text-emerald-100">
+                Public
+              </span>
+            </>
+          )}
+          {visibility === "private" && (
+            <>
+              <Lock className="w-3.5 h-3.5 text-amber-300" />
+              <span className="text-xs font-medium text-amber-50">
+                Private
+              </span>
+            </>
+          )}
+          {visibility === "future" && (
+            <>
+              <Lock className="w-3.5 h-3.5 text-sky-300" />
+              <span className="text-xs font-medium text-sky-50">
+                {unlockLabel}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="relative p-5 z-20 -mt-12">
         <h3 className="font-display text-xl font-bold text-white mb-2 drop-shadow-lg">
-           {capsule.title}
+          {capsule.title}
         </h3>
         <p className="text-sm text-gray-300 line-clamp-2 mb-4 h-10">
           {capsule.description}

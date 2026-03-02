@@ -921,7 +921,7 @@ function ProfilePageInner() {
                     >
                       {timeCapsules.map((capsule) => (
                         <motion.div key={capsule.id} variants={itemVariants}>
-                          <Link href={`/capsules#${capsule.id}`}>
+                          <Link href={`/capsules/${capsule.id}`}>
                             <div className="group rounded-2xl overflow-hidden border border-white/10 bg-card/30 hover:border-primary/20 transition-all">
                               <div className="aspect-video relative overflow-hidden">
                                 {capsule.image ? (

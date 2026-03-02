@@ -1,14 +1,23 @@
 "use client";
-import { motion } from 'framer-motion';
-import { Layout } from '@/components/layout/Layout';
-import { TimeCapsuleCard } from '@/components/capsules/TimeCapsuleCard';
-import { Button } from '@/components/ui/button';
-import { useWishbook } from '@/contexts/WishbookContext';
-import { Clock, Plus, Archive, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { Layout } from "@/components/layout/Layout";
+import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
+import { Button } from "@/components/ui/button";
+import { useWishbook } from "@/contexts/WishbookContext";
+import { Clock, Plus, Archive, Sparkles, Lock, Globe2 } from "lucide-react";
+import type { TimeCapsule, Favorite } from "@/types/wishbook";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function CapsulesPage() {
-  const { timeCapsules } = useWishbook();
+  const { timeCapsules, favorites } = useWishbook();
+  const [activeCapsule, setActiveCapsule] = useState<TimeCapsule | null>(null);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -51,12 +60,18 @@ export default function CapsulesPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex justify-center mb-12"
+            className="flex flex-wrap items-center justify-center gap-3 mb-12"
           >
             <Link href="/create-capsule">
               <Button variant="gradient" size="lg">
                 <Plus className="w-5 h-5" />
                 Create New Capsule
+              </Button>
+            </Link>
+            <Link href="/capsules/explore">
+              <Button variant="outline" size="lg" className="gap-2 rounded-full">
+                <Sparkles className="w-4 h-4" />
+                Explore life phases
               </Button>
             </Link>
           </motion.div>
@@ -153,6 +168,171 @@ export default function CapsulesPage() {
           )}
         </div>
       </div>
+
+      {/* Capsule Detail (design-only, no backend) */}
+      <Dialog
+        open={!!activeCapsule}
+        onOpenChange={(open) => {
+          if (!open) setActiveCapsule(null);
+        }}
+      >
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          {activeCapsule && (
+            <>
+              <div className="relative h-56 md:h-64 overflow-hidden">
+                <img
+                  src={activeCapsule.image}
+                  alt={activeCapsule.title}
+                  className="w-full h-full object-cover brightness-[0.45]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 flex flex-col gap-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {activeCapsule.period || "Time period not set"}
+                  </p>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    {activeCapsule.visibility === "private" && (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        <span>Private capsule</span>
+                      </>
+                    )}
+                    {(!activeCapsule.visibility ||
+                      activeCapsule.visibility === "public") && (
+                      <>
+                        <Globe2 className="w-3 h-3" />
+                        <span>Public capsule</span>
+                      </>
+                    )}
+                    {activeCapsule.visibility === "future" && (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        <span>
+                          Opens{" "}
+                          {activeCapsule.unlockAt
+                            ? activeCapsule.unlockAt.toLocaleDateString()
+                            : "in future"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <DialogHeader className="p-0">
+                    <DialogTitle className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                      {activeCapsule.title}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {activeCapsule.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {activeCapsule.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Left: timeline of favorites */}
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Memories in this chapter
+                  </h3>
+                  {getFavoritesForCapsule(activeCapsule, favorites).length ===
+                  0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No favorites linked yet. Add movies, songs, or books that
+                      defined this phase.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {getFavoritesForCapsule(activeCapsule, favorites).map(
+                        (fav) => (
+                          <div
+                            key={fav.id}
+                            className="flex items-center gap-3 rounded-xl border border-white/10 bg-card/40 p-2.5"
+                          >
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                              <img
+                                src={fav.image}
+                                alt={fav.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {fav.title}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground capitalize">
+                                {fav.categoryId}
+                              </p>
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: capsule DNA */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Capsule DNA
+                  </h3>
+                  <div className="rounded-2xl border border-white/10 bg-card/40 p-3 space-y-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Dominant moods
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeCapsule.emotions.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">
+                            No moods added yet.
+                          </span>
+                        ) : (
+                          activeCapsule.emotions.slice(0, 4).map((emotion) => (
+                            <span
+                              key={emotion}
+                              className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary border border-primary/20"
+                            >
+                              {emotion}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Number of memories
+                      </p>
+                      <p className="text-sm font-medium">
+                        {activeCapsule.favorites.length} favorites
+                      </p>
+                    </div>
+                    {activeCapsule.story && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Story
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-4">
+                          {activeCapsule.story}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
+}
+
+function getFavoritesForCapsule(
+  capsule: TimeCapsule,
+  allFavorites: Favorite[],
+): Favorite[] {
+  if (!capsule.favorites?.length) return [];
+  const ids = new Set(capsule.favorites);
+  return allFavorites.filter((f) => ids.has(f.id));
 }

@@ -1,110 +1,96 @@
 "use client";
-import { useState, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useWishbook } from '@/contexts/WishbookContext';
-import { 
-  ArrowLeft, 
-  Upload, 
-  Clock,
-  Sparkles,
-  Plus,
-  X
-} from 'lucide-react';
-import { TimeCapsule } from '@/types/wishbook';
-import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { Layout } from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useWishbook } from "@/contexts/WishbookContext";
+import { ArrowLeft, Upload, Clock, Sparkles, Plus, X } from "lucide-react";
+import { TimeCapsule } from "@/types/wishbook";
+import { CapsuleMediaUploader } from "@/components/capsules/CapsuleMediaUploader";
 
 export default function CreateCapsulePage() {
   const router = useRouter();
-  const { favorites, addTimeCapsule } = useWishbook();
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    period: '',
-    image: '',
-    story: '',
-  });
-  const [selectedFavorites, setSelectedFavorites] = useState<string[]>([]);
-  const [emotions, setEmotions] = useState<string[]>([]);
-  const [newEmotion, setNewEmotion] = useState('');
-  const coverImageInputRef = useRef<HTMLInputElement | null>(null);
+  const { addTimeCapsule } = useWishbook();
 
-  const handleCoverImageFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        setFormData(prev => ({ ...prev, image: dataUrl }));
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    },
-    []
-  );
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    period: "",
+    story: "",
+  });
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [emotions, setEmotions] = useState<string[]>([]);
+  const [newEmotion, setNewEmotion] = useState("");
+  const [media, setMedia] = useState<{ images: string[]; videos: string[] }>({
+    images: [],
+    videos: [],
+  });
 
   const emotionSuggestions = [
-    'nostalgic', 'happy', 'bittersweet', 'adventurous', 'peaceful', 
-    'hopeful', 'melancholic', 'excited', 'reflective', 'free'
+    "nostalgic",
+    "happy",
+    "bittersweet",
+    "adventurous",
+    "peaceful",
+    "hopeful",
+    "melancholic",
+    "excited",
+    "reflective",
+    "free",
   ];
-
-  const toggleFavorite = (id: string) => {
-    setSelectedFavorites(prev =>
-      prev.includes(id)
-        ? prev.filter(f => f !== id)
-        : [...prev, id]
-    );
-  };
 
   const addEmotion = (emotion: string) => {
     if (emotion.trim() && !emotions.includes(emotion.trim())) {
-      setEmotions(prev => [...prev, emotion.trim()]);
-      setNewEmotion('');
+      setEmotions((prev) => [...prev, emotion.trim()]);
+      setNewEmotion("");
     }
   };
 
   const removeEmotion = (emotion: string) => {
-    setEmotions(prev => prev.filter(e => e !== emotion));
+    setEmotions((prev) => prev.filter((e) => e !== emotion));
   };
 
   const handleSubmit = () => {
+    const selectedCover =
+      coverImage || media.images[0] || media.videos[0] || "";
+
     const newCapsule: TimeCapsule = {
       id: Date.now().toString(),
-      userId: '1',
+      userId: "1",
       title: formData.title,
       description: formData.description,
       period: formData.period,
-      image: formData.image || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop',
-      favorites: selectedFavorites,
+      image:
+        selectedCover ||
+        "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop",
+      favorites: [],
       emotions,
       story: formData.story,
+      images: media.images,
+      videos: media.videos,
       createdAt: new Date(),
     };
 
     addTimeCapsule(newCapsule);
-    router.push('/capsules');
+    router.push("/capsules");
   };
 
   return (
     <Layout>
       <div className="min-h-screen py-12">
-        <div className="container mx-auto px-4 max-w-3xl">
+        <div className="container mx-auto px-0">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.back()}
               className="mb-4"
             >
@@ -119,223 +105,263 @@ export default function CreateCapsulePage() {
             </p>
           </motion.div>
 
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-6"
-          >
-            {/* Cover Image */}
-            <div className="elevated-card">
-              <Label className="text-base font-medium mb-3 block">Cover Image</Label>
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add a photo that represents this time
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                  <input
-                    ref={coverImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleCoverImageFile}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => coverImageInputRef.current?.click()}
-                    className="gap-1.5"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </Button>
-                  <span className="text-muted-foreground text-sm">or</span>
-                  <Input
-                    placeholder="Paste image URL"
-                    value={formData.image.startsWith('data:') ? '' : formData.image}
-                    onChange={(e) =>
-                      setFormData(prev => ({ ...prev, image: e.target.value.trim() }))
-                    }
-                    className="w-64"
-                  />
-                </div>
-                {formData.image.startsWith('data:') && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Image set from upload
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Basic Info */}
-            <div className="elevated-card space-y-4">
-              <div>
-                <Label htmlFor="title" className="mb-1 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  Capsule Title *
-                </Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., College Days, Summer of 2023"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="period">Time Period</Label>
-                <Input
-                  id="period"
-                  placeholder="e.g., 2018-2022, Summer 2023"
-                  value={formData.period}
-                  onChange={(e) => setFormData(prev => ({ ...prev, period: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Short Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="A brief description of what this time meant to you..."
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            {/* Select Favorites */}
-            <div className="elevated-card">
-              <Label className="text-base font-medium mb-4 block">
-                Select Favorites to Include
-              </Label>
-              {favorites.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {favorites.map((fav) => (
-                    <label
-                      key={fav.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedFavorites.includes(fav.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/30'
-                      }`}
+          <div className="grid gap-10 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)] items-start">
+            {/* Form */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-500 ease-out hover:shadow-elevated hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="elevated-card space-y-4">
+                  <div>
+                    <Label
+                      htmlFor="title"
+                      className="mb-1 flex items-center gap-2"
                     >
-                      <Checkbox
-                        checked={selectedFavorites.includes(fav.id)}
-                        onCheckedChange={() => toggleFavorite(fav.id)}
-                      />
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                          <img
-                            src={getFavoriteCoverImage(fav.image, fav.categoryId)}
-                            alt={fav.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{fav.title}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {fav.categoryId}
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
+                      <Clock className="w-4 h-4 text-primary" />
+                      Capsule Title *
+                    </Label>
+                    <Input
+                      id="title"
+                      placeholder="e.g., College Days, Summer of 2023"
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="period">Time Period</Label>
+                    <Input
+                      id="period"
+                      placeholder="e.g., 2018-2022, Summer 2023"
+                      value={formData.period}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          period: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description">
+                      One line that describes this era
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder="e.g., The years I learned to let go."
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      rows={2}
+                    />
+                  </div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">
-                  No favorites yet. Add some favorites first!
-                </p>
-              )}
-            </div>
 
-            {/* Emotions */}
-            <div className="elevated-card">
-              <Label className="text-base font-medium mb-4 block">
-                Emotions & Feelings
-              </Label>
-              
-              {/* Suggestions */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {emotionSuggestions.map((emotion) => (
-                  <Button
-                    key={emotion}
-                    variant={emotions.includes(emotion) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => emotions.includes(emotion) ? removeEmotion(emotion) : addEmotion(emotion)}
-                  >
-                    {emotion}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Custom Input */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add custom emotion..."
-                  value={newEmotion}
-                  onChange={(e) => setNewEmotion(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmotion(newEmotion))}
+                {/* Extra media */}
+                <CapsuleMediaUploader
+                  images={media.images}
+                  videos={media.videos}
+                  coverUrl={coverImage}
+                  onChange={setMedia}
+                  onCoverChange={setCoverImage}
                 />
-                <Button onClick={() => addEmotion(newEmotion)} variant="outline">
-                  <Plus className="w-4 h-4" />
+
+                {/* Emotions */}
+                <div className="elevated-card">
+                  <Label className="text-base font-medium mb-4 block">
+                    How this phase felt
+                  </Label>
+
+                  {/* Suggestions */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {emotionSuggestions.map((emotion) => (
+                      <Button
+                        key={emotion}
+                        variant={
+                          emotions.includes(emotion) ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() =>
+                          emotions.includes(emotion)
+                            ? removeEmotion(emotion)
+                            : addEmotion(emotion)
+                        }
+                      >
+                        {emotion}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Custom Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add custom emotion..."
+                      value={newEmotion}
+                      onChange={(e) => setNewEmotion(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), addEmotion(newEmotion))
+                      }
+                    />
+                    <Button
+                      onClick={() => addEmotion(newEmotion)}
+                      variant="outline"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Selected Emotions */}
+                  {emotions.filter((e) => !emotionSuggestions.includes(e))
+                    .length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {emotions
+                        .filter((e) => !emotionSuggestions.includes(e))
+                        .map((emotion) => (
+                          <span
+                            key={emotion}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent text-sm"
+                          >
+                            {emotion}
+                            <button onClick={() => removeEmotion(emotion)}>
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Story */}
+                <div className="elevated-card">
+                  <Label
+                    htmlFor="story"
+                    className="text-base font-medium flex items-center gap-2 mb-3"
+                  >
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Your story of this chapter
+                  </Label>
+                  <Textarea
+                    id="story"
+                    placeholder="Write about what happened during this time. What defined these days? What do you want to remember?"
+                    value={formData.story}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        story: e.target.value,
+                      }))
+                    }
+                    rows={6}
+                  />
+                </div>
+              </div>
+              {/* Capsule preview (design-only, mirrors favorite preview shell) */}
+
+              {/* Submit */}
+              <div className="flex gap-4 pt-6 mt-4 border-t border-white/10">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="gradient"
+                  className="flex-1"
+                  onClick={handleSubmit}
+                  disabled={!formData.title}
+                >
+                  <Clock className="w-5 h-5" />
+                  Create Capsule
                 </Button>
               </div>
-
-              {/* Selected Emotions */}
-              {emotions.filter(e => !emotionSuggestions.includes(e)).length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {emotions.filter(e => !emotionSuggestions.includes(e)).map((emotion) => (
-                    <span
-                      key={emotion}
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent text-sm"
-                    >
-                      {emotion}
-                      <button onClick={() => removeEmotion(emotion)}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+            </motion.div>
+            <div className="md:sticky md:top-4">
+              <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
+                  <p>Live preview</p>
                 </div>
-              )}
-            </div>
+                <div className="p-4">
+                  {/* Cover preview */}
+                  <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-muted border border-white/5 mb-4 flex items-center justify-center">
+                    {coverImage || media.images[0] || media.videos[0] ? (
+                      media.videos.includes(coverImage || media.images[0] || media.videos[0]) ? (
+                        <video
+                          src={coverImage || media.videos[0]}
+                          className="w-full h-full object-cover pointer-events-none"
+                          autoPlay
+                          muted
+                          loop
+                        />
+                      ) : (
+                        <img
+                          src={coverImage || media.images[0]}
+                          alt=""
+                          className="w-full h-full object-cover pointer-events-none"
+                        />
+                      )
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                        <Upload className="w-10 h-10 mb-2 opacity-50" />
+                        <span className="text-sm">Cover media</span>
+                      </div>
+                    )}
+                  </div>
 
-            {/* Story */}
-            <div className="elevated-card">
-              <Label htmlFor="story" className="text-base font-medium flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-primary" />
-                Your Story (Optional)
-              </Label>
-              <Textarea
-                id="story"
-                placeholder="Write about what happened during this time. What defined these days? What do you want to remember?"
-                value={formData.story}
-                onChange={(e) => setFormData(prev => ({ ...prev, story: e.target.value }))}
-                rows={6}
-              />
+                  {/* Text + moods */}
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-primary">
+                        {formData.period || "Time period not set"}
+                      </p>
+                      <h2 className="font-display text-lg font-semibold truncate">
+                        {formData.title || "Untitled capsule"}
+                      </h2>
+                      {formData.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {formData.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {emotions.slice(0, 4).map((emotion) => (
+                        <span
+                          key={emotion}
+                          className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs text-primary"
+                        >
+                          {emotion}
+                        </span>
+                      ))}
+                      {emotions.length === 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          No moods selected yet.
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Memories you link later will appear in this capsule&apos;s
+                      story.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            {/* Submit */}
-            <div className="flex gap-4 pt-4">
-              <Button variant="outline" className="flex-1" onClick={() => router.back()}>
-                Cancel
-              </Button>
-              <Button 
-                variant="gradient" 
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={!formData.title}
-              >
-                <Clock className="w-5 h-5" />
-                Create Capsule
-              </Button>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </Layout>

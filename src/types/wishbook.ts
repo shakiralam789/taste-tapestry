@@ -163,9 +163,16 @@ export interface TimeCapsule {
   description: string;
   period: string;
   image?: string;
+  /** Optional gallery media for the capsule (frontend-only for now). */
+  images?: string[];
+  videos?: string[];
   favorites: string[];
   emotions: string[];
   story?: string;
+  /** Frontend-only: visibility control for capsules */
+  visibility?: "public" | "private" | "future";
+  /** Frontend-only: when a future capsule should unlock */
+  unlockAt?: Date;
   createdAt: Date;
 }
 
