@@ -29,34 +29,61 @@ export function useNotificationsSocket() {
 
     const handleNotification = (payload: any) => {
       if (payload?.type === "follow") {
-        addNotification({
-          type: "follow",
-          title: payload.removed ? "Follower removed" : "New follower",
-          description: "",
-        });
-        // Whether follow or unfollow, refresh profile counts
         if (!payload.removed) {
-          toast("You have a new follower.");
+          // Only notify on new follower, not when follower is removed
+          addNotification({
+            type: "follow",
+            title: "New follower",
+            description: payload.actorDisplayName
+              ? `${payload.actorDisplayName} started following you`
+              : "",
+            actorId: payload.actorId,
+            actorDisplayName: payload.actorDisplayName,
+            actorAvatar: payload.actorAvatar,
+          });
+          toast(
+            payload.actorDisplayName
+              ? `${payload.actorDisplayName} started following you.`
+              : "You have a new follower.",
+          );
         }
         queryClient.invalidateQueries({ queryKey: ["profile"] });
       } else if (payload?.type === "favorite_love") {
-        addNotification({
-          type: "favorite_love",
-          title: payload.loved ? "Favorite loved" : "Love removed",
-          description: "",
-        });
         if (payload.loved) {
-          toast("Someone loved your favorite.");
+          addNotification({
+            type: "favorite_love",
+            title: "Favorite loved",
+            description: payload.actorDisplayName
+              ? `${payload.actorDisplayName} loved your favorite`
+              : "",
+            actorId: payload.actorId,
+            actorDisplayName: payload.actorDisplayName,
+            actorAvatar: payload.actorAvatar,
+          });
+          toast(
+            payload.actorDisplayName
+              ? `${payload.actorDisplayName} loved your favorite.`
+              : "Someone loved your favorite.",
+          );
         }
         queryClient.invalidateQueries({ queryKey: ["favorites"] });
       } else if (payload?.type === "capsule_love") {
-        addNotification({
-          type: "capsule_love",
-          title: payload.loved ? "Capsule loved" : "Love removed",
-          description: "",
-        });
         if (payload.loved) {
-          toast("Someone loved your capsule.");
+          addNotification({
+            type: "capsule_love",
+            title: "Capsule loved",
+            description: payload.actorDisplayName
+              ? `${payload.actorDisplayName} loved your capsule`
+              : "",
+            actorId: payload.actorId,
+            actorDisplayName: payload.actorDisplayName,
+            actorAvatar: payload.actorAvatar,
+          });
+          toast(
+            payload.actorDisplayName
+              ? `${payload.actorDisplayName} loved your capsule.`
+              : "Someone loved your capsule.",
+          );
         }
         queryClient.invalidateQueries({ queryKey: ["capsules"] });
       } else {

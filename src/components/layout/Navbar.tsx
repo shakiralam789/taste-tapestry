@@ -44,6 +44,7 @@ export function Navbar() {
   const searchParams = useSearchParams();
   const { user: wishbookUser } = useWishbook();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
   const { notifications, unreadCount, markAllRead } = useNotifications();
   const selectedCategory = searchParams?.get("category") || null;
 
@@ -112,44 +113,96 @@ export function Navbar() {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-80" align="end">
-                <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Notifications</span>
-                  {notifications.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={markAllRead}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Mark all as read
-                    </button>
-                  )}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {notifications.length === 0 ? (
-                  <div className="px-3 py-6 text-xs text-muted-foreground text-center">
-                    No notifications yet.
-                  </div>
-                ) : (
-                  notifications.slice(0, 10).map((n) => (
-                    <DropdownMenuItem
-                      key={n.id}
-                      className={`flex flex-col items-start gap-0.5 ${
-                        !n.read ? "bg-primary/5" : ""
-                      }`}
-                    >
-                      <span className="text-xs font-medium">{n.title}</span>
-                      {n.description && (
-                        <span className="text-[11px] text-muted-foreground">
-                          {n.description}
-                        </span>
+              <DropdownMenuContent
+                className="w-80 p-0"
+                align="end"
+                sideOffset={8}
+              >
+                <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 70px)" }}>
+                  <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
+                    <span>Notifications</span>
+                    {notifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllRead}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {notifications.length === 0 ? (
+                    <div className="px-3 py-6 text-xs text-muted-foreground text-center">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    <>
+                      {(showAllNotifications
+                        ? notifications
+                        : notifications.slice(0, 10)
+                      ).map((n) => (
+                        <DropdownMenuItem
+                          key={n.id}
+                          className={`flex items-center gap-3 ${
+                            !n.read ? "" : ""
+                          }`}
+                        >
+                          {n.actorId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                router.push(`/users/${n.actorId}`);
+                              }}
+                              className="shrink-0"
+                            >
+                              <Avatar className="w-7 h-7 ring-1 ring-primary/30">
+                                <AvatarImage
+                                  src={n.actorAvatar ?? undefined}
+                                  alt={n.actorDisplayName ?? "User"}
+                                />
+                                <AvatarFallback className="text-[10px]">
+                                  {(n.actorDisplayName ?? "?")[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                            </button>
+                          )}
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-xs font-medium">
+                              {n.title}
+                            </span>
+                            {n.description && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {n.description}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground mt-0.5">
+                              {n.createdAt.toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                      {notifications.length > 10 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <div className="px-3 py-1.5 flex justify-center">
+                            <button
+                              type="button"
+                              className="text-[11px] text-primary hover:underline"
+                              onClick={() =>
+                                setShowAllNotifications((prev) => !prev)
+                              }
+                            >
+                              {showAllNotifications
+                                ? "Show latest 10"
+                                : "See more"}
+                            </button>
+                          </div>
+                        </>
                       )}
-                      <span className="text-[10px] text-muted-foreground mt-0.5">
-                        {n.createdAt.toLocaleTimeString()}
-                      </span>
-                    </DropdownMenuItem>
-                  ))
-                )}
+                    </>
+                  )}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 
