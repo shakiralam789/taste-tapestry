@@ -5,6 +5,8 @@ import { Upload, ImageIcon, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uploadCapsuleMedia } from "@/features/capsules/api";
+import { toast } from "sonner";
 
 interface CapsuleMediaUploaderProps {
   images: string[];
@@ -27,33 +29,60 @@ export function CapsuleMediaUploader({
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleImageFiles = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []).filter((file) =>
+        file.type.startsWith("image/"),
+      );
       if (!files.length) return;
-      const newUrls = files
-        .filter((file) => file.type.startsWith("image/"))
-        .map((file) => URL.createObjectURL(file));
-      if (newUrls.length) {
-        onChange({ images: [...images, ...newUrls], videos });
+      setUploading(true);
+      try {
+        const uploaded: string[] = [];
+        for (const file of files) {
+          try {
+            const url = await uploadCapsuleMedia(file);
+            uploaded.push(url);
+          } catch {
+            toast.error("Failed to upload image");
+          }
+        }
+        if (uploaded.length) {
+          onChange({ images: [...images, ...uploaded], videos });
+        }
+      } finally {
+        setUploading(false);
+        e.target.value = "";
       }
-      e.target.value = "";
     },
     [images, videos, onChange],
   );
 
   const handleVideoFiles = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []).filter((file) =>
+        file.type.startsWith("video/"),
+      );
       if (!files.length) return;
-      const newUrls = files
-        .filter((file) => file.type.startsWith("video/"))
-        .map((file) => URL.createObjectURL(file));
-      if (newUrls.length) {
-        onChange({ images, videos: [...videos, ...newUrls] });
+      setUploading(true);
+      try {
+        const uploaded: string[] = [];
+        for (const file of files) {
+          try {
+            const url = await uploadCapsuleMedia(file);
+            uploaded.push(url);
+          } catch {
+            toast.error("Failed to upload video");
+          }
+        }
+        if (uploaded.length) {
+          onChange({ images, videos: [...videos, ...uploaded] });
+        }
+      } finally {
+        setUploading(false);
+        e.target.value = "";
       }
-      e.target.value = "";
     },
     [images, videos, onChange],
   );
@@ -132,6 +161,11 @@ export function CapsuleMediaUploader({
             <Button type="button" size="sm" variant="outline" onClick={addImageUrl}>
               Add
             </Button>
+            {uploading && (
+              <span className="text-[10px] text-muted-foreground">
+                Uploading…
+              </span>
+            )}
           </div>
 
           {images.length > 0 && (
@@ -222,6 +256,11 @@ export function CapsuleMediaUploader({
             <Button type="button" size="sm" variant="outline" onClick={addVideoUrl}>
               Add
             </Button>
+            {uploading && (
+              <span className="text-[10px] text-muted-foreground">
+                Uploading…
+              </span>
+            )}
           </div>
 
           {videos.length > 0 && (

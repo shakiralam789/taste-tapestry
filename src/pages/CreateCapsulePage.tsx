@@ -1,20 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useWishbook } from "@/contexts/WishbookContext";
 import { ArrowLeft, Upload, Clock, Sparkles, Plus, X } from "lucide-react";
-import { TimeCapsule } from "@/types/wishbook";
 import { CapsuleMediaUploader } from "@/components/capsules/CapsuleMediaUploader";
+import { createCapsule, getCapsule, updateCapsule } from "@/features/capsules/api";
+import { toast } from "sonner";
 
 export default function CreateCapsulePage() {
   const router = useRouter();
-  const { addTimeCapsule } = useWishbook();
+  const searchParams = useSearchParams();
+  const params = useParams<{ id?: string }>();
+  const routeId = typeof params?.id === "string" ? params.id : null;
+  const queryId = searchParams?.get("id");
+  const editId = routeId || queryId;
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -28,6 +34,64 @@ export default function CreateCapsulePage() {
   const [media, setMedia] = useState<{ images: string[]; videos: string[] }>({
     images: [],
     videos: [],
+  });
+
+  const { data: existingCapsule } = useQuery({
+    queryKey: ["capsule", editId],
+    queryFn: () => getCapsule(editId as string),
+    enabled: !!editId,
+  });
+
+  // Hydrate form when editing
+  useEffect(() => {
+    if (!existingCapsule) return;
+
+    // Drop any blob: URLs that can't be reused after reload
+    const safeImages =
+      (existingCapsule.images ?? []).filter((src) => !src.startsWith("blob:"));
+    const safeVideos =
+      (existingCapsule.videos ?? []).filter((src) => !src.startsWith("blob:"));
+    const safeImage =
+      existingCapsule.image && !existingCapsule.image.startsWith("blob:")
+        ? existingCapsule.image
+        : undefined;
+
+    setFormData({
+      title: existingCapsule.title,
+      description: existingCapsule.description ?? "",
+      period: existingCapsule.period ?? "",
+      story: existingCapsule.story ?? "",
+    });
+    setCoverImage(
+      safeImage ?? safeImages[0] ?? safeVideos[0] ?? null,
+    );
+    setEmotions(existingCapsule.emotions ?? []);
+    setMedia({
+      images: safeImages,
+      videos: safeVideos,
+    });
+  }, [existingCapsule]);
+
+  const mutation = useMutation({
+    mutationFn: async (payload: Parameters<typeof createCapsule>[0]) => {
+      if (editId) {
+        return updateCapsule(editId, payload);
+      }
+      return createCapsule(payload);
+    },
+    onSuccess: (savedCapsule) => {
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      if (editId) {
+        queryClient.invalidateQueries({ queryKey: ["capsule", savedCapsule.id] });
+        router.push(`/capsules/${savedCapsule.id}`);
+      } else {
+        router.push("/capsules");
+      }
+      toast.success(editId ? "Capsule updated" : "Capsule created");
+    },
+    onError: () => {
+      toast.error("Failed to create capsule. Please try again.");
+    },
   });
 
   const emotionSuggestions = [
@@ -55,28 +119,25 @@ export default function CreateCapsulePage() {
   };
 
   const handleSubmit = () => {
-    const selectedCover =
-      coverImage || media.images[0] || media.videos[0] || "";
+    const filteredImages = media.images.filter((src) => !src.startsWith("blob:"));
+    const filteredVideos = media.videos.filter((src) => !src.startsWith("blob:"));
 
-    const newCapsule: TimeCapsule = {
-      id: Date.now().toString(),
-      userId: "1",
+    const cleanCover =
+      coverImage && !coverImage.startsWith("blob:")
+        ? coverImage
+        : filteredImages[0] || filteredVideos[0] || "";
+
+    mutation.mutate({
       title: formData.title,
-      description: formData.description,
-      period: formData.period,
-      image:
-        selectedCover ||
-        "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop",
+      description: formData.description || undefined,
+      period: formData.period || undefined,
+      image: cleanCover || undefined,
+      images: filteredImages.length ? filteredImages : undefined,
+      videos: filteredVideos.length ? filteredVideos : undefined,
       favorites: [],
       emotions,
-      story: formData.story,
-      images: media.images,
-      videos: media.videos,
-      createdAt: new Date(),
-    };
-
-    addTimeCapsule(newCapsule);
-    router.push("/capsules");
+      story: formData.story || undefined,
+    });
   };
 
   return (
@@ -98,7 +159,8 @@ export default function CreateCapsulePage() {
               Back
             </Button>
             <h1 className="font-display text-3xl font-bold">
-              Create <span className="gradient-text">Time Capsule</span>
+              {editId ? "Edit" : "Create"}{" "}
+              <span className="gradient-text">Time Capsule</span>
             </h1>
             <p className="text-muted-foreground">
               Preserve a chapter of your life through the things you loved
@@ -284,10 +346,10 @@ export default function CreateCapsulePage() {
                   variant="gradient"
                   className="flex-1"
                   onClick={handleSubmit}
-                  disabled={!formData.title}
+                  disabled={!formData.title || mutation.isPending}
                 >
                   <Clock className="w-5 h-5" />
-                  Create Capsule
+                  {mutation.isPending ? "Creating..." : "Create Capsule"}
                 </Button>
               </div>
             </motion.div>

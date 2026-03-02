@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
+import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
@@ -20,6 +21,7 @@ import {
 import { useAuth } from "@/features/auth/AuthContext";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
+import { getUserCapsules } from "@/features/capsules/api";
 import { toast } from "sonner";
 import {
   MapPin,
@@ -89,6 +91,15 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["user-favorites", id],
     queryFn: () => getPublicFavorites(id),
+    enabled: !!id && !!profile,
+  });
+
+  const {
+    data: capsules = [],
+    isLoading: capsulesLoading,
+  } = useQuery({
+    queryKey: ["user-capsules", id],
+    queryFn: () => getUserCapsules(id),
     enabled: !!id && !!profile,
   });
 
@@ -498,15 +509,29 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       Collections tied to a period — school days, breakup era, summer 2024.
                     </p>
                   </div>
-                  <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
-                    <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50" />
-                    <h4 className="text-lg font-semibold mb-2 text-foreground">
-                      No capsules yet
-                    </h4>
-                    <p className="text-sm">
-                      {displayName} hasn&apos;t created any time capsules yet.
+                  {capsulesLoading ? (
+                    <p className="text-sm text-muted-foreground">
+                      Loading capsules...
                     </p>
-                  </div>
+                  ) : capsules.length === 0 ? (
+                    <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
+                      <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50" />
+                      <h4 className="text-lg font-semibold mb-2 text-foreground">
+                        No capsules yet
+                      </h4>
+                      <p className="text-sm">
+                        {displayName} hasn&apos;t created any time capsules yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {capsules.map((capsule) => (
+                        <Link key={capsule.id} href={`/capsules/${capsule.id}`}>
+                          <TimeCapsuleCard capsule={capsule} />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>

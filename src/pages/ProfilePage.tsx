@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
 function ProfilePageInner() {
   const { user: authUser } = useAuth();
-  const { user: wishbookUser, timeCapsules } = useWishbook();
+  const { user: wishbookUser } = useWishbook();
   const queryClient = useQueryClient();
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
     string | "all"
@@ -150,6 +150,11 @@ function ProfilePageInner() {
   const { data: albums = [], isLoading: albumsLoading } = useQuery({
     queryKey: ["albums"],
     queryFn: getAlbums,
+  });
+
+  const { data: capsules = [] } = useQuery({
+    queryKey: ["capsules"],
+    queryFn: () => import("@/features/capsules/api").then(m => m.getMyCapsules()),
   });
 
   const displayName =
@@ -896,7 +901,7 @@ function ProfilePageInner() {
                       </Button>
                     </Link>
                   </div>
-                  {timeCapsules.length === 0 ? (
+                  {capsules.length === 0 ? (
                     <Link href="/create-capsule">
                       <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
                         <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50 group-hover:opacity-80" />
@@ -919,7 +924,7 @@ function ProfilePageInner() {
                       animate="visible"
                       className="grid grid-cols-1 md:grid-cols-2 gap-6"
                     >
-                      {timeCapsules.map((capsule) => (
+                      {capsules.map((capsule) => (
                         <motion.div key={capsule.id} variants={itemVariants}>
                           <Link href={`/capsules/${capsule.id}`}>
                             <div className="group rounded-2xl overflow-hidden border border-white/10 bg-card/30 hover:border-primary/20 transition-all">

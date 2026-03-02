@@ -1,22 +1,42 @@
 import { motion } from "framer-motion";
 import { TimeCapsule } from "@/types/wishbook";
-import { Calendar, Globe2, Lock, Unlock, Film } from "lucide-react";
+import { Calendar, Globe2, Lock, Unlock, Film, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
   onClick?: () => void;
+  showActions?: boolean;
+  onEdit?: () => void;
+  onToggleVisibility?: (visibility: "public" | "private") => void;
+  onDelete?: () => void;
 }
 
-export function TimeCapsuleCard({ capsule, onClick }: TimeCapsuleCardProps) {
+export function TimeCapsuleCard({
+  capsule,
+  onClick,
+  showActions,
+  onEdit,
+  onToggleVisibility,
+  onDelete,
+}: TimeCapsuleCardProps) {
   const visibility = capsule.visibility ?? "public";
   const unlockLabel =
     visibility === "future" && capsule.unlockAt
       ? `Opens ${capsule.unlockAt.toLocaleDateString()}`
       : "Future";
 
+  const rawCover =
+    capsule.image || capsule.images?.[0] || capsule.videos?.[0];
   const coverUrl =
-    capsule.image || capsule.images?.[0] || capsule.videos?.[0] || "";
-  const isVideoCover = !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
+    rawCover && rawCover.startsWith("blob:") ? undefined : rawCover;
+  const isVideoCover =
+    !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
 
   return (
     <motion.div
@@ -29,20 +49,28 @@ export function TimeCapsuleCard({ capsule, onClick }: TimeCapsuleCardProps) {
 
       {/* Media Header */}
       <div className="relative h-48 overflow-hidden">
-        {isVideoCover ? (
-          <video
-            src={coverUrl}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
-            autoPlay
-            muted
-            loop
-          />
+        {coverUrl ? (
+          isVideoCover ? (
+            <video
+              src={coverUrl}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
+              autoPlay
+              muted
+              loop
+            />
+          ) : (
+            <img
+              src={coverUrl}
+              alt={capsule.title}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
+            />
+          )
         ) : (
-          <img
-            src={coverUrl}
-            alt={capsule.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
-          />
+          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">
+              No cover media
+            </span>
+          </div>
         )}
 
         {/* Period Badge */}
@@ -52,31 +80,72 @@ export function TimeCapsuleCard({ capsule, onClick }: TimeCapsuleCardProps) {
             {capsule.period}
           </span>
         </div>
-        {/* Visibility Badge */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20 text-[11px]">
-          {visibility === "public" && (
-            <>
-              <Globe2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs font-medium text-emerald-100">
-                Public
-              </span>
-            </>
+        {/* Visibility + actions */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
+          {visibility !== "public" && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px]">
+              {visibility === "private" && (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="text-xs font-medium text-amber-50">
+                    Private
+                  </span>
+                </>
+              )}
+              {visibility === "future" && (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-sky-300" />
+                  <span className="text-xs font-medium text-sky-50">
+                    {unlockLabel}
+                  </span>
+                </>
+              )}
+            </div>
           )}
-          {visibility === "private" && (
-            <>
-              <Lock className="w-3.5 h-3.5 text-amber-300" />
-              <span className="text-xs font-medium text-amber-50">
-                Private
-              </span>
-            </>
-          )}
-          {visibility === "future" && (
-            <>
-              <Lock className="w-3.5 h-3.5 text-sky-300" />
-              <span className="text-xs font-medium text-sky-50">
-                {unlockLabel}
-              </span>
-            </>
+          {showActions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 border border-white/10 text-muted-foreground hover:text-primary hover:border-primary/60 focus:outline-none"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-40"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {onEdit && (
+                  <DropdownMenuItem onClick={onEdit}>
+                    Edit capsule
+                  </DropdownMenuItem>
+                )}
+                {onToggleVisibility && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      onToggleVisibility(
+                        visibility === "public" ? "private" : "public",
+                      )
+                    }
+                  >
+                    {visibility === "public"
+                      ? "Make private"
+                      : "Make public"}
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    className="text-red-500 focus:text-red-500"
+                    onClick={onDelete}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
