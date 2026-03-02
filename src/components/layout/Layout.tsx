@@ -27,10 +27,10 @@ export function Layout({ children, className }: LayoutProps) {
 
   return (
     <NotificationsProvider>
-      <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row font-body selection:bg-primary/20 selection:text-primary">
+      <div className="min-h-screen bg-background text-foreground flex flex-col font-body selection:bg-primary/20 selection:text-primary">
         {/* Top navigation with notifications bell and dropdown */}
         <Navbar />
-
+        
         <NotificationsSocketRoot />
         {isClient && <Sidebar />}
 

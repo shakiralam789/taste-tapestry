@@ -21,7 +21,7 @@ export function CategoryChip({
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        `inline-flex items-center gap-1 md:gap-2 px-4 md:py-2 py-1.5 rounded-full transition-all duration-300`,
+        `inline-flex items-center gap-1.5 md:gap-2 px-4 md:py-2 py-2 rounded-full transition-all duration-300`,
         "border font-medium text-sm backdrop-blur-sm",
         isSelected
           ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-5px_hsl(var(--primary)/0.5)]"
