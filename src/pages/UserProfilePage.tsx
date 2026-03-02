@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientOnly } from "@/components/common/ClientOnly";
+import { useRouter } from "nextjs-toploader/app";
 
 type UserProfilePageProps = { id: string };
 
@@ -47,7 +48,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   const isOwnProfile = authUser?.id === id;
-
+  const router = useRouter();
   const {
     data: profile,
     isLoading: profileLoading,
@@ -353,7 +354,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                               onClick={() =>
                                 setSelectedCategoryFilter(cat.value)
                               }
-                              className={`rounded-full ${cat.value === "all" ? "gap-0" : "gap-2"}`}
+                              className={`rounded-full`}
                             >
                               <span aria-hidden>
                                 {Icon ? (
@@ -439,12 +440,11 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                               }}
                               className={viewMode === "list" ? "w-full" : ""}
                             >
-                              <Link href={`/favorites/${favorite.id}`}>
-                                <ProfilePostCard
-                                  favorite={favorite}
-                                  variant={viewMode}
-                                />
-                              </Link>
+                              <ProfilePostCard
+                                favorite={favorite}
+                                variant={viewMode}
+                                onTitleClick={() => router.push(`/favorites/${favorite.id}`)}
+                              />
                             </motion.div>
                           ))}
                       </div>

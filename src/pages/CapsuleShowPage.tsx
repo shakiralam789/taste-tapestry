@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useWishbook } from "@/contexts/WishbookContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, TimeCapsule } from "@/types/wishbook";
-import { getCapsule } from "@/features/capsules/api";
+import { getCapsule, toggleCapsuleLove } from "@/features/capsules/api";
 import {
   ArrowLeft,
   Clock,
@@ -18,6 +18,7 @@ import {
   Film,
   ImageIcon,
   Pencil,
+  Heart,
 } from "lucide-react";
 import {
   Dialog,
@@ -39,6 +40,7 @@ export default function CapsuleShowPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const { favorites } = useWishbook();
+  const queryClient = useQueryClient();
   const [preview, setPreview] = useState<
     | {
         type: "image" | "video";
@@ -63,6 +65,47 @@ export default function CapsuleShowPage() {
     () => (capsule ? getFavoritesForCapsule(capsule, favorites) : []),
     [capsule, favorites],
   );
+
+  const [loved, setLoved] = useState(capsule?.lovedByMe ?? false);
+  const [loveCount, setLoveCount] = useState(capsule?.loveCount ?? 0);
+
+  useEffect(() => {
+    if (!capsule) return;
+    setLoved(capsule.lovedByMe ?? false);
+    setLoveCount(capsule.loveCount ?? 0);
+  }, [capsule?.lovedByMe, capsule?.loveCount]);
+
+  const loveMutation = useMutation({
+    mutationFn: () => toggleCapsuleLove(id),
+    onMutate: () => {
+      setLoved((prev) => !prev);
+      setLoveCount((prev) => (loved ? Math.max(prev - 1, 0) : prev + 1));
+    },
+    onSuccess: ({ loved, count }) => {
+      setLoved(loved);
+      setLoveCount(count);
+      queryClient.setQueryData<TimeCapsule | undefined>(
+        ["capsule", id],
+        (old) =>
+          old
+            ? {
+                ...old,
+                lovedByMe: loved,
+                loveCount: count,
+              }
+            : old,
+      );
+      queryClient.setQueriesData<TimeCapsule[] | undefined>(
+        { queryKey: ["capsules"] },
+        (old) =>
+          old
+            ? old.map((c) =>
+                c.id === id ? { ...c, lovedByMe: loved, loveCount: count } : c,
+              )
+            : old,
+      );
+    },
+  });
 
   if (isLoading) {
     return (
@@ -184,7 +227,7 @@ export default function CapsuleShowPage() {
                 {capsule.description}
               </p>
             )}
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
               {capsule.visibility === "private" && (
                 <>
                   <Lock className="w-3 h-3" />
@@ -202,6 +245,20 @@ export default function CapsuleShowPage() {
                   </span>
                 </>
               )}
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 border border-white/10 hover:border-primary/60 hover:text-primary transition-colors text-xs"
+                onClick={() => loveMutation.mutate()}
+              >
+                <Heart
+                  className={`w-3.5 h-3.5 ${
+                    loved
+                      ? "fill-red-500 text-red-500"
+                      : "fill-white/20"
+                  }`}
+                />
+                <span>{loveCount}</span>
+              </button>
             </div>
           </div>
         </div>

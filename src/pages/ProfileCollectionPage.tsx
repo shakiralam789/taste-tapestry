@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import {
   useInfiniteQuery,
   useQuery,
@@ -79,7 +80,7 @@ function ProfileCollectionPageInner() {
   const [albumPickerFavorite, setAlbumPickerFavorite] =
     useState<Favorite | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-
+  const router = useRouter();
   const categoryFromUrl = searchParams?.get("category") ?? null;
   useEffect(() => {
     if (
@@ -294,9 +295,7 @@ function ProfileCollectionPageInner() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {allItems.map((favorite) => (
                       <div key={favorite.id} className="relative group">
-                        <Link href={`/favorites/${favorite.id}`}>
-                          <ProfilePostCard favorite={favorite} variant="grid" />
-                        </Link>
+                          <ProfilePostCard favorite={favorite} variant="grid" onTitleClick={() => router.push(`/favorites/${favorite.id}`)} />
                         {authUser && (
                           <div className="absolute top-2 right-2">
                             <DropdownMenu>

@@ -127,6 +127,9 @@ export interface Favorite {
   fields: Record<string, any>;
   /** If false, other users cannot see this item on your profile. */
   isPublic?: boolean;
+  /** Social love reaction metadata */
+  loveCount?: number;
+  lovedByMe?: boolean;
 }
 
 export interface MovieFavorite extends Favorite {
@@ -173,6 +176,9 @@ export interface TimeCapsule {
   visibility?: "public" | "private" | "future";
   /** Frontend-only: when a future capsule should unlock */
   unlockAt?: Date;
+  /** Social love reaction metadata */
+  loveCount?: number;
+  lovedByMe?: boolean;
   createdAt: Date;
 }
 

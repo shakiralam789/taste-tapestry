@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import {
   useInfiniteQuery,
   useQuery,
@@ -30,7 +31,7 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
-
+  const router = useRouter();
   const categoryFromUrl = searchParams?.get("category") ?? null;
   useEffect(() => {
     if (
@@ -197,13 +198,12 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {allItems.map((favorite) => (
-                      <Link
+                      <div
                         key={favorite.id}
-                        href={`/favorites/${favorite.id}`}
                         className="block"
                       >
-                        <ProfilePostCard favorite={favorite} variant="grid" />
-                      </Link>
+                        <ProfilePostCard favorite={favorite} variant="grid" onTitleClick={() => router.push(`/favorites/${favorite.id}`)} />
+                      </div>
                     ))}
                   </div>
                   <div

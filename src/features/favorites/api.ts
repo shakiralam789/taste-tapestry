@@ -125,3 +125,21 @@ export async function uploadFavoriteMusic(
   };
 }
 
+export async function getFavoriteLove(
+  id: string,
+): Promise<{ loved: boolean; count: number }> {
+  const { data } = await apiClient.get<{ loved: boolean; count: number }>(
+    `/favorites/${id}/love`,
+  );
+  return data;
+}
+
+export async function toggleFavoriteLove(
+  id: string,
+): Promise<{ loved: boolean; count: number }> {
+  const { data } = await apiClient.post<{ loved: boolean; count: number }>(
+    `/favorites/${id}/love`,
+  );
+  return data;
+}
+

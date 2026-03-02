@@ -77,6 +77,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { CATEGORY_TABS } from "@/features/albums/constants";
+import { useRouter } from "nextjs-toploader/app";
 
 const categoryLabels: Record<InterestCategory, string> = {
   creative: "Creative pursuits",
@@ -104,6 +105,7 @@ export default function ProfilePage() {
 }
 
 function ProfilePageInner() {
+  const router = useRouter();
   const { user: authUser } = useAuth();
   const { user: wishbookUser } = useWishbook();
   const queryClient = useQueryClient();
@@ -649,12 +651,11 @@ function ProfilePageInner() {
                               viewMode === "list" ? "w-full" : ""
                             }`}
                           >
-                            <Link href={`/favorites/${favorite.id}`}>
-                              <ProfilePostCard
-                                favorite={favorite}
-                                variant={viewMode}
-                              />
-                            </Link>
+                            <ProfilePostCard
+                              favorite={favorite}
+                              variant={viewMode}
+                              onTitleClick={() => router.push(`/favorites/${favorite.id}`)}
+                            />
                             {authUser && (
                               <div className="absolute top-2 right-2">
                                 <DropdownMenu>

@@ -84,4 +84,22 @@ export async function uploadCapsuleMedia(file: File): Promise<string> {
   return data.url;
 }
 
+export async function getCapsuleLove(
+  id: string,
+): Promise<{ loved: boolean; count: number }> {
+  const { data } = await apiClient.get<{ loved: boolean; count: number }>(
+    `/capsules/${id}/love`,
+  );
+  return data;
+}
+
+export async function toggleCapsuleLove(
+  id: string,
+): Promise<{ loved: boolean; count: number }> {
+  const { data } = await apiClient.post<{ loved: boolean; count: number }>(
+    `/capsules/${id}/love`,
+  );
+  return data;
+}
+
 

@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { TimeCapsule } from "@/types/wishbook";
-import { Calendar, Globe2, Lock, Unlock, Film, MoreHorizontal } from "lucide-react";
+import { Calendar, Globe2, Lock, Unlock, Film, MoreHorizontal, Heart } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toggleCapsuleLove } from "@/features/capsules/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +41,55 @@ export function TimeCapsuleCard({
   const isVideoCover =
     !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
 
+  const queryClient = useQueryClient();
+  const [loved, setLoved] = useState(capsule.lovedByMe ?? false);
+  const [loveCount, setLoveCount] = useState(capsule.loveCount ?? 0);
+
+  useEffect(() => {
+    setLoved(capsule.lovedByMe ?? false);
+    setLoveCount(capsule.loveCount ?? 0);
+  }, [capsule.lovedByMe, capsule.loveCount]);
+
+  const loveMutation = useMutation({
+    mutationFn: () => toggleCapsuleLove(capsule.id),
+    onMutate: () => {
+      setLoved((prev) => !prev);
+      setLoveCount((prev) => (loved ? Math.max(prev - 1, 0) : prev + 1));
+    },
+    onSuccess: ({ loved, count }) => {
+      setLoved(loved);
+      setLoveCount(count);
+      queryClient.setQueriesData<TimeCapsule | undefined>(
+        { queryKey: ["capsule", capsule.id] },
+        (old) =>
+          old
+            ? {
+                ...old,
+                lovedByMe: loved,
+                loveCount: count,
+              }
+            : old,
+      );
+      queryClient.setQueriesData<TimeCapsule[] | undefined>(
+        { queryKey: ["capsules"] },
+        (old) =>
+          old
+            ? old.map((c) =>
+                c.id === capsule.id
+                  ? { ...c, lovedByMe: loved, loveCount: count }
+                  : c,
+              )
+            : old,
+      );
+    },
+  });
+
   return (
     <motion.div
+      onClick={onClick}
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
-      className="group relative overflow-hidden rounded-2xl bg-card/40 border border-white/5 backdrop-blur-sm hover:border-primary/30 transition-colors"
-      onClick={onClick}
+      className="cursor-pointer group relative overflow-hidden rounded-2xl bg-card/40 border border-white/5 backdrop-blur-sm hover:border-primary/30 transition-colors"
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 z-10" />
 
@@ -152,6 +198,7 @@ export function TimeCapsuleCard({
 
       {/* Content */}
       <div className="relative p-5 z-20 -mt-12">
+
         <h3 className="font-display text-xl font-bold text-white mb-2 drop-shadow-lg">
           {capsule.title}
         </h3>
@@ -172,12 +219,32 @@ export function TimeCapsuleCard({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/10">
+        <div 
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="cursor-default flex items-center justify-between pt-3 border-t border-white/10">
           <div className="flex items-center gap-2 text-xs text-gray-400 group-hover:text-primary transition-colors">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             {capsule.favorites.length} memories locked
           </div>
-          <Unlock className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              loveMutation.mutate();
+            }}
+          >
+            <Heart
+              className={`w-4 h-4 ${
+                loved
+                  ? "fill-red-500 text-red-500"
+                  : "fill-white/20"
+              }`}
+            />
+            <span>{loveCount}</span>
+          </button>
         </div>
       </div>
     </motion.div>
