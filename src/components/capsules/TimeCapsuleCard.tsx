@@ -7,6 +7,7 @@ import {
   Film,
   MoreHorizontal,
   Heart,
+  ArrowRight,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleCapsuleLove } from "@/features/capsules/api";
@@ -47,12 +48,10 @@ export function TimeCapsuleCard({
       ? `Opens ${capsule.unlockAt.toLocaleDateString()}`
       : "Future";
 
-  const rawCover =
-    capsule.image || capsule.images?.[0] || capsule.videos?.[0];
+  const rawCover = capsule.image || capsule.images?.[0] || capsule.videos?.[0];
   const coverUrl =
     rawCover && rawCover.startsWith("blob:") ? undefined : rawCover;
-  const isVideoCover =
-    !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
+  const isVideoCover = !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
 
   const queryClient = useQueryClient();
   const [loved, setLoved] = useState(capsule.lovedByMe ?? false);
@@ -106,17 +105,14 @@ export function TimeCapsuleCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 mb-4 hover:border-primary/20 transition-colors cursor-pointer"
-      onClick={onClick}
+      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 mb-4 hover:border-primary/20 transition-colors"
     >
       {/* Header - like FavoriteCard */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
             <AvatarImage src={authorAvatar ?? undefined} />
-            <AvatarFallback>
-              {displayAuthorName[0] ?? "T"}
-            </AvatarFallback>
+            <AvatarFallback>{displayAuthorName[0] ?? "T"}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
@@ -182,15 +178,13 @@ export function TimeCapsuleCard({
         {visibility !== "public" && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
             <Lock className="w-3 h-3" />
-            <span>
-              {visibility === "private" ? "Private" : unlockLabel}
-            </span>
+            <span>{visibility === "private" ? "Private" : unlockLabel}</span>
           </span>
         )}
       </div>
 
       {/* Body text */}
-      <div className="" >
+      <div className="">
         <h3 className="text-lg font-display font-semibold mb-2">
           {capsule.title}
         </h3>
@@ -201,25 +195,27 @@ export function TimeCapsuleCard({
         )}
 
         {/* Media */}
-       {coverUrl && <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
-          {coverUrl ? (
-            isVideoCover ? (
-              <video
-                src={coverUrl}
-                className="max-h-[420px] w-full object-contain"
-                autoPlay
-                muted
-                loop
-              />
-            ) : (
-              <img
-                src={coverUrl}
-                alt={capsule.title}
-                className="max-h-[420px] w-full object-contain"
-              />
-            )
-          ) : null}
-        </div>}
+        {coverUrl && (
+          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
+            {coverUrl ? (
+              isVideoCover ? (
+                <video
+                  src={coverUrl}
+                  className="max-h-[420px] w-full object-contain"
+                  autoPlay
+                  muted
+                  loop
+                />
+              ) : (
+                <img
+                  src={coverUrl}
+                  alt={capsule.title}
+                  className="max-h-[420px] w-full object-contain"
+                />
+              )
+            ) : null}
+          </div>
+        )}
 
         {/* Emotions as hashtags */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -238,10 +234,6 @@ export function TimeCapsuleCard({
           className="cursor-default flex items-center justify-between mt-2 pt-2 border-t border-white/5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            {capsule.favorites.length} memories locked
-          </div>
           <button
             type="button"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 px-2 rounded-full group"
@@ -250,9 +242,19 @@ export function TimeCapsuleCard({
               loveMutation.mutate();
             }}
           >
-            <Heart className={`w-4 h-4 group-hover:scale-110 transition-transform ${loved ? "fill-red-500 text-red-500" : ""}`} />
+            <Heart
+              className={`w-4 h-4 group-hover:scale-110 transition-transform ${loved ? "fill-red-500 text-red-500" : ""}`}
+            />
             <span>{loveCount}</span>
           </button>
+          <div
+            onClick={onClick}
+            className="capitalize text-primary/60 inline-flex items-center gap-1.5 text-xs hover:text-primary cursor-pointer"
+          >
+            show details
+            <ArrowRight className="w-4 h-4" />
+
+          </div>
         </div>
       </div>
     </motion.div>
