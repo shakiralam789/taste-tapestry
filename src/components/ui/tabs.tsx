@@ -2,6 +2,7 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const Tabs = TabsPrimitive.Root;
 
@@ -19,6 +20,14 @@ const TabsList = React.forwardRef<
   />
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
+
+const TabsListLink = React.forwardRef<
+  React.ElementRef<typeof Link>,
+  React.ComponentPropsWithoutRef<typeof Link>
+>(({ className, ...props }, ref) => (
+  <Link ref={ref} className={cn(className, "rounded-none border-b-2 border-transparent px-0 py-4 [&.active]:bg-transparent [&.active]:border-primary [&.active]:text-primary [&.active]:shadow-none hover:text-primary transition-colors text-base hover:border-primary")} {...props} />
+));
+TabsListLink.displayName = "TabsListLink";
 
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
@@ -50,4 +59,4 @@ const TabsContent = React.forwardRef<
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabsListLink };

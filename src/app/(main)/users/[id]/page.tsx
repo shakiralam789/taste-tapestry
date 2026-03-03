@@ -1,10 +1,7 @@
-import UserProfilePage from "@/pages/UserProfilePage";
-
+"use client";
+import Collections from "@/components/user-profile/Collections";
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string }> };
-
-export default async function Page({ params }: Props) {
-  const { id } = await params;
-  return <UserProfilePage id={id} />;
+export default function Page() {
+  return <Collections />;
 }

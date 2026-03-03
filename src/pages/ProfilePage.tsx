@@ -1,11 +1,9 @@
 "use client";
-import { useMemo, useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
-import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
+
 import { useAuth } from "@/features/auth/AuthContext";
 import {
   getProfile,
@@ -24,100 +21,59 @@ import {
   updateProfile,
   uploadAvatar,
 } from "@/features/profile/api";
-import { useWishbook } from "@/contexts/WishbookContext";
-import { interestCategories } from "@/data/mockData";
-import type { InterestCategory, Favorite } from "@/types/wishbook";
-import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
-import {
-  getFavorites,
-  deleteFavorite,
-  updateFavorite,
-  PROFILE_PREVIEW_LIMIT,
-} from "@/features/favorites/api";
-import { getAlbums, updateAlbum } from "@/features/albums/api";
-import { deleteCapsule, updateCapsule } from "@/features/capsules/api";
-import { getCookie, setCookie } from "@/lib/cookies";
 import {
   MapPin,
   Calendar,
   Edit3,
   Sparkles,
-  Plus,
   Rocket,
   Users,
   Heart,
   Palette,
-  Mic2,
-  Lock,
-  ChevronRight,
+  ChevronRight, 
   Loader2,
-  LayoutGrid,
-  List,
-  Images,
-  Trash2,
-  MoreHorizontal,
-  Globe,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CATEGORY_TABS } from "@/features/albums/constants";
-import { useRouter } from "nextjs-toploader/app";
-import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { TabsListLink } from "@/components/ui/tabs";
 
-const categoryLabels: Record<InterestCategory, string> = {
-  creative: "Creative pursuits",
-  performance: "Performance-based",
-  skill: "Skill-based",
-  intellectual: "Intellectual / technical",
-  unique: "Unique / unconventional",
-  collaborative: "Collaborative",
-};
-
-const talentOptions = [
-  "Singing",
-  "Dancing",
-  "Writing",
-  "Art",
-  "Acting",
-  "Stunts",
+const PROFILE_TABS = [
+  {
+    label: "My collection",
+    href: "/profile",
+  },
+  {
+    label: "Interests & pursuits",
+    href: "/profile/interests",
+  },
+  {
+    label: "Hidden talents",
+    href: "/profile/talents",
+  },
+  {
+    label: "Time capsules",
+    href: "/profile/capsules",
+  },
 ];
 
-export default function ProfilePage() {
+export default function ProfilePage({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   if (typeof window === "undefined") {
     return null;
   }
-  return <ProfilePageInner />;
+  return <ProfilePageInner>{children}</ProfilePageInner>;
 }
 
-function ProfilePageInner() {
-  const router = useRouter();
+function ProfilePageInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { user: authUser } = useAuth();
-  const { user: wishbookUser } = useWishbook();
   const queryClient = useQueryClient();
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
-    string | "all"
-  >("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
-    const stored = getCookie("profileCollectionView");
-    return stored === "list" || stored === "grid" ? stored : "grid";
-  });
+
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: "",
@@ -130,38 +86,12 @@ function ProfilePageInner() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
-  const [albumPickerFavorite, setAlbumPickerFavorite] =
-    useState<Favorite | null>(null);
-  const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(
-    null,
-  );
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,
     enabled: !!authUser,
     staleTime: PROFILE_QUERY_STALE_MS,
-  });
-
-  const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
-    queryKey: ["favorites", selectedCategoryFilter],
-    queryFn: async (): Promise<Favorite[]> => {
-      const categoryId =
-        selectedCategoryFilter === "all" ? undefined : selectedCategoryFilter;
-      return getFavorites(categoryId);
-    },
-  });
-
-  const { data: albums = [], isLoading: albumsLoading } = useQuery({
-    queryKey: ["albums"],
-    queryFn: getAlbums,
-  });
-
-  const { data: capsules = [] } = useQuery({
-    queryKey: ["capsules"],
-    queryFn: () =>
-      import("@/features/capsules/api").then((m) => m.getMyCapsules()),
   });
 
   const displayName =
@@ -181,85 +111,6 @@ function ProfilePageInner() {
   const displaySinceYear = profile?.createdAt
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
-
-  const addToAlbumMutation = useMutation({
-    mutationFn: async (args: { albumId: string; favoriteId: string }) => {
-      const currentAlbum = albums.find((a) => a.id === args.albumId);
-      if (!currentAlbum) throw new Error("Album not found");
-      const currentIds = currentAlbum.favoriteIds ?? [];
-      if (currentIds.includes(args.favoriteId)) return currentAlbum;
-      const nextIds = [...currentIds, args.favoriteId];
-      return updateAlbum(args.albumId, { favoriteIds: nextIds });
-    },
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["albums"] });
-      void queryClient.invalidateQueries({
-        queryKey: ["album-show", variables.albumId],
-      });
-      toast.success("Added to album");
-    },
-    onError: () => toast.error("Could not add to album"),
-  });
-
-  const deleteFavoriteMutation = useMutation({
-    mutationFn: deleteFavorite,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      void queryClient.invalidateQueries({ queryKey: ["albums"] });
-      toast.success("Item deleted");
-      setFavoriteToDelete(null);
-    },
-    onError: () => {
-      toast.error("Could not delete item");
-    },
-  });
-
-  const toggleFavoriteVisibilityMutation = useMutation({
-    mutationFn: async ({ id, isPublic }: { id: string; isPublic: boolean }) =>
-      updateFavorite(id, { isPublic }),
-    onSuccess: (_, { isPublic }) => {
-      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      toast.success(isPublic ? "Item is now public" : "Item is now private");
-    },
-    onError: () => toast.error("Could not update visibility"),
-  });
-
-  const updateCapsuleVisibilityMutation = useMutation({
-    mutationFn: ({
-      id,
-      visibility,
-    }: {
-      id: string;
-      visibility: "public" | "private";
-    }) => updateCapsule(id, { visibility }),
-    onSuccess: (_, { visibility }) => {
-      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
-      toast.success(
-        visibility === "public"
-          ? "Capsule is now public"
-          : "Capsule is now private",
-      );
-    },
-    onError: () => toast.error("Could not update capsule visibility"),
-  });
-
-  const deleteCapsuleMutation = useMutation({
-    mutationFn: deleteCapsule,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
-      toast.success("Capsule deleted");
-    },
-    onError: () => {
-      toast.error("Could not delete capsule");
-    },
-  });
-
-  useEffect(() => {
-    setCookie("profileCollectionView", viewMode, {
-      maxAgeSeconds: 60 * 60 * 24 * 365,
-      path: "/",
-    });
-  }, [viewMode]);
 
   useEffect(() => {
     if (editOpen && profile) {
@@ -320,37 +171,8 @@ function ProfilePageInner() {
     }
   };
 
-  const interestsByCategory = useMemo(() => {
-    const map: Partial<
-      Record<InterestCategory, typeof wishbookUser.interests>
-    > = {};
-    wishbookUser.interests.forEach((i) => {
-      if (!map[i.category]) map[i.category] = [];
-      map[i.category]!.push(i);
-    });
-    return map;
-  }, [wishbookUser]);
-
-  const revealedTalents = useMemo(
-    () => wishbookUser.talents.filter((t) => t.isPublic),
-    [wishbookUser.talents],
-  );
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
   return (
-    <Layout className="md:px-0 px-0 pt-0 md:pt-0">
+    <>
       <div className="min-h-screen pb-12">
         {/* Immersive Cyber Banner */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
@@ -522,484 +344,20 @@ function ProfilePageInner() {
                 ))}
               </motion.div>
 
-              <Tabs defaultValue="favorites" className="w-full">
-                <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
-                  <TabsTrigger
-                    value="favorites"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    My collection
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="interests"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Interests & pursuits
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="talents"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Hidden talents
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="capsules"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Time capsules
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="favorites" className="mt-0">
-                  <div className="flex flex-col gap-4 mb-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <h3 className="text-2xl font-display font-bold">
-                          My collection
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          Curated favorites — movies, songs, books, places. Your
-                          taste, your story.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Link href="/albums">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full"
-                          >
-                            <Images className="w-3.5 h-3.5" />
-                            Albums
-                          </Button>
-                        </Link>
-                        <Link href="/add-favorite">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full"
-                          >
-                            <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
-                            Add new
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex flex-wrap gap-2">
-                        {CATEGORY_TABS.map((cat) => {
-                          const Icon = "icon" in cat ? cat.icon : undefined;
-
-                          return (
-                            <Button
-                              key={cat.value}
-                              type="button"
-                              size="sm"
-                              variant={
-                                selectedCategoryFilter === cat.value
-                                  ? "default"
-                                  : "outline"
-                              }
-                              onClick={() =>
-                                setSelectedCategoryFilter(cat.value)
-                              }
-                              className={`rounded-full`}
-                            >
-                              <span aria-hidden>
-                                {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
-                              </span>
-                              {cat.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setViewMode("grid")}
-                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                            viewMode === "grid"
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-white/5"
-                          }`}
-                          aria-label="Grid view"
-                        >
-                          <LayoutGrid className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setViewMode("list")}
-                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                            viewMode === "list"
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-white/5"
-                          }`}
-                          aria-label="List view"
-                        >
-                          <List className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className={
-                      viewMode === "grid"
-                        ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                        : "flex flex-col gap-3"
-                    }
-                  >
-                    {favoritesLoading && favorites.length === 0 ? (
-                      Array.from({ length: 3 }).map((_, idx) => (
-                        <ProfilePostCardSkeleton key={idx} variant={viewMode} />
-                      ))
-                    ) : favorites.length === 0 ? (
-                      <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
-                        <p className="text-muted-foreground text-sm mb-2">
-                          {selectedCategoryFilter === "all"
-                            ? "No items in your collection yet."
-                            : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in your collection.`}
-                        </p>
-                        <Link href="/add-favorite">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full mt-2"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add your first
-                          </Button>
-                        </Link>
-                      </div>
-                    ) : (
-                      favorites
-                        .slice(0, PROFILE_PREVIEW_LIMIT)
-                        .map((favorite) => (
-                          <div
-                            key={favorite.id}
-                            className={`relative ${
-                              viewMode === "list" ? "w-full" : ""
-                            }`}
-                          >
-                            <ProfilePostCard
-                              favorite={favorite}
-                              variant={viewMode}
-                              onTitleClick={() =>
-                                router.push(`/favorites/${favorite.id}`)
-                              }
-                            />
-                            {authUser && (
-                              <div className="absolute top-2 right-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className="inline-flex items-center justify-center size-8 rounded-full bg-background/95 border border-white/20 shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-white/30 backdrop-blur-sm"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                      }}
-                                      aria-label="Item actions"
-                                    >
-                                      <MoreHorizontal className="w-4 h-4" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-40 text-sm"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <DropdownMenuItem
-                                      className="flex items-center gap-2 cursor-pointer"
-                                      onSelect={(e) => {
-                                        e.preventDefault();
-                                        setAlbumPickerFavorite(favorite);
-                                        setAlbumPickerOpen(true);
-                                      }}
-                                    >
-                                      <Images className="w-4 h-4" />
-                                      Add to album
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="flex items-center gap-2 cursor-pointer"
-                                      onSelect={(e) => {
-                                        e.preventDefault();
-                                        if (
-                                          toggleFavoriteVisibilityMutation.isPending
-                                        )
-                                          return;
-                                        toggleFavoriteVisibilityMutation.mutate(
-                                          {
-                                            id: favorite.id,
-                                            isPublic: !(
-                                              favorite.isPublic ?? true
-                                            ),
-                                          },
-                                        );
-                                      }}
-                                    >
-                                      {(favorite.isPublic ?? true) ? (
-                                        <>
-                                          <Lock className="w-4 h-4" />
-                                          Make private
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Globe className="w-4 h-4" />
-                                          Make public
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                                      onSelect={(e) => {
-                                        e.preventDefault();
-                                        if (deleteFavoriteMutation.isPending)
-                                          return;
-                                        setFavoriteToDelete(favorite);
-                                      }}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                    )}
-                    {favorites.length > PROFILE_PREVIEW_LIMIT && (
-                      <div className="col-span-full flex justify-center pt-4">
-                        <Link
-                          href={
-                            selectedCategoryFilter === "all"
-                              ? "/profile/collection"
-                              : `/profile/collection?category=${selectedCategoryFilter}`
-                          }
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full gap-2"
-                          >
-                            See all ({favorites.length})
-                            <ChevronRight className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                  </motion.div>
-                </TabsContent>
-
-                <TabsContent value="interests" className="mt-0">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">
-                      Interests & creative pursuits
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Creative, performance, skill-based, and more — what drives
-                      you.
-                    </p>
-                  </div>
-                  {wishbookUser.interests.length > 0 ? (
-                    <div className="space-y-6">
-                      {Object.entries(interestsByCategory).map(
-                        ([cat, interests]) =>
-                          interests &&
-                          interests.length > 0 && (
-                            <div
-                              key={cat}
-                              className="p-6 rounded-2xl bg-card/20 border border-white/5 hover:border-primary/20 transition-all"
-                            >
-                              <h4 className="text-lg font-semibold mb-3 text-primary capitalize">
-                                {categoryLabels[cat as InterestCategory] || cat}
-                              </h4>
-                              <div className="flex flex-wrap gap-2">
-                                {interests.map((i) => (
-                                  <Badge
-                                    key={i.id}
-                                    variant="secondary"
-                                    className="bg-primary/10 text-primary border-primary/20"
-                                  >
-                                    {i.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          ),
-                      )}
-                    </div>
-                  ) : (
-                    <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
-                      No interests added yet.
-                    </div>
-                  )}
-                  <div className="mt-6 p-6 rounded-2xl bg-card/20 border border-dashed border-white/10">
-                    <h4 className="text-lg font-semibold mb-3 text-muted-foreground">
-                      Explore more interests
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Add from creative, performance, skill-based, intellectual,
-                      unique, and collaborative pursuits.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {Object.entries(interestCategories).map(
-                        ([category, interests]) => (
-                          <div key={category} className="space-y-2">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                              {categoryLabels[category as InterestCategory] ||
-                                category}
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                              {interests.slice(0, 6).map((i) => (
-                                <Badge
-                                  key={i.id}
-                                  variant="outline"
-                                  className="bg-background/50 cursor-pointer hover:border-primary/50"
-                                >
-                                  {i.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="talents" className="mt-0">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">
-                      Hidden talents
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Reveal your secret skills — singing, dancing, writing,
-                      art, acting, stunts.
-                    </p>
-                  </div>
-                  {revealedTalents.length > 0 ? (
-                    <div className="flex flex-wrap gap-3 mb-6">
-                      {revealedTalents.map((t) => (
-                        <div
-                          key={t.id}
-                          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-secondary/10 border border-secondary/20"
-                        >
-                          <Mic2 className="w-5 h-5 text-secondary" />
-                          <span className="font-medium">{t.name}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            Revealed
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
-                      No talents revealed yet.
-                    </div>
-                  )}
-                  <div className="p-8 rounded-3xl bg-secondary/5 border border-secondary/20 border-dashed">
-                    <Sparkles className="w-12 h-12 text-secondary mx-auto mb-4" />
-                    <h4 className="text-xl font-bold mb-2 text-center">
-                      Unveil a talent
-                    </h4>
-                    <p className="text-muted-foreground text-center mb-6 text-sm">
-                      Share a hidden skill with your taste twin community.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {talentOptions.map((name) => (
-                        <Button
-                          key={name}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full"
-                        >
-                          {name}
-                        </Button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center mt-4 flex items-center justify-center gap-1">
-                      <Lock className="w-3 h-3" /> Private until you reveal
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="capsules" className="mt-0">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-2xl font-display font-bold">
-                        Time capsules
-                      </h3>
-                      <p className="text-muted-foreground text-sm">
-                        Collections tied to a period — school days, breakup era,
-                        summer this year.
-                      </p>
-                    </div>
-                    <Link href="/create-capsule">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full border-dashed group hover:border-primary hover:text-primary"
-                      >
-                        <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
-                        Create capsule
-                      </Button>
-                    </Link>
-                  </div>
-                  {capsules.length === 0 ? (
-                    <Link href="/create-capsule">
-                      <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
-                        <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50 group-hover:opacity-80" />
-                        <h4 className="text-lg font-semibold mb-2 text-foreground">
-                          No capsules yet
-                        </h4>
-                        <p className="text-sm mb-4">
-                          Capture a chapter of your life with favorites,
-                          emotions, and stories.
-                        </p>
-                        <Button variant="secondary" size="sm">
-                          Create your first capsule
-                        </Button>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="flex flex-col gap-4 mx-auto">
-                      {capsules.map((capsule) => (
-                        <div key={capsule.id}>
-                          <TimeCapsuleCard
-                            capsule={capsule}
-                            onClick={() =>
-                              router.push(`/capsules/${capsule.id}`)
-                            }
-                            showActions
-                            authorName={displayName || "You"}
-                            authorSubtitle="Your time capsule"
-                            authorAvatar={
-                              displayAvatarUrl || displayAvatar || null
-                            }
-                            onEdit={() =>
-                              router.push(`/update-captule/${capsule.id}`)
-                            }
-                            onToggleVisibility={(visibility) =>
-                              updateCapsuleVisibilityMutation.mutate({
-                                id: capsule.id,
-                                visibility,
-                              })
-                            }
-                            onDelete={() =>
-                              deleteCapsuleMutation.mutate(capsule.id)
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+              <div className="w-full">
+                <div className="w-full flex items-center justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                  {PROFILE_TABS.map((tab) => (
+                    <TabsListLink
+                      key={tab.href}
+                      href={tab.href}
+                      className={pathname === tab.href ? "active" : ""}
+                    >
+                      {tab.label}
+                    </TabsListLink>
+                  ))}
+                </div>
+                {children}
+              </div>
             </div>
           </div>
         </div>
@@ -1066,116 +424,6 @@ function ProfilePageInner() {
           </form>
         </DialogContent>
       </Dialog>
-
-      <Dialog
-        open={albumPickerOpen}
-        onOpenChange={(open) => {
-          setAlbumPickerOpen(open);
-          if (!open) setAlbumPickerFavorite(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md overflow-visible">
-          <DialogHeader>
-            <DialogTitle className="text-base">Add to album</DialogTitle>
-          </DialogHeader>
-          {albumsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading albums...</p>
-          ) : albums.length === 0 ? (
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>You don&apos;t have any albums yet.</p>
-              <Link href="/create-album">
-                <Button size="sm" className="rounded-full">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Create album
-                </Button>
-              </Link>
-            </div>
-          ) : !albumPickerFavorite ? (
-            <p className="text-sm text-muted-foreground">
-              Select a favorite to add to an album.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Choose an album for{" "}
-                <span className="font-medium">{albumPickerFavorite.title}</span>
-              </p>
-              <AddToAlbumDropdown
-                albums={albums}
-                favoriteId={albumPickerFavorite.id}
-                onSelect={async (albumId) => {
-                  await addToAlbumMutation.mutateAsync({
-                    albumId,
-                    favoriteId: albumPickerFavorite.id,
-                  });
-                  setAlbumPickerOpen(false);
-                  setAlbumPickerFavorite(null);
-                }}
-                disabled={addToAlbumMutation.isPending}
-                loading={albumsLoading}
-                placeholder="Search albums..."
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
-        open={!!favoriteToDelete}
-        onOpenChange={(open) => {
-          if (!open) setFavoriteToDelete(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove it from your collection. It will also
-              be removed from any albums it was added to.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {favoriteToDelete && (
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-card/40 p-3 mt-2">
-              <div className="w-12 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                {favoriteToDelete.image ? (
-                  <img
-                    src={favoriteToDelete.image}
-                    alt={favoriteToDelete.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
-                    {favoriteToDelete.title}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {favoriteToDelete.title}
-                </p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {favoriteToDelete.categoryId}
-                </p>
-              </div>
-            </div>
-          )}
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel onClick={() => setFavoriteToDelete(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteFavoriteMutation.isPending || !favoriteToDelete}
-              onClick={async () => {
-                if (!favoriteToDelete) return;
-                await deleteFavoriteMutation.mutateAsync(favoriteToDelete.id);
-              }}
-            >
-              {deleteFavoriteMutation.isPending ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Layout>
+    </>
   );
 }

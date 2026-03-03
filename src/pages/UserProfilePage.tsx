@@ -1,27 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
-import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
-import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import {
   getPublicProfile,
-  getPublicFavorites,
   getFollowStatus,
   followUser,
   unfollowUser,
 } from "@/features/users/api";
 import { useAuth } from "@/features/auth/AuthContext";
-import { CATEGORY_TABS } from "@/features/albums/constants";
-import { PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
-import { getUserCapsules } from "@/features/capsules/api";
 import { toast } from "sonner";
 import {
   MapPin,
@@ -31,31 +23,46 @@ import {
   Users,
   Rocket,
   Calendar,
-  LayoutGrid,
-  List,
-  Images,
-  ChevronRight,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsListLink } from "@/components/ui/tabs";
+import { useParams, usePathname } from "next/navigation";
 import { ClientOnly } from "@/components/common/ClientOnly";
-import { useRouter } from "nextjs-toploader/app";
 
-type UserProfilePageProps = { id: string };
+const USER_PROFILE_TABS = [
+  {
+    label: "My collection",
+    value: "",
+  },
+  {
+    label: "Interests & pursuits",
+    value: "interests",
+  },
+  {
+    label: "Hidden talents",
+    value: "talents",
+  },
+  {
+    label: "Time capsules",
+    value: "capsules",
+  },
+];
 
-const staggerDelay = 0.08;
+function UserProfilePageInner({ children }: { children: React.ReactNode }) {
+  const { id } = useParams<{ id: string | undefined }>();
+  const pathname = usePathname();
 
-function UserProfilePageInner({ id }: UserProfilePageProps) {
+  console.log(pathname);
+  
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   const isOwnProfile = authUser?.id === id;
-  const router = useRouter();
   const {
     data: profile,
     isLoading: profileLoading,
     isError: profileError,
   } = useQuery({
     queryKey: ["user-profile", id],
-    queryFn: () => getPublicProfile(id),
+    queryFn: () => getPublicProfile(id as string),
     enabled: !!id,
   });
 
@@ -93,27 +100,6 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
 
   const isFollowing = followStatus?.isFollowing ?? false;
 
-  const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
-    queryKey: ["user-favorites", id],
-    queryFn: () => getPublicFavorites(id),
-    enabled: !!id && !!profile,
-  });
-
-  const { data: capsules = [], isLoading: capsulesLoading } = useQuery({
-    queryKey: ["user-capsules", id],
-    queryFn: () => getUserCapsules(id),
-    enabled: !!id && !!profile,
-  });
-
-  const [selectedCategoryFilter, setSelectedCategoryFilter] =
-    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  const filteredFavorites = useMemo(() => {
-    if (selectedCategoryFilter === "all") return favorites;
-    return favorites.filter((f) => f.categoryId === selectedCategoryFilter);
-  }, [favorites, selectedCategoryFilter]);
-
   if (profileLoading && !profile) {
     return <FullScreenLoader />;
   }
@@ -146,7 +132,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
     : new Date().getFullYear();
 
   return (
-    <Layout className="md:px-0 px-0 pt-0 md:pt-0">
+    <>
       <div className="min-h-screen pb-12">
         {/* Banner - same as ProfilePage */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
@@ -288,275 +274,30 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                 </div>
               </motion.div>
 
-              <Tabs defaultValue="favorites" className="w-full">
-                <TabsList className="w-full justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
-                  <TabsTrigger
-                    value="favorites"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Collection
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="interests"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Interests & pursuits
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="talents"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Hidden talents
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="capsules"
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-base"
-                  >
-                    Time capsules
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="favorites" className="mt-0">
-                  <div className="flex flex-col gap-4 mb-6">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <div>
-                        <h3 className="text-2xl font-display font-bold">
-                          {displayName}&apos;s collection
-                        </h3>
-                        <p className="text-muted-foreground text-sm">
-                          Movies, songs, books, places — their taste in one
-                          place.
-                        </p>
-                      </div>
-                      <Link href={`/users/${id}/albums`}>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full"
-                        >
-                          <Images className="w-3.5 h-3.5" />
-                          Albums
-                        </Button>
-                      </Link>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <div className="flex flex-wrap gap-2">
-                        {CATEGORY_TABS.map((cat) => {
-                          const Icon = "icon" in cat ? cat.icon : undefined;
-                          return (
-                            <Button
-                              key={cat.value}
-                              type="button"
-                              size="sm"
-                              variant={
-                                selectedCategoryFilter === cat.value
-                                  ? "default"
-                                  : "outline"
-                              }
-                              onClick={() =>
-                                setSelectedCategoryFilter(cat.value)
-                              }
-                              className={`rounded-full`}
-                            >
-                              <span aria-hidden>
-                                {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
-                              </span>
-                              {cat.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setViewMode("grid")}
-                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                            viewMode === "grid"
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-white/5"
-                          }`}
-                          aria-label="Grid view"
-                        >
-                          <LayoutGrid className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setViewMode("list")}
-                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                            viewMode === "list"
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-white/5"
-                          }`}
-                          aria-label="List view"
-                        >
-                          <List className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {favoritesLoading ? (
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                          : "flex flex-col gap-3"
-                      }
+              <div className="w-full">
+                <div className="w-full flex justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                  {USER_PROFILE_TABS.map((tab) => (
+                    <TabsListLink key={tab.value} href={`/users/${id}/${tab.value}`}
+                    className={pathname === `/users/${id}${tab?.value ? `/${tab.value}` : ""}` ? "active" : ""}
                     >
-                      {Array.from({ length: 3 }).map((_, idx) => (
-                        <ProfilePostCardSkeleton key={idx} variant={viewMode} />
-                      ))}
-                    </div>
-                  ) : filteredFavorites.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
-                      <p className="text-muted-foreground text-sm mb-2">
-                        {selectedCategoryFilter === "all"
-                          ? "No items in their collection yet."
-                          : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in their collection.`}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div
-                        className={
-                          viewMode === "grid"
-                            ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                            : "flex flex-col gap-3"
-                        }
-                      >
-                        {filteredFavorites
-                          .slice(0, PROFILE_PREVIEW_LIMIT)
-                          .map((favorite, index) => (
-                            <motion.div
-                              key={favorite.id}
-                              initial={{ opacity: 0, y: 14 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{
-                                delay: index * staggerDelay,
-                                duration: 0.25,
-                              }}
-                              className={viewMode === "list" ? "w-full" : ""}
-                            >
-                              <ProfilePostCard
-                                favorite={favorite}
-                                variant={viewMode}
-                                onTitleClick={() =>
-                                  router.push(`/favorites/${favorite.id}`)
-                                }
-                              />
-                            </motion.div>
-                          ))}
-                      </div>
-                      {filteredFavorites.length > PROFILE_PREVIEW_LIMIT && (
-                        <div className="flex justify-center pt-4">
-                          <Link
-                            href={
-                              selectedCategoryFilter === "all"
-                                ? `/users/${id}/collection`
-                                : `/users/${id}/collection?category=${selectedCategoryFilter}`
-                            }
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-full gap-2"
-                            >
-                              See all ({filteredFavorites.length})
-                              <ChevronRight className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="interests" className="mt-0">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">
-                      Interests & creative pursuits
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Creative, performance, skill-based, and more — what drives
-                      them.
-                    </p>
-                  </div>
-                  <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
-                    No interests added yet.
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="talents" className="mt-0">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">
-                      Hidden talents
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Reveal your secret skills — singing, dancing, writing,
-                      art, acting, stunts.
-                    </p>
-                  </div>
-                  <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
-                    No talents revealed yet.
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="capsules" className="mt-0">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-display font-bold">
-                      Time capsules
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Collections tied to a period — school days, breakup era,
-                      summer this year.
-                    </p>
-                  </div>
-                  {capsulesLoading ? (
-                    <p className="text-sm text-muted-foreground">
-                      Loading capsules...
-                    </p>
-                  ) : capsules.length === 0 ? (
-                    <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
-                      <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50" />
-                      <h4 className="text-lg font-semibold mb-2 text-foreground">
-                        No capsules yet
-                      </h4>
-                      <p className="text-sm">
-                        {displayName} hasn&apos;t created any time capsules yet.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4 mx-auto">
-                      {capsules.map((capsule) => (
-                        <div key={capsule.id}>
-                          <TimeCapsuleCard
-                            capsule={capsule}
-                            authorName={displayName}
-                            authorSubtitle={displayUsername || "Time capsule"}
-                            authorAvatar={profile.avatar}
-                            onClick={() =>
-                              router.push(`/capsules/${capsule.id}`)
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                      {tab.label}
+                    </TabsListLink>
+                  ))}
+                </div>
+                {children}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 
-export default function UserProfilePage(props: UserProfilePageProps) {
+export default function UserProfilePage({ children }: { children: React.ReactNode }) {
   return (
     <ClientOnly>
-      <UserProfilePageInner {...props} />
+      <UserProfilePageInner>{children}</UserProfilePageInner>
     </ClientOnly>
   );
 }
