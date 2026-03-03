@@ -7,12 +7,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
-import {
-  getPublicProfile,
-  getFollowStatus,
-  followUser,
-  unfollowUser,
-} from "@/features/users/api";
+import { getFollowStatus, followUser, unfollowUser } from "@/features/users/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
 import {
@@ -27,6 +22,7 @@ import {
 import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
 import { ClientOnly } from "@/components/common/ClientOnly";
+import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
 
 const USER_PROFILE_TABS = [
   {
@@ -51,29 +47,28 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string | undefined }>();
   const pathname = usePathname();
 
-  console.log(pathname);
-  
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   const isOwnProfile = authUser?.id === id;
   const {
-    data: profile,
-    isLoading: profileLoading,
-    isError: profileError,
-  } = useQuery({
-    queryKey: ["user-profile", id],
-    queryFn: () => getPublicProfile(id as string),
-    enabled: !!id,
-  });
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    displayName,
+    displayUsername,
+    displayBio,
+    displayLocation,
+    displaySinceYear,
+  } = usePublicProfileInfo(id);
 
   const { data: followStatus, isLoading: followStatusLoading } = useQuery({
     queryKey: ["user-follow-status", id],
-    queryFn: () => getFollowStatus(id),
+    queryFn: () => getFollowStatus(id as string),
     enabled: !!id && !!authUser && !isOwnProfile,
   });
 
   const followMutation = useMutation({
-    mutationFn: () => followUser(id),
+    mutationFn: () => followUser(id as string),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["user-follow-status", id],
@@ -86,7 +81,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
   });
 
   const unfollowMutation = useMutation({
-    mutationFn: () => unfollowUser(id),
+    mutationFn: () => unfollowUser(id as string),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["user-follow-status", id],
@@ -119,17 +114,6 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
       </Layout>
     );
   }
-
-  const displayName =
-    profile.displayName?.trim() || profile.username?.trim() || "User";
-  const displayUsername = profile.username?.trim()
-    ? `@${profile.username}`
-    : "";
-  const displayBio = profile.bio?.trim() || "This user hasn't added a bio yet.";
-  const displayLocation = profile.location?.trim() || "";
-  const displaySinceYear = profile.createdAt
-    ? new Date(profile.createdAt).getFullYear()
-    : new Date().getFullYear();
 
   return (
     <>

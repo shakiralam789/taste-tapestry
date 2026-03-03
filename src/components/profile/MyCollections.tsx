@@ -131,11 +131,6 @@ export default function MyCollections() {
     onError: () => toast.error("Could not add to album"),
   });
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
   useEffect(() => {
     setCookie("profileCollectionView", viewMode, {
       maxAgeSeconds: 60 * 60 * 24 * 365,

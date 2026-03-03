@@ -9,57 +9,51 @@ import { Button } from "@/components/ui/button";
 import { Plus, Rocket } from "lucide-react";
 import { getProfile, PROFILE_QUERY_STALE_MS } from "@/features/profile/api";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useProfileInfo } from "@/features/profile/useProfileInfo";
 
 export default function Capsules() {
-  const { user: authUser } = useAuth();
-
   const router = useRouter();
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
-    enabled: !!authUser,
-    staleTime: PROFILE_QUERY_STALE_MS,
-  });
-  const displayName =
-    profile?.displayName?.trim() || authUser?.displayName?.trim() || "";
-  const displayAvatar = profile?.avatar?.trim() || "";
-  const displayAvatarUrl = displayAvatar;
+  const {
+    loading: profileLoading,
+    displayName,
+    displayAvatar,
+  } = useProfileInfo();
+
   const queryClient = useQueryClient();
-    const { data: capsules = [] } = useQuery({
-        queryKey: ["capsules"],
-        queryFn: () =>
-          import("@/features/capsules/api").then((m) => m.getMyCapsules()),
-      });
-    const updateCapsuleVisibilityMutation = useMutation({
-        mutationFn: ({
-          id,
-          visibility,
-        }: {
-          id: string;
-          visibility: "public" | "private";
-        }) => updateCapsule(id, { visibility }),
-        onSuccess: (_, { visibility }) => {
-          void queryClient.invalidateQueries({ queryKey: ["capsules"] });
-          toast.success(
-            visibility === "public"
-              ? "Capsule is now public"
-              : "Capsule is now private",
-          );
-        },
-        onError: () => toast.error("Could not update capsule visibility"),
-      });
-    
-    
-    const deleteCapsuleMutation = useMutation({
-        mutationFn: deleteCapsule,
-        onSuccess: () => {
-          void queryClient.invalidateQueries({ queryKey: ["capsules"] });
-          toast.success("Capsule deleted");
-        },
-        onError: () => {
-          toast.error("Could not delete capsule");
-        },
-      });
+  const { data: capsules = [] } = useQuery({
+    queryKey: ["capsules"],
+    queryFn: () =>
+      import("@/features/capsules/api").then((m) => m.getMyCapsules()),
+  });
+  const updateCapsuleVisibilityMutation = useMutation({
+    mutationFn: ({
+      id,
+      visibility,
+    }: {
+      id: string;
+      visibility: "public" | "private";
+    }) => updateCapsule(id, { visibility }),
+    onSuccess: (_, { visibility }) => {
+      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      toast.success(
+        visibility === "public"
+          ? "Capsule is now public"
+          : "Capsule is now private",
+      );
+    },
+    onError: () => toast.error("Could not update capsule visibility"),
+  });
+
+  const deleteCapsuleMutation = useMutation({
+    mutationFn: deleteCapsule,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      toast.success("Capsule deleted");
+    },
+    onError: () => {
+      toast.error("Could not delete capsule");
+    },
+  });
   return (
     <>
       <div className="flex items-center justify-between mb-6">
@@ -107,7 +101,7 @@ export default function Capsules() {
                 showActions
                 authorName={displayName || "You"}
                 authorSubtitle="Your time capsule"
-                authorAvatar={displayAvatarUrl || displayAvatar || null}
+                authorAvatar={ displayAvatar || null}
                 onEdit={() => router.push(`/update-captule/${capsule.id}`)}
                 onToggleVisibility={(visibility) =>
                   updateCapsuleVisibilityMutation.mutate({

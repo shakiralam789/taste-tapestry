@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,8 @@ import {
 } from "@/components/ui/dialog";
 
 import { useAuth } from "@/features/auth/AuthContext";
-import {
-  getProfile,
-  PROFILE_QUERY_STALE_MS,
-  updateProfile,
-  uploadAvatar,
-} from "@/features/profile/api";
+import { updateProfile, uploadAvatar } from "@/features/profile/api";
+import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import {
   MapPin,
   Calendar,
@@ -87,30 +83,20 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
   const [avatarVersion, setAvatarVersion] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
-    enabled: !!authUser,
-    staleTime: PROFILE_QUERY_STALE_MS,
-  });
+  const {
+    profile,
+    loading: profileLoading,
+    displayName,
+    displayUsername,
+    displayAvatar,
+    displayBio,
+    displayLocation,
+    displaySinceYear,
+  } = useProfileInfo();
 
-  const displayName =
-    profile?.displayName?.trim() || authUser?.displayName?.trim() || "";
-  const displayUsername = profile?.username?.trim()
-    ? `@${profile.username}`
-    : "";
-  const displayAvatar = profile?.avatar?.trim() || "";
   const displayAvatarUrl = displayAvatar
     ? `${displayAvatar}${displayAvatar.includes("?") ? "&" : "?"}v=${avatarVersion}`
     : "";
-  const displayBio =
-    profile?.bio?.trim() ||
-    "" ||
-    "Digital explorer navigating the neon tides. Curator of moments and memories.";
-  const displayLocation = profile?.location?.trim() || "" || "Neo Tokyo";
-  const displaySinceYear = profile?.createdAt
-    ? new Date(profile.createdAt).getFullYear()
-    : new Date().getFullYear();
 
   useEffect(() => {
     if (editOpen && profile) {

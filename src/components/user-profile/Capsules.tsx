@@ -1,39 +1,30 @@
-import React from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { Rocket } from "lucide-react";
 import { TimeCapsuleCard } from "../capsules/TimeCapsuleCard";
 import { getUserCapsules } from "@/features/capsules/api";
-import { getPublicProfile } from "@/features/users/api";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
+import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
 
 export default function Capsules() {
   const { id } = useParams<{ id: string | undefined }>();
   const router = useRouter();
   const {
-    data: profile,
-    isLoading: profileLoading,
-    isError: profileError,
-  } = useQuery({
-    queryKey: ["user-profile", id],
-    queryFn: () => getPublicProfile(id as string),
-    enabled: !!id,
-  });
+    profile,
+    displayName,
+    displayUsername,
+    loading: profileLoading,
+    error: profileError,
+  } = usePublicProfileInfo(id as string);
   const { data: capsules = [], isLoading: capsulesLoading } = useQuery({
     queryKey: ["user-capsules", id],
     queryFn: () => getUserCapsules(id as string),
-    enabled: !!id && !!profile,
+    enabled: !!id && !!profile && !profileLoading,
   });
 
-  if (profileError || !profile) {
+  if (profileError || !profile || profileLoading) {
     return null;
   }
-
-  const displayName =
-    profile.displayName?.trim() || profile.username?.trim() || "User";
-  const displayUsername = profile.username?.trim()
-    ? `@${profile.username}`
-    : "";
 
   return (
     <>
@@ -44,7 +35,7 @@ export default function Capsules() {
           year.
         </p>
       </div>
-      {capsulesLoading ? (
+      {capsulesLoading || profileLoading ? (
         <p className="text-sm text-muted-foreground">Loading capsules...</p>
       ) : capsules.length === 0 ? (
         <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
