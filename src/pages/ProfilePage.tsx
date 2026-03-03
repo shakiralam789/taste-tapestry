@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useAuth } from "@/features/auth/AuthContext";
-import { updateProfile, uploadAvatar } from "@/features/profile/api";
+import { updateProfile, uploadAvatar, uploadBanner } from "@/features/profile/api";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import {
   MapPin,
@@ -77,11 +77,15 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     avatar: "",
     bio: "",
     location: "",
+    bannerUrl: "",
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  const [bannerVersion, setBannerVersion] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const {
     profile,
@@ -91,11 +95,16 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     displayAvatar,
     displayBio,
     displayLocation,
+    displayBannerUrl,
     displaySinceYear,
   } = useProfileInfo();
 
   const displayAvatarUrl = displayAvatar
     ? `${displayAvatar}${displayAvatar.includes("?") ? "&" : "?"}v=${avatarVersion}`
+    : "";
+
+  const bannerUrlWithVersion = displayBannerUrl
+    ? `${displayBannerUrl}${displayBannerUrl.includes("?") ? "&" : "?"}v=${bannerVersion}`
     : "";
 
   useEffect(() => {
@@ -106,6 +115,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
         avatar: profile.avatar ?? "",
         bio: profile.bio ?? "",
         location: profile.location ?? "",
+        bannerUrl: profile.bannerUrl ?? "",
       });
     }
   }, [editOpen, profile]);
@@ -120,6 +130,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
         avatar: editForm.avatar.trim() || undefined,
         bio: editForm.bio.trim() || undefined,
         location: editForm.location.trim() || undefined,
+        bannerUrl: editForm.bannerUrl.trim() || undefined,
       });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       setEditOpen(false);
@@ -157,14 +168,76 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleBannerFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !file.type.startsWith("image/")) {
+      toast.error("Please choose an image file (JPEG, PNG, GIF, or WebP)");
+      return;
+    }
+    setBannerUploading(true);
+    try {
+      const updated = await uploadBanner(file);
+      if (updated) {
+        queryClient.setQueryData(["profile"], updated);
+        setBannerVersion((v) => v + 1);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      }
+      toast.success("Banner updated");
+    } catch {
+      toast.error("Failed to upload banner");
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
   return (
     <>
       <div className="min-h-screen pb-12">
-        {/* Immersive Cyber Banner */}
+        {/* Immersive Banner */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-60"
+            style={{
+              backgroundImage:
+                !profileLoading && bannerUrlWithVersion
+                  ? `url(${bannerUrlWithVersion})`
+                  : undefined,
+            }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 mix-blend-overlay" />
+          {authUser && (
+            <div className="absolute top-4 right-4 z-10">
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleBannerFileChange}
+                aria-label="Upload banner"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full bg-background/70 border-white/30 text-xs hover:bg-background hover:border-primary/60"
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={bannerUploading}
+                aria-label="Change banner"
+              >
+                {bannerUploading ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Edit3 className="w-3.5 h-3.5 mr-1" />
+                )}
+                Update banner
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="container mx-auto px-4 -mt-32 relative z-10">

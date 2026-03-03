@@ -11,13 +11,17 @@ export interface Profile {
   avatar: string | null;
   bio: string | null;
   location: string | null;
+  bannerUrl?: string | null;
   createdAt: string;
   followersCount?: number;
   followingCount?: number;
 }
 
 export type UpdateProfilePayload = Partial<
-  Pick<Profile, "displayName" | "username" | "avatar" | "bio" | "location">
+  Pick<
+    Profile,
+    "displayName" | "username" | "avatar" | "bio" | "location" | "bannerUrl"
+  >
 >;
 
 export async function getProfile(): Promise<Profile | null> {
@@ -37,6 +41,16 @@ export async function uploadAvatar(file: File): Promise<Profile | null> {
   const form = new FormData();
   form.append("file", file);
   const { data } = await apiClient.post<Profile | null>("/users/me/avatar", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+/** Upload banner image; returns updated profile. */
+export async function uploadBanner(file: File): Promise<Profile | null> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<Profile | null>("/users/me/banner", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data;

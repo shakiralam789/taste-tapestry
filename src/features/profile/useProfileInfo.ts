@@ -30,6 +30,12 @@ export function useProfileInfo() {
 
   const displayLocation = profile?.location?.trim() || "" || "Neo Tokyo";
 
+  const defaultBannerUrl =
+    "https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop";
+
+  const displayBannerUrl =
+    profile?.bannerUrl?.trim() || defaultBannerUrl;
+
   const displaySinceYear = profile?.createdAt
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
@@ -42,6 +48,7 @@ export function useProfileInfo() {
     displayAvatar,
     displayBio,
     displayLocation,
+    displayBannerUrl,
     displaySinceYear,
   };
 }
