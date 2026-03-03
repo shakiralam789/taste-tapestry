@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { AlbumCard } from "@/components/albums/AlbumCard";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
@@ -37,7 +36,7 @@ function UserAlbumsPageInner({ id }: UserAlbumsPageProps) {
 
   if (!profile) {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
           <p className="text-lg text-muted-foreground">User not found.</p>
           <Link href="/profile">
@@ -47,13 +46,13 @@ function UserAlbumsPageInner({ id }: UserAlbumsPageProps) {
             </Button>
           </Link>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen py-12">
+    <>
+      <div className="min-h-screen py-12 px-8">
         <div className="container mx-auto px-4">
           <div className="mb-6 flex items-center gap-4">
             <Link href={`/users/${id}`}>
@@ -106,7 +105,7 @@ function UserAlbumsPageInner({ id }: UserAlbumsPageProps) {
           )}
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 

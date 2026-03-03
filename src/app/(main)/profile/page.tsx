@@ -1,12 +1,15 @@
 "use client";
 import MyCollections from "@/components/profile/MyCollections";
+import ProfilePage from "@/pages/ProfilePage";
 
 export const dynamic = "force-dynamic";
 
 export default function Page() {
   return (
-    <div className="mt-0">
-      <MyCollections />
-    </div>
+    <ProfilePage>
+      <div className="mt-0">
+        <MyCollections />
+      </div>
+    </ProfilePage>
   );
 }

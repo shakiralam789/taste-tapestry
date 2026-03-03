@@ -9,7 +9,6 @@ import {
   useQuery,
   keepPreviousData,
 } from "@tanstack/react-query";
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
@@ -107,17 +106,17 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
 
   if (isLoading && allItems.length === 0) {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen flex items-center justify-center">
           <FullScreenLoader />
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen py-8">
+    <>
+      <div className="min-h-screen py-8 px-8">
         <div className="container mx-auto px-4">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
@@ -220,7 +219,7 @@ function UserCollectionPageInner({ id }: UserCollectionPageProps) {
           </Tabs>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 
