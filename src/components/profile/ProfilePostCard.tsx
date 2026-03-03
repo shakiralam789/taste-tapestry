@@ -154,6 +154,7 @@ export function ProfilePostCard({
   // Default grid variant
   return (
     <motion.div
+      onClick={() => onTitleClick?.()}
       whileHover={{ y: -5 }}
       className="group relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
     >

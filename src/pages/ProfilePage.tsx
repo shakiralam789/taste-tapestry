@@ -35,6 +35,7 @@ import {
   PROFILE_PREVIEW_LIMIT,
 } from "@/features/favorites/api";
 import { getAlbums, updateAlbum } from "@/features/albums/api";
+import { deleteCapsule, updateCapsule } from "@/features/capsules/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
   MapPin,
@@ -78,6 +79,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { useRouter } from "nextjs-toploader/app";
+import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 
 const categoryLabels: Record<InterestCategory, string> = {
   creative: "Creative pursuits",
@@ -218,6 +220,36 @@ function ProfilePageInner() {
       toast.success(isPublic ? "Item is now public" : "Item is now private");
     },
     onError: () => toast.error("Could not update visibility"),
+  });
+
+  const updateCapsuleVisibilityMutation = useMutation({
+    mutationFn: ({
+      id,
+      visibility,
+    }: {
+      id: string;
+      visibility: "public" | "private";
+    }) => updateCapsule(id, { visibility }),
+    onSuccess: (_, { visibility }) => {
+      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      toast.success(
+        visibility === "public"
+          ? "Capsule is now public"
+          : "Capsule is now private",
+      );
+    },
+    onError: () => toast.error("Could not update capsule visibility"),
+  });
+
+  const deleteCapsuleMutation = useMutation({
+    mutationFn: deleteCapsule,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      toast.success("Capsule deleted");
+    },
+    onError: () => {
+      toast.error("Could not delete capsule");
+    },
   });
 
   useEffect(() => {
@@ -888,7 +920,7 @@ function ProfilePageInner() {
                       </h3>
                       <p className="text-muted-foreground text-sm">
                         Collections tied to a period — school days, breakup era,
-                        summer 2024.
+                        summer this year.
                       </p>
                     </div>
                     <Link href="/create-capsule">
@@ -919,69 +951,29 @@ function ProfilePageInner() {
                       </div>
                     </Link>
                   ) : (
-                    <motion.div
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                    >
+                    <div className="flex flex-col gap-4 mx-auto">
                       {capsules.map((capsule) => (
-                        <motion.div key={capsule.id} variants={itemVariants}>
-                          <Link href={`/capsules/${capsule.id}`}>
-                            <div className="group rounded-2xl overflow-hidden border border-white/10 bg-card/30 hover:border-primary/20 transition-all">
-                              <div className="aspect-video relative overflow-hidden">
-                                {capsule.image ? (
-                                  <img
-                                    src={capsule.image}
-                                    alt={capsule.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                                    <Rocket className="w-12 h-12 text-primary/50" />
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                                <div className="absolute bottom-0 left-0 right-0 p-4">
-                                  <h4 className="font-display font-semibold text-lg">
-                                    {capsule.title}
-                                  </h4>
-                                  <p className="text-xs text-muted-foreground">
-                                    {capsule.period}
-                                  </p>
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {capsule.emotions.slice(0, 3).map((e) => (
-                                      <span
-                                        key={e}
-                                        className="text-xs px-2 py-0.5 rounded-full bg-white/10"
-                                      >
-                                        {e}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="p-4">
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {capsule.description}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        </motion.div>
+                        <TimeCapsuleCard
+                          key={capsule.id}
+                          capsule={capsule}
+                          onClick={() => router.push(`/capsules/${capsule.id}`)}
+                          showActions
+                          authorName={displayName || "You"}
+                          authorSubtitle="Your time capsule"
+                          authorAvatar={displayAvatarUrl || displayAvatar || null}
+                          onEdit={() =>
+                            router.push(`/update-captule/${capsule.id}`)
+                          }
+                          onToggleVisibility={(visibility) =>
+                            updateCapsuleVisibilityMutation.mutate({
+                              id: capsule.id,
+                              visibility,
+                            })
+                          }
+                          onDelete={() => deleteCapsuleMutation.mutate(capsule.id)}
+                        />
                       ))}
-                      <Link href="/create-capsule">
-                        <motion.div
-                          variants={itemVariants}
-                          className="aspect-video rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
-                        >
-                          <Plus className="w-10 h-10" />
-                          <span className="font-medium text-sm">
-                            New capsule
-                          </span>
-                        </motion.div>
-                      </Link>
-                    </motion.div>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>

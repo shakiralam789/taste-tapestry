@@ -95,7 +95,7 @@ export default function ExploreCapsulesPage() {
             </Link>
           </motion.div>
 
-          {/* Capsules grid */}
+          {/* Capsules list (single column, social-style cards) */}
           {visibleCapsules.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <p className="mb-2 text-sm">
@@ -109,7 +109,7 @@ export default function ExploreCapsulesPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="flex flex-col gap-4 max-w-2xl mx-auto"
             >
               {visibleCapsules.map((capsule) => (
                 <Link key={capsule.id} href={`/capsules/${capsule.id}`}>

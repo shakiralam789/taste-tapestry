@@ -18,8 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useWishbook } from "@/contexts/WishbookContext";
-import { CategoryChip } from "@/components/categories/CategoryChip";
-import { CATEGORY_TABS } from "@/features/albums/constants";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,32 +30,18 @@ import { useNotifications } from "@/features/notifications/NotificationsContext"
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
-  { path: "/discover", icon: Compass, label: "Discover" },
-  { path: "/mood", icon: Sparkles, label: "Mood" },
+  { path: "/discover", icon: Compass, label: "Collections" },
+  { path: "/mood", icon: Sparkles, label: "Hidden talents" },
   { path: "/capsules", icon: Clock, label: "Capsules" },
-  { path: "/matches", icon: Heart, label: "Matches" },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user: wishbookUser } = useWishbook();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const { notifications, unreadCount, markAllRead } = useNotifications();
-  const selectedCategory = searchParams?.get("category") || null;
-
-  const handleCategoryClick = (value: string) => {
-    const params = new URLSearchParams(searchParams?.toString() || "");
-    if (selectedCategory === value) {
-      params.delete("category");
-    } else {
-      params.set("category", value);
-    }
-    const query = params.toString();
-    router.push(`/${query ? `?${query}` : ""}`);
-  };
 
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -78,23 +62,22 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Category Tabs (moved from HomePage) */}
-          <div className="xl:-translate-x-8 col-span-8 hidden md:flex items-center justify-center gap-1.5 md:gap-2">
-            {CATEGORY_TABS.map((category) => {
-              const Icon = "icon" in category ? category.icon : undefined;
+          {/* Desktop Navigation */}
+          <div className="col-span-8 hidden md:flex items-center justify-center gap-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
               return (
-                <CategoryChip
-                  key={category.value}
-                  category={{
-                    id: category.value,
-                    name: category.label,
-                    icon: Icon ? <Icon className="w-4 h-4" /> : "✨",
-                    color: "primary",
-                    isDefault: true,
-                  }}
-                  isSelected={selectedCategory === category.value}
-                  onClick={() => handleCategoryClick(category.value)}
-                />
+                  <Button
+                    key={item.path}
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    className={`gap-2 ${
+                      isActive ? "bg-primary text-primary-foreground" : ""
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </Button>
               );
             })}
           </div>
@@ -114,11 +97,14 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-80 p-0"
+                className="w-80 p-0 overflow-hidden"
                 align="end"
                 sideOffset={8}
               >
-                <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 70px)" }}>
+                <div
+                  className="overflow-y-auto overflow-x-hidden"
+                  style={{ maxHeight: "calc(100vh - 70px)" }}
+                >
                   <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
                     <span>Notifications</span>
                     {notifications.length > 0 && (

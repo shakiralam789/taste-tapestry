@@ -506,7 +506,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       Time capsules
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Collections tied to a period — school days, breakup era, summer 2024.
+                      Collections tied to a period — school days, breakup era, summer this year.
                     </p>
                   </div>
                   {capsulesLoading ? (
@@ -524,11 +524,15 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-4 mx-auto">
                       {capsules.map((capsule) => (
-                        <Link key={capsule.id} href={`/capsules/${capsule.id}`}>
-                          <TimeCapsuleCard capsule={capsule} />
-                        </Link>
+                          <TimeCapsuleCard
+                            capsule={capsule}
+                            authorName={displayName}
+                            authorSubtitle={displayUsername || "Time capsule"}
+                            authorAvatar={profile.avatar}
+                            onClick={() => router.push(`/capsules/${capsule.id}`)}
+                          />
                       ))}
                     </div>
                   )}

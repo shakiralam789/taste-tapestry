@@ -23,10 +23,8 @@ import { useQuery } from "@tanstack/react-query";
 import { searchUsers, type UserSearchHit } from "@/features/users/api";
 
 const navItems = [
-  { path: "/", icon: Home, label: "Home" },
   { path: "/discover", icon: Compass, label: "Discover" },
   { path: "/mood", icon: Sparkles, label: "Moods" },
-  { path: "/capsules", icon: Clock, label: "Capsules" },
   { path: "/matches", icon: Heart, label: "Matches" },
   // { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: "/profile", icon: User, label: "Profile" },

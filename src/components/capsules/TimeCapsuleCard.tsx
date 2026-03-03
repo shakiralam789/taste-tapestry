@@ -1,7 +1,13 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TimeCapsule } from "@/types/wishbook";
-import { Calendar, Globe2, Lock, Unlock, Film, MoreHorizontal, Heart } from "lucide-react";
+import {
+  Calendar,
+  Lock,
+  Film,
+  MoreHorizontal,
+  Heart,
+} from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleCapsuleLove } from "@/features/capsules/api";
 import {
@@ -10,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -18,6 +25,9 @@ interface TimeCapsuleCardProps {
   onEdit?: () => void;
   onToggleVisibility?: (visibility: "public" | "private") => void;
   onDelete?: () => void;
+  authorName?: string;
+  authorSubtitle?: string;
+  authorAvatar?: string | null;
 }
 
 export function TimeCapsuleCard({
@@ -27,6 +37,9 @@ export function TimeCapsuleCard({
   onEdit,
   onToggleVisibility,
   onDelete,
+  authorName,
+  authorSubtitle,
+  authorAvatar,
 }: TimeCapsuleCardProps) {
   const visibility = capsule.visibility ?? "public";
   const unlockLabel =
@@ -44,6 +57,10 @@ export function TimeCapsuleCard({
   const queryClient = useQueryClient();
   const [loved, setLoved] = useState(capsule.lovedByMe ?? false);
   const [loveCount, setLoveCount] = useState(capsule.loveCount ?? 0);
+
+  const displayAuthorName = authorName ?? "Time capsule";
+  const displayAuthorSubtitle =
+    authorSubtitle ?? `Chapter from ${capsule.period || "a moment"}`;
 
   useEffect(() => {
     setLoved(capsule.lovedByMe ?? false);
@@ -86,163 +103,154 @@ export function TimeCapsuleCard({
 
   return (
     <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 mb-4 hover:border-primary/20 transition-colors cursor-pointer"
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-      className="cursor-pointer group relative overflow-hidden rounded-2xl bg-card/40 border border-white/5 backdrop-blur-sm hover:border-primary/30 transition-colors"
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 z-10" />
-
-      {/* Media Header */}
-      <div className="relative h-48 overflow-hidden">
-        {coverUrl ? (
-          isVideoCover ? (
-            <video
-              src={coverUrl}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
-              autoPlay
-              muted
-              loop
-            />
-          ) : (
-            <img
-              src={coverUrl}
-              alt={capsule.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
-            />
-          )
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-            <span className="text-xs text-muted-foreground">
-              No cover media
+      {/* Header - like FavoriteCard */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+            <AvatarImage src={authorAvatar ?? undefined} />
+            <AvatarFallback>
+              {displayAuthorName[0] ?? "T"}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground">
+                {displayAuthorName}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                • {capsule.period || "A moment in time"}
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              {displayAuthorSubtitle}
             </span>
           </div>
-        )}
-
-        {/* Period Badge */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20">
-          <Calendar className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-medium text-white">
-            {capsule.period}
-          </span>
         </div>
-        {/* Visibility + actions */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
-          {visibility !== "public" && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px]">
-              {visibility === "private" && (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-amber-300" />
-                  <span className="text-xs font-medium text-amber-50">
-                    Private
-                  </span>
-                </>
-              )}
-              {visibility === "future" && (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-sky-300" />
-                  <span className="text-xs font-medium text-sky-50">
-                    {unlockLabel}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-          {showActions && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 border border-white/10 text-muted-foreground hover:text-primary hover:border-primary/60 focus:outline-none"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-40"
+        {showActions && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-white/5 focus:outline-none"
                 onClick={(e) => e.stopPropagation()}
               >
-                {onEdit && (
-                  <DropdownMenuItem onClick={onEdit}>
-                    Edit capsule
-                  </DropdownMenuItem>
-                )}
-                {onToggleVisibility && (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      onToggleVisibility(
-                        visibility === "public" ? "private" : "public",
-                      )
-                    }
-                  >
-                    {visibility === "public"
-                      ? "Make private"
-                      : "Make public"}
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem
-                    className="text-red-500 focus:text-red-500"
-                    onClick={onDelete}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-40"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  Edit capsule
+                </DropdownMenuItem>
+              )}
+              {onToggleVisibility && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    onToggleVisibility(
+                      visibility === "public" ? "private" : "public",
+                    )
+                  }
+                >
+                  {visibility === "public" ? "Make private" : "Make public"}
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem
+                  className="text-red-500 focus:text-red-500"
+                  onClick={onDelete}
+                >
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="relative p-5 z-20 -mt-12">
+      {/* Meta row */}
+      <div className="flex items-center gap-2 mb-2 text-[11px] text-muted-foreground">
+        {visibility !== "public" && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+            <Lock className="w-3 h-3" />
+            <span>
+              {visibility === "private" ? "Private" : unlockLabel}
+            </span>
+          </span>
+        )}
+      </div>
 
-        <h3 className="font-display text-xl font-bold text-white mb-2 drop-shadow-lg">
+      {/* Body text */}
+      <div className="" >
+        <h3 className="text-lg font-display font-semibold mb-2">
           {capsule.title}
         </h3>
-        <p className="text-sm text-gray-300 line-clamp-2 mb-4 h-10">
-          {capsule.description}
-        </p>
+        {capsule.description && (
+          <p className="text-sm md:text-base text-foreground/90 mb-3 whitespace-pre-wrap leading-relaxed">
+            {capsule.description}
+          </p>
+        )}
 
-        {/* Emotions */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        {/* Media */}
+        <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
+          {coverUrl ? (
+            isVideoCover ? (
+              <video
+                src={coverUrl}
+                className="max-h-[420px] w-full object-contain"
+                autoPlay
+                muted
+                loop
+              />
+            ) : (
+              <img
+                src={coverUrl}
+                alt={capsule.title}
+                className="max-h-[420px] w-full object-contain"
+              />
+            )
+          ) : null}
+        </div>
+
+        {/* Emotions as hashtags */}
+        <div className="flex flex-wrap gap-2 mb-4">
           {capsule.emotions.slice(0, 3).map((emotion) => (
-            <span 
+            <span
               key={emotion}
-              className="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-sm bg-primary/10 text-primary border border-primary/20"
+              className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
             >
-              {emotion}
+              #{emotion}
             </span>
           ))}
         </div>
 
-        {/* Footer */}
-        <div 
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className="cursor-default flex items-center justify-between pt-3 border-t border-white/10">
-          <div className="flex items-center gap-2 text-xs text-gray-400 group-hover:text-primary transition-colors">
+        {/* Action Bar */}
+        <div
+          className="cursor-default flex items-center justify-between mt-2 pt-2 border-t border-white/5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2 text-xs text-gray-400">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             {capsule.favorites.length} memories locked
           </div>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 px-2 rounded-full group"
             onClick={(e) => {
               e.stopPropagation();
               loveMutation.mutate();
             }}
           >
-            <Heart
-              className={`w-4 h-4 ${
-                loved
-                  ? "fill-red-500 text-red-500"
-                  : "fill-white/20"
-              }`}
-            />
+            <Heart className={`w-4 h-4 group-hover:scale-110 transition-transform ${loved ? "fill-red-500 text-red-500" : ""}`} />
             <span>{loveCount}</span>
           </button>
         </div>

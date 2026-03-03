@@ -7,12 +7,17 @@ import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { Button } from "@/components/ui/button";
 import { Clock, Plus, Archive, Sparkles } from "lucide-react";
 import { deleteCapsule, getMyCapsules, updateCapsule } from "@/features/capsules/api";
+import { getProfile } from "@/features/profile/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function CapsulesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
   const { data: timeCapsules = [], isLoading } = useQuery({
     queryKey: ["capsules"],
     queryFn: getMyCapsules,
@@ -95,7 +100,7 @@ export default function CapsulesPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+            className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"
           >
             {[
               { 
@@ -107,11 +112,6 @@ export default function CapsulesPage() {
                 icon: Sparkles, 
                 title: 'Tell Your Story', 
                 desc: 'Add personal notes and emotions to each capsule' 
-              },
-              { 
-                icon: Clock, 
-                title: 'Revisit Memories', 
-                desc: 'Look back on who you were through your taste' 
               },
             ].map((item, index) => (
               <motion.div
@@ -130,13 +130,13 @@ export default function CapsulesPage() {
             ))}
           </motion.div>
 
-          {/* Capsules Grid */}
+          {/* Capsules list (single column, social-style cards) */}
           {isLoading ? (
             <p className="text-center text-muted-foreground py-10">
               Loading capsules...
             </p>
           ) : timeCapsules.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-4 max-w-2xl mx-auto">
               {timeCapsules.map((capsule, index) => (
                 <motion.div
                   key={capsule.id}
@@ -148,6 +148,13 @@ export default function CapsulesPage() {
                     capsule={capsule}
                     onClick={() => router.push(`/capsules/${capsule.id}`)}
                     showActions
+                    authorName={
+                      profile?.displayName?.trim() ||
+                      profile?.username?.trim() ||
+                      "You"
+                    }
+                    authorSubtitle="Your time capsule"
+                    authorAvatar={profile?.avatar ?? null}
                     onEdit={() => router.push(`/update-captule/${capsule.id}`)}
                     onToggleVisibility={(visibility) =>
                       updateVisibilityMutation.mutate({

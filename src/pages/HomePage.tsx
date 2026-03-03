@@ -20,7 +20,7 @@ export default function HomePage() {
   return (
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
       <div className="min-h-screen">
-        <div className="max-w-2xl mx-auto md:px-4 pt-4">
+        <div className="max-w-3xl mx-auto md:px-4 pt-4">
           {/* Create Post Input (Desktop) */}
           <div className="px-4 md:px-0 mb-4 relative group">
             <Link href="/add-favorite">
