@@ -133,7 +133,9 @@ function ProfilePageInner() {
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [albumPickerFavorite, setAlbumPickerFavorite] =
     useState<Favorite | null>(null);
-  const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(null);
+  const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(
+    null,
+  );
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
@@ -158,7 +160,8 @@ function ProfilePageInner() {
 
   const { data: capsules = [] } = useQuery({
     queryKey: ["capsules"],
-    queryFn: () => import("@/features/capsules/api").then(m => m.getMyCapsules()),
+    queryFn: () =>
+      import("@/features/capsules/api").then((m) => m.getMyCapsules()),
   });
 
   const displayName =
@@ -190,7 +193,9 @@ function ProfilePageInner() {
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["albums"] });
-      void queryClient.invalidateQueries({ queryKey: ["album-show", variables.albumId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["album-show", variables.albumId],
+      });
       toast.success("Added to album");
     },
     onError: () => toast.error("Could not add to album"),
@@ -210,10 +215,7 @@ function ProfilePageInner() {
   });
 
   const toggleFavoriteVisibilityMutation = useMutation({
-    mutationFn: async ({
-      id,
-      isPublic,
-    }: { id: string; isPublic: boolean }) =>
+    mutationFn: async ({ id, isPublic }: { id: string; isPublic: boolean }) =>
       updateFavorite(id, { isPublic }),
     onSuccess: (_, { isPublic }) => {
       void queryClient.invalidateQueries({ queryKey: ["favorites"] });
@@ -365,7 +367,7 @@ function ProfilePageInner() {
               animate={{ opacity: 1, y: 0 }}
               className="lg:sticky top-4 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
-               <div className="w-fit absolute top-4 right-4">
+              <div className="w-fit absolute top-4 right-4">
                 <Button
                   type="button"
                   className="w-fit rounded-xl"
@@ -439,8 +441,6 @@ function ProfilePageInner() {
                   Since {displaySinceYear}
                 </div>
               </div>
-
-             
 
               {/* Quick discovery links */}
               <div className="md:mt-6 mt-4 w-full space-y-2">
@@ -589,7 +589,6 @@ function ProfilePageInner() {
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-wrap gap-2">
                         {CATEGORY_TABS.map((cat) => {
-
                           const Icon = "icon" in cat ? cat.icon : undefined;
 
                           return (
@@ -653,30 +652,32 @@ function ProfilePageInner() {
                         : "flex flex-col gap-3"
                     }
                   >
-                    {favoritesLoading && favorites.length === 0
-                      ? Array.from({ length: 3 }).map((_, idx) => (
-                          <ProfilePostCardSkeleton
-                            key={idx}
-                            variant={viewMode}
-                          />
-                        ))
-                      : favorites.length === 0
-                        ? (
-                            <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
-                              <p className="text-muted-foreground text-sm mb-2">
-                                {selectedCategoryFilter === "all"
-                                  ? "No items in your collection yet."
-                                  : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in your collection.`}
-                              </p>
-                              <Link href="/add-favorite">
-                                <Button variant="outline" size="sm" className="rounded-full mt-2">
-                                  <Plus className="w-4 h-4" />
-                                  Add your first
-                                </Button>
-                              </Link>
-                            </div>
-                          )
-                        : favorites.slice(0, PROFILE_PREVIEW_LIMIT).map((favorite) => (
+                    {favoritesLoading && favorites.length === 0 ? (
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <ProfilePostCardSkeleton key={idx} variant={viewMode} />
+                      ))
+                    ) : favorites.length === 0 ? (
+                      <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
+                        <p className="text-muted-foreground text-sm mb-2">
+                          {selectedCategoryFilter === "all"
+                            ? "No items in your collection yet."
+                            : `No ${CATEGORY_TABS.find((c) => c.value === selectedCategoryFilter)?.label ?? selectedCategoryFilter} in your collection.`}
+                        </p>
+                        <Link href="/add-favorite">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full mt-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add your first
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      favorites
+                        .slice(0, PROFILE_PREVIEW_LIMIT)
+                        .map((favorite) => (
                           <div
                             key={favorite.id}
                             className={`relative ${
@@ -686,7 +687,9 @@ function ProfilePageInner() {
                             <ProfilePostCard
                               favorite={favorite}
                               variant={viewMode}
-                              onTitleClick={() => router.push(`/favorites/${favorite.id}`)}
+                              onTitleClick={() =>
+                                router.push(`/favorites/${favorite.id}`)
+                              }
                             />
                             {authUser && (
                               <div className="absolute top-2 right-2">
@@ -724,11 +727,18 @@ function ProfilePageInner() {
                                       className="flex items-center gap-2 cursor-pointer"
                                       onSelect={(e) => {
                                         e.preventDefault();
-                                        if (toggleFavoriteVisibilityMutation.isPending) return;
-                                        toggleFavoriteVisibilityMutation.mutate({
-                                          id: favorite.id,
-                                          isPublic: !(favorite.isPublic ?? true),
-                                        });
+                                        if (
+                                          toggleFavoriteVisibilityMutation.isPending
+                                        )
+                                          return;
+                                        toggleFavoriteVisibilityMutation.mutate(
+                                          {
+                                            id: favorite.id,
+                                            isPublic: !(
+                                              favorite.isPublic ?? true
+                                            ),
+                                          },
+                                        );
                                       }}
                                     >
                                       {(favorite.isPublic ?? true) ? (
@@ -747,7 +757,8 @@ function ProfilePageInner() {
                                       className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                                       onSelect={(e) => {
                                         e.preventDefault();
-                                        if (deleteFavoriteMutation.isPending) return;
+                                        if (deleteFavoriteMutation.isPending)
+                                          return;
                                         setFavoriteToDelete(favorite);
                                       }}
                                     >
@@ -759,23 +770,28 @@ function ProfilePageInner() {
                               </div>
                             )}
                           </div>
-                        ))}
-                        {favorites.length > PROFILE_PREVIEW_LIMIT && (
-                          <div className="col-span-full flex justify-center pt-4">
-                            <Link
-                              href={
-                                selectedCategoryFilter === "all"
-                                  ? "/profile/collection"
-                                  : `/profile/collection?category=${selectedCategoryFilter}`
-                              }
-                            >
-                              <Button variant="outline" size="sm" className="rounded-full gap-2">
-                                See all ({favorites.length})
-                                <ChevronRight className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
+                        ))
+                    )}
+                    {favorites.length > PROFILE_PREVIEW_LIMIT && (
+                      <div className="col-span-full flex justify-center pt-4">
+                        <Link
+                          href={
+                            selectedCategoryFilter === "all"
+                              ? "/profile/collection"
+                              : `/profile/collection?category=${selectedCategoryFilter}`
+                          }
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full gap-2"
+                          >
+                            See all ({favorites.length})
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
                   </motion.div>
                 </TabsContent>
 
@@ -953,25 +969,32 @@ function ProfilePageInner() {
                   ) : (
                     <div className="flex flex-col gap-4 mx-auto">
                       {capsules.map((capsule) => (
-                        <TimeCapsuleCard
-                          key={capsule.id}
-                          capsule={capsule}
-                          onClick={() => router.push(`/capsules/${capsule.id}`)}
-                          showActions
-                          authorName={displayName || "You"}
-                          authorSubtitle="Your time capsule"
-                          authorAvatar={displayAvatarUrl || displayAvatar || null}
-                          onEdit={() =>
-                            router.push(`/update-captule/${capsule.id}`)
-                          }
-                          onToggleVisibility={(visibility) =>
-                            updateCapsuleVisibilityMutation.mutate({
-                              id: capsule.id,
-                              visibility,
-                            })
-                          }
-                          onDelete={() => deleteCapsuleMutation.mutate(capsule.id)}
-                        />
+                        <div key={capsule.id}>
+                          <TimeCapsuleCard
+                            capsule={capsule}
+                            onClick={() =>
+                              router.push(`/capsules/${capsule.id}`)
+                            }
+                            showActions
+                            authorName={displayName || "You"}
+                            authorSubtitle="Your time capsule"
+                            authorAvatar={
+                              displayAvatarUrl || displayAvatar || null
+                            }
+                            onEdit={() =>
+                              router.push(`/update-captule/${capsule.id}`)
+                            }
+                            onToggleVisibility={(visibility) =>
+                              updateCapsuleVisibilityMutation.mutate({
+                                id: capsule.id,
+                                visibility,
+                              })
+                            }
+                            onDelete={() =>
+                              deleteCapsuleMutation.mutate(capsule.id)
+                            }
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1142,9 +1165,7 @@ function ProfilePageInner() {
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={
-                deleteFavoriteMutation.isPending || !favoriteToDelete
-              }
+              disabled={deleteFavoriteMutation.isPending || !favoriteToDelete}
               onClick={async () => {
                 if (!favoriteToDelete) return;
                 await deleteFavoriteMutation.mutateAsync(favoriteToDelete.id);

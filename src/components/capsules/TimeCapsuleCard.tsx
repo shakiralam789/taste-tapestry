@@ -201,7 +201,7 @@ export function TimeCapsuleCard({
         )}
 
         {/* Media */}
-        <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
+       {coverUrl && <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
           {coverUrl ? (
             isVideoCover ? (
               <video
@@ -219,7 +219,7 @@ export function TimeCapsuleCard({
               />
             )
           ) : null}
-        </div>
+        </div>}
 
         {/* Emotions as hashtags */}
         <div className="flex flex-wrap gap-2 mb-4">

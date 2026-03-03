@@ -68,7 +68,9 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
   const followMutation = useMutation({
     mutationFn: () => followUser(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["user-follow-status", id] });
+      void queryClient.invalidateQueries({
+        queryKey: ["user-follow-status", id],
+      });
       void queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Following");
@@ -79,7 +81,9 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
   const unfollowMutation = useMutation({
     mutationFn: () => unfollowUser(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["user-follow-status", id] });
+      void queryClient.invalidateQueries({
+        queryKey: ["user-follow-status", id],
+      });
       void queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Unfollowed");
@@ -95,18 +99,14 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
     enabled: !!id && !!profile,
   });
 
-  const {
-    data: capsules = [],
-    isLoading: capsulesLoading,
-  } = useQuery({
+  const { data: capsules = [], isLoading: capsulesLoading } = useQuery({
     queryKey: ["user-capsules", id],
     queryFn: () => getUserCapsules(id),
     enabled: !!id && !!profile,
   });
 
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
-    (typeof CATEGORY_TABS)[number]["value"]
-  >("all");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] =
+    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filteredFavorites = useMemo(() => {
@@ -139,9 +139,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
   const displayUsername = profile.username?.trim()
     ? `@${profile.username}`
     : "";
-  const displayBio =
-    profile.bio?.trim() ||
-    "This user hasn't added a bio yet.";
+  const displayBio = profile.bio?.trim() || "This user hasn't added a bio yet.";
   const displayLocation = profile.location?.trim() || "";
   const displaySinceYear = profile.createdAt
     ? new Date(profile.createdAt).getFullYear()
@@ -226,7 +224,11 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                         : "Follow"}
                   </Button>
                 )}
-                <Button className="w-full rounded-xl" variant="outline" size="sm">
+                <Button
+                  className="w-full rounded-xl"
+                  variant="outline"
+                  size="sm"
+                >
                   <Share2 className="w-4 h-4 mr-2" /> Share
                 </Button>
               </div>
@@ -322,7 +324,8 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                           {displayName}&apos;s collection
                         </h3>
                         <p className="text-muted-foreground text-sm">
-                          Movies, songs, books, places — their taste in one place.
+                          Movies, songs, books, places — their taste in one
+                          place.
                         </p>
                       </div>
                       <Link href={`/users/${id}/albums`}>
@@ -357,9 +360,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                               className={`rounded-full`}
                             >
                               <span aria-hidden>
-                                {Icon ? (
-                                  <Icon className="w-3.5 h-3.5" />
-                                ) : null}
+                                {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
                               </span>
                               {cat.label}
                             </Button>
@@ -404,10 +405,7 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       }
                     >
                       {Array.from({ length: 3 }).map((_, idx) => (
-                        <ProfilePostCardSkeleton
-                          key={idx}
-                          variant={viewMode}
-                        />
+                        <ProfilePostCardSkeleton key={idx} variant={viewMode} />
                       ))}
                     </div>
                   ) : filteredFavorites.length === 0 ? (
@@ -443,7 +441,9 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                               <ProfilePostCard
                                 favorite={favorite}
                                 variant={viewMode}
-                                onTitleClick={() => router.push(`/favorites/${favorite.id}`)}
+                                onTitleClick={() =>
+                                  router.push(`/favorites/${favorite.id}`)
+                                }
                               />
                             </motion.div>
                           ))}
@@ -478,7 +478,8 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       Interests & creative pursuits
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Creative, performance, skill-based, and more — what drives them.
+                      Creative, performance, skill-based, and more — what drives
+                      them.
                     </p>
                   </div>
                   <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
@@ -492,7 +493,8 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       Hidden talents
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Reveal your secret skills — singing, dancing, writing, art, acting, stunts.
+                      Reveal your secret skills — singing, dancing, writing,
+                      art, acting, stunts.
                     </p>
                   </div>
                   <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm">
@@ -506,7 +508,8 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                       Time capsules
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Collections tied to a period — school days, breakup era, summer this year.
+                      Collections tied to a period — school days, breakup era,
+                      summer this year.
                     </p>
                   </div>
                   {capsulesLoading ? (
@@ -526,13 +529,17 @@ function UserProfilePageInner({ id }: UserProfilePageProps) {
                   ) : (
                     <div className="flex flex-col gap-4 mx-auto">
                       {capsules.map((capsule) => (
+                        <div key={capsule.id}>
                           <TimeCapsuleCard
                             capsule={capsule}
                             authorName={displayName}
                             authorSubtitle={displayUsername || "Time capsule"}
                             authorAvatar={profile.avatar}
-                            onClick={() => router.push(`/capsules/${capsule.id}`)}
+                            onClick={() =>
+                              router.push(`/capsules/${capsule.id}`)
+                            }
                           />
+                        </div>
                       ))}
                     </div>
                   )}
