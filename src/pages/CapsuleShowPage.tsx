@@ -15,16 +15,12 @@ import {
   Clock,
   Globe2,
   Lock,
-  Film,
   ImageIcon,
   Pencil,
   Heart,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { VideoThumbnail } from "@/components/common/VideoThumbnail";
+import { VideoPlayer } from "@/components/common/VideoPlayer";
 
 function getFavoritesForCapsule(
   capsule: TimeCapsule,
@@ -303,10 +299,7 @@ export default function CapsuleShowPage() {
                         })
                       }
                     >
-                      <div className="aspect-video w-full flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Film className="w-4 h-4 text-primary" />
-                        <span>Video {idx + 1}</span>
-                      </div>
+                      <VideoThumbnail src={src} className="w-full" />
                     </div>
                   ))}
                 </div>
@@ -413,32 +406,42 @@ export default function CapsuleShowPage() {
         </div>
       </div>
 
-      <Dialog
-        open={!!preview}
-        onOpenChange={(open) => {
-          if (!open) setPreview(null);
-        }}
-      >
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black">
-          <DialogTitle className="sr-only">
-            {preview?.type === "video" ? "Video preview" : "Image preview"}
-          </DialogTitle>
-          {preview?.type === "video" ? (
-            <video
-              src={preview.src}
-              controls
-              autoPlay
-              className="w-full h-full max-h-[80vh] object-contain"
-            />
-          ) : preview ? (
-            <img
-              src={preview.src}
-              alt=""
-              className="w-full h-full max-h-[80vh] object-contain"
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 w-screen h-screen bg-black/90 flex items-center justify-center"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="relative w-full h-full max-w-5xl px-4 md:px-8 flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="absolute top-6 right-8 z-50 rounded-full bg-black/70 border border-white/20 text-white px-3 py-1 text-xs hover:bg-black"
+              onClick={() => setPreview(null)}
+            >
+              Close
+            </button>
+            {preview.type === "video" ? (
+              <div className="w-full max-w-3xl bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+                <VideoPlayer
+                  src={preview.src}
+                  containerClassName="w-full h-full"
+                  videoClassName="max-h-[80vh] w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-full max-w-3xl max-h-[80vh] bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+                <img
+                  src={preview.src}
+                  alt=""
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

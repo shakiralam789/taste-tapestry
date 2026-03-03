@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { VideoPlayer } from "@/components/common/VideoPlayer";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -196,24 +197,19 @@ export function TimeCapsuleCard({
 
         {/* Media */}
         {coverUrl && (
-          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center cursor-pointer">
-            {coverUrl ? (
-              isVideoCover ? (
-                <video
-                  src={coverUrl}
-                  className="max-h-[420px] w-full object-contain"
-                  autoPlay
-                  muted
-                  loop
-                />
-              ) : (
-                <img
-                  src={coverUrl}
-                  alt={capsule.title}
-                  className="max-h-[420px] w-full object-contain"
-                />
-              )
-            ) : null}
+          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center">
+            {isVideoCover ? (
+              <VideoPlayer
+                src={coverUrl}
+                videoClassName="max-h-[420px] w-full object-contain"
+              />
+            ) : (
+              <img
+                src={coverUrl}
+                alt={capsule.title}
+                className="max-h-[420px] w-full object-contain"
+              />
+            )}
           </div>
         )}
 
