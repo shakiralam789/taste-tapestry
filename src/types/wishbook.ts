@@ -166,6 +166,7 @@ export interface TimeCapsule {
   description: string;
   period: string;
   image?: string;
+  bannerImage?: string;
   /** Optional gallery media for the capsule (frontend-only for now). */
   images?: string[];
   videos?: string[];

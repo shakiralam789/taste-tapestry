@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useWishbook } from "@/contexts/WishbookContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, TimeCapsule } from "@/types/wishbook";
-import { getCapsule, toggleCapsuleLove } from "@/features/capsules/api";
+import { getCapsule, toggleCapsuleLove, updateCapsule } from "@/features/capsules/api";
 import {
   ArrowLeft,
   Clock,
@@ -20,6 +20,7 @@ import {
   Heart,
   Play,
 } from "lucide-react";
+import { toast } from "sonner";
 import { VideoThumbnail } from "@/components/common/VideoThumbnail";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 
@@ -104,6 +105,49 @@ export default function CapsuleShowPage() {
     },
   });
 
+  const setCoverMutation = useMutation({
+    mutationFn: (vars: { kind: "poster" | "banner"; src: string }) =>
+      updateCapsule(
+        id,
+        vars.kind === "poster"
+          ? { image: vars.src }
+          : { bannerImage: vars.src },
+      ),
+    onSuccess: (updated, vars) => {
+      queryClient.setQueryData<TimeCapsule | undefined>(
+        ["capsule", id],
+        (old) => updated ?? old,
+      );
+      queryClient.setQueriesData<TimeCapsule[] | undefined>(
+        { queryKey: ["capsules"] },
+        (old) =>
+          old
+            ? old.map((c) =>
+                c.id === id
+                  ? {
+                      ...c,
+                      image:
+                        vars.kind === "poster" ? vars.src : c.image ?? vars.src,
+                      bannerImage:
+                        vars.kind === "banner"
+                          ? vars.src
+                          : c.bannerImage ?? vars.src,
+                    }
+                  : c,
+              )
+            : old,
+      );
+      toast.success(
+        vars.kind === "poster"
+          ? "Capsule poster updated"
+          : "Capsule banner updated",
+      );
+    },
+    onError: () => {
+      toast.error("Could not update cover");
+    },
+  });
+
   if (isLoading) {
     return (
       <Layout>
@@ -148,22 +192,28 @@ export default function CapsuleShowPage() {
     capsule.image && !capsule.image.startsWith("blob:")
       ? capsule.image
       : undefined;
+  const safeBanner =
+    capsule.bannerImage && !capsule.bannerImage.startsWith("blob:")
+      ? capsule.bannerImage
+      : undefined;
 
-  const coverUrl =
+  const posterUrl =
     safeImage ||
     safeImages[0] ||
     safeVideos[0] ||
     "https://picsum.photos/seed/capsule/1200/600";
-  const isVideoCover = safeVideos.includes(coverUrl);
+
+  const heroUrl = safeBanner || posterUrl;
+  const isVideoHero = safeVideos.includes(heroUrl);
 
   return (
     <Layout className="md:px-0 px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
         {/* Hero */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
-          {isVideoCover ? (
+          {isVideoHero ? (
             <video
-              src={coverUrl}
+              src={heroUrl}
               className="w-full h-full object-cover brightness-[0.5]"
               autoPlay
               muted
@@ -171,19 +221,19 @@ export default function CapsuleShowPage() {
               onClick={() =>
                 setPreview({
                   type: "video",
-                  src: coverUrl,
+                  src: heroUrl,
                 })
               }
             />
           ) : (
             <img
-              src={coverUrl}
+              src={heroUrl}
               alt={capsule.title}
               className="w-full h-full object-cover brightness-[0.5]"
               onClick={() =>
                 setPreview({
                   type: "image",
-                  src: coverUrl,
+                  src: heroUrl,
                 })
               }
             />
@@ -287,6 +337,47 @@ export default function CapsuleShowPage() {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      {isOwner && (
+                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
+                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
+                            <button
+                              type="button"
+                              className={`font-semibold px-1.5 py-0.5 rounded-full ${
+                                capsule.image === src
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-white/80 hover:bg-white/10"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCoverMutation.mutate({
+                                  kind: "poster",
+                                  src,
+                                });
+                              }}
+                            >
+                              Poster
+                            </button>
+                            <span className="text-white/30">·</span>
+                            <button
+                              type="button"
+                              className={`font-semibold px-1.5 py-0.5 rounded-full ${
+                                capsule.bannerImage === src
+                                  ? "bg-primary/80 text-primary-foreground"
+                                  : "text-white/80 hover:bg-white/10"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCoverMutation.mutate({
+                                  kind: "banner",
+                                  src,
+                                });
+                              }}
+                            >
+                              Banner
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {safeVideos.map((src, idx) => (
@@ -306,6 +397,47 @@ export default function CapsuleShowPage() {
                           <Play className="w-6 h-6 fill-current pl-0.5" />
                         </div>
                       </div>
+                      {isOwner && (
+                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] border border-white/20">
+                            <button
+                              type="button"
+                              className={`px-1.5 py-0.5 rounded-full ${
+                                capsule.image === src
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-white/80 hover:bg-white/10"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCoverMutation.mutate({
+                                  kind: "poster",
+                                  src,
+                                });
+                              }}
+                            >
+                              Poster
+                            </button>
+                            <span className="text-white/30">·</span>
+                            <button
+                              type="button"
+                              className={`px-1.5 py-0.5 rounded-full ${
+                                capsule.bannerImage === src
+                                  ? "bg-primary/80 text-primary-foreground"
+                                  : "text-white/80 hover:bg-white/10"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCoverMutation.mutate({
+                                  kind: "banner",
+                                  src,
+                                });
+                              }}
+                            >
+                              Banner
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

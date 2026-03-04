@@ -11,19 +11,25 @@ import { toast } from "sonner";
 interface CapsuleMediaUploaderProps {
   images: string[];
   videos: string[];
-  /** Current cover image URL for the capsule, if any */
+  /** Current poster image URL for the capsule, if any */
   coverUrl?: string | null;
+  /** Current banner image URL for the capsule, if any */
+  bannerUrl?: string | null;
   onChange: (next: { images: string[]; videos: string[] }) => void;
-  /** Called when user selects an image to be the cover */
+  /** Called when user selects media to be the poster */
   onCoverChange?: (url: string) => void;
+  /** Called when user selects media to be the banner */
+  onBannerChange?: (url: string) => void;
 }
 
 export function CapsuleMediaUploader({
   images,
   videos,
   coverUrl,
+  bannerUrl,
   onChange,
   onCoverChange,
+  onBannerChange,
 }: CapsuleMediaUploaderProps) {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -115,7 +121,7 @@ export function CapsuleMediaUploader({
         </Label>
         <p className="text-xs text-muted-foreground">
           Add visuals that capture this phase — screenshots, photos, or short
-          clips. You can pick any image here to be the capsule cover.
+          clips. You can pick any media here to be the capsule poster and banner.
         </p>
       </div>
 
@@ -171,7 +177,8 @@ export function CapsuleMediaUploader({
           {images.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mt-2">
               {images.map((src, idx) => {
-                const isCover = coverUrl === src;
+                const isPoster = coverUrl === src;
+                const isBanner = bannerUrl === src;
                 return (
                   <div
                     key={`${idx}-${src}`}
@@ -189,15 +196,30 @@ export function CapsuleMediaUploader({
                       />
                     </button>
                     <div className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-1 text-[9px]">
-                      <span
-                        className={`px-1.5 py-0.5 rounded-full ${
-                          isCover
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-black/60 text-white/80"
-                        }`}
-                      >
-                        {isCover ? "Cover" : "Set as cover"}
-                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onCoverChange?.(src)}
+                          className={`px-1.5 py-0.5 rounded-full ${
+                            isPoster
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-black/60 text-white/80 hover:bg-black/80"
+                          }`}
+                        >
+                          {isPoster ? "Poster" : "Set poster"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onBannerChange?.(src)}
+                          className={`px-1.5 py-0.5 rounded-full ${
+                            isBanner
+                              ? "bg-primary/80 text-primary-foreground"
+                              : "bg-black/60 text-white/80 hover:bg-black/80"
+                          }`}
+                        >
+                          {isBanner ? "Banner" : "Set banner"}
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeImage(src)}
@@ -266,7 +288,8 @@ export function CapsuleMediaUploader({
           {videos.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mt-2">
               {videos.map((src, idx) => {
-                const isCover = coverUrl === src;
+                const isPoster = coverUrl === src;
+                const isBanner = bannerUrl === src;
                 return (
                   <div
                     key={`${idx}-${src}`}
@@ -280,15 +303,30 @@ export function CapsuleMediaUploader({
                       <Film className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                     </button>
                     <div className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-1 text-[9px] px-1">
-                      <span
-                        className={`px-1.5 py-0.5 rounded-full ${
-                          isCover
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-black/60 text-white/80"
-                        }`}
-                      >
-                        {isCover ? "Cover" : "Set as cover"}
-                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onCoverChange?.(src)}
+                          className={`px-1.5 py-0.5 rounded-full ${
+                            isPoster
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-black/60 text-white/80 hover:bg-black/80"
+                          }`}
+                        >
+                          {isPoster ? "Poster" : "Set poster"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onBannerChange?.(src)}
+                          className={`px-1.5 py-0.5 rounded-full ${
+                            isBanner
+                              ? "bg-primary/80 text-primary-foreground"
+                              : "bg-black/60 text-white/80 hover:bg-black/80"
+                          }`}
+                        >
+                          {isBanner ? "Banner" : "Set banner"}
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeVideo(src)}

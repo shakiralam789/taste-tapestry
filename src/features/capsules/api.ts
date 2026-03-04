@@ -6,6 +6,7 @@ export type CreateCapsulePayload = {
   description?: string;
   period?: string;
   image?: string;
+  bannerImage?: string;
   images?: string[];
   videos?: string[];
   favorites?: string[];

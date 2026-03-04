@@ -29,6 +29,7 @@ export default function CreateCapsulePage() {
     story: "",
   });
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<string[]>([]);
   const [newEmotion, setNewEmotion] = useState("");
   const [media, setMedia] = useState<{ images: string[]; videos: string[] }>({
@@ -55,6 +56,11 @@ export default function CreateCapsulePage() {
       existingCapsule.image && !existingCapsule.image.startsWith("blob:")
         ? existingCapsule.image
         : undefined;
+    const safeBanner =
+      existingCapsule.bannerImage &&
+      !existingCapsule.bannerImage.startsWith("blob:")
+        ? existingCapsule.bannerImage
+        : undefined;
 
     setFormData({
       title: existingCapsule.title,
@@ -62,9 +68,9 @@ export default function CreateCapsulePage() {
       period: existingCapsule.period ?? "",
       story: existingCapsule.story ?? "",
     });
-    setCoverImage(
-      safeImage ?? safeImages[0] ?? safeVideos[0] ?? null,
-    );
+    const defaultMedia = safeImage ?? safeImages[0] ?? safeVideos[0] ?? null;
+    setCoverImage(defaultMedia);
+    setBannerImage(safeBanner ?? defaultMedia);
     setEmotions(existingCapsule.emotions ?? []);
     setMedia({
       images: safeImages,
@@ -122,16 +128,22 @@ export default function CreateCapsulePage() {
     const filteredImages = media.images.filter((src) => !src.startsWith("blob:"));
     const filteredVideos = media.videos.filter((src) => !src.startsWith("blob:"));
 
-    const cleanCover =
+    const cleanPoster =
       coverImage && !coverImage.startsWith("blob:")
         ? coverImage
         : filteredImages[0] || filteredVideos[0] || "";
+
+    const cleanBanner =
+      bannerImage && !bannerImage.startsWith("blob:")
+        ? bannerImage
+        : cleanPoster;
 
     mutation.mutate({
       title: formData.title,
       description: formData.description || undefined,
       period: formData.period || undefined,
-      image: cleanCover || undefined,
+      image: cleanPoster || undefined,
+      bannerImage: cleanBanner || undefined,
       images: filteredImages.length ? filteredImages : undefined,
       videos: filteredVideos.length ? filteredVideos : undefined,
       favorites: [],
@@ -238,8 +250,10 @@ export default function CreateCapsulePage() {
                   images={media.images}
                   videos={media.videos}
                   coverUrl={coverImage}
+                  bannerUrl={bannerImage}
                   onChange={setMedia}
                   onCoverChange={setCoverImage}
+                  onBannerChange={setBannerImage}
                 />
 
                 {/* Emotions */}
