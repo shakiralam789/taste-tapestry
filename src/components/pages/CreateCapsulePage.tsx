@@ -391,7 +391,7 @@ export default function CreateCapsulePage() {
                 </Button>
               </div>
             </motion.div>
-            <div className="col-span-5 md:sticky md:top-4">
+            <div className="col-span-5 md:sticky md:top-20">
               <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
                   <p>Live preview</p>

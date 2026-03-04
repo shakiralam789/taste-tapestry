@@ -264,7 +264,7 @@ function ProfileCollectionPageInner() {
             onValueChange={handleTabChange}
             className="w-full"
           >
-            <TabsList className="bg-background sticky top-0 z-10 w-full justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none gap-0">
+            <TabsList className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none gap-0">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = "icon" in tab ? tab.icon : undefined;
                 return (

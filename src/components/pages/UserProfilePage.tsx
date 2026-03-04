@@ -259,7 +259,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
               </motion.div>
 
               <div className="w-full">
-                <div className="w-full flex justify-start flex-wrap bg-transparent border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
                   {USER_PROFILE_TABS.map((tab) => (
                     <TabsListLink key={tab.value} href={`/users/${id}/${tab.value}`}
                     className={pathname === `/users/${id}${tab?.value ? `/${tab.value}` : ""}` ? "active" : ""}
