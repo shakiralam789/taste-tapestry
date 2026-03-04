@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import * as RHF from "react-hook-form";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export default function RegisterPage() {
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>();
+  } = RHF.useForm<RegisterFormValues>();
   const router = useRouter();
   const { registerWithEmail } = useAuth();
 
