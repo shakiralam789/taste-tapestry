@@ -1,6 +1,6 @@
 "use client";
 import Talent from "@/components/profile/Talent";
-import ProfilePage from "@/pages/ProfilePage";
+import ProfilePage from "@/components/pages/ProfilePage";
 
 export const dynamic = "force-dynamic";
 

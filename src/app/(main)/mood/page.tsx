@@ -1,4 +1,4 @@
-import MoodPage from "@/pages/MoodPage";
+import MoodPage from "@/components/pages/MoodPage";
 
 export const dynamic = "force-dynamic";
 

@@ -1,4 +1,4 @@
-import UserProfilePage from '@/pages/UserProfilePage';
+import UserProfilePage from '@/components/pages/UserProfilePage';
 import { Layout } from '@/components/layout/Layout';
 
 export default async function layout({ children }: { children: React.ReactNode }) {

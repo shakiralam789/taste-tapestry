@@ -1,4 +1,4 @@
-import MatchesPage from "@/pages/MatchesPage";
+import MatchesPage from "@/components/pages/MatchesPage";
 
 export const dynamic = "force-dynamic";
 

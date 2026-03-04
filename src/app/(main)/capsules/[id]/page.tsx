@@ -1,4 +1,4 @@
-import CapsuleShowPage from "@/pages/CapsuleShowPage";
+import CapsuleShowPage from "@/components/pages/CapsuleShowPage";
 
 export const dynamic = "force-dynamic";
 

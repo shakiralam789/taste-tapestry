@@ -1,6 +1,6 @@
 "use client";
 import Capsules from "@/components/profile/Capsules";
-import ProfilePage from "@/pages/ProfilePage";
+import ProfilePage from "@/components/pages/ProfilePage";
 
 export const dynamic = "force-dynamic";
 

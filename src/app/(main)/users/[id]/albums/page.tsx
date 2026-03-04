@@ -1,4 +1,4 @@
-import UserAlbumsPage from "@/pages/UserAlbumsPage";
+import UserAlbumsPage from "@/components/pages/UserAlbumsPage";
 
 export const dynamic = "force-dynamic";
 

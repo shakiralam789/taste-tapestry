@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
-import ProfilePage from "@/pages/ProfilePage";
+import ProfilePage from "@/components/pages/ProfilePage";
 import React from "react";
 
 export default function ProfileLayout({

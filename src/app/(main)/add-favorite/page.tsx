@@ -1,4 +1,4 @@
-import AddFavoritePage from "@/pages/AddFavoritePage";
+import AddFavoritePage from "@/components/pages/AddFavoritePage";
 
 export const dynamic = "force-dynamic";
 

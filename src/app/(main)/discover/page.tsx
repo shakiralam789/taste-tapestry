@@ -1,4 +1,4 @@
-import DiscoverPage from "@/pages/DiscoverPage";
+import DiscoverPage from "@/components/pages/DiscoverPage";
 
 export const dynamic = "force-dynamic";
 

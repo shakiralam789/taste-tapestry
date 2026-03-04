@@ -1,4 +1,4 @@
-import EditAlbumPage from "@/pages/EditAlbumPage";
+import EditAlbumPage from "@/components/pages/EditAlbumPage";
 
 export const dynamic = "force-dynamic";
 

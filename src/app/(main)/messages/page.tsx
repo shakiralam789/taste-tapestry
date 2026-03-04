@@ -1,4 +1,4 @@
-import MessagesPage from "@/pages/MessagesPage";
+import MessagesPage from "@/components/pages/MessagesPage";
 
 export const dynamic = "force-dynamic";
 

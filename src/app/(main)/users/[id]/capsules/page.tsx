@@ -1,6 +1,6 @@
 "use client";
 import Capsules from '@/components/user-profile/Capsules'
-import UserProfilePage from '@/pages/UserProfilePage';
+import UserProfilePage from '@/components/pages/UserProfilePage';
 export default function page() {
   return (
     <UserProfilePage>
