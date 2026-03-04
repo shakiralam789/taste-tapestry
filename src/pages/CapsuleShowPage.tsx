@@ -18,6 +18,7 @@ import {
   ImageIcon,
   Pencil,
   Heart,
+  Play,
 } from "lucide-react";
 import { VideoThumbnail } from "@/components/common/VideoThumbnail";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
@@ -268,11 +269,11 @@ export default function CapsuleShowPage() {
                   <ImageIcon className="w-4 h-4 text-primary" />
                   Visual memories
                 </h2>
-                <div className="columns-2 md:columns-3 gap-3 [column-fill:_balance]">
+                <div className="columns-2 md:columns-3 gap-0 [column-fill:_balance]">
                   {safeImages.map((src, idx) => (
                     <div
                       key={`img-${idx}-${src}`}
-                      className="relative mb-3 break-inside-avoid rounded-xl overflow-hidden border border-white/10 cursor-pointer group"
+                      className="relative break-inside-avoid overflow-hidden cursor-pointer group"
                       onClick={() =>
                         setPreview({
                           type: "image",
@@ -285,13 +286,13 @@ export default function CapsuleShowPage() {
                         alt=""
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     </div>
                   ))}
                   {safeVideos.map((src, idx) => (
                     <div
                       key={`vid-${idx}-${src}`}
-                      className="mb-3 break-inside-avoid rounded-xl border border-white/10 bg-black/60 cursor-pointer group overflow-hidden"
+                      className="relative break-inside-avoid overflow-hidden bg-black/60 cursor-pointer group"
                       onClick={() =>
                         setPreview({
                           type: "video",
@@ -300,6 +301,11 @@ export default function CapsuleShowPage() {
                       }
                     >
                       <VideoThumbnail src={src} className="w-full" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="rounded-full bg-black/60 p-3 text-white border border-white/20">
+                          <Play className="w-6 h-6 fill-current pl-0.5" />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

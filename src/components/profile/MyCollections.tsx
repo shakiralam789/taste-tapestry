@@ -160,7 +160,13 @@ export default function MyCollections() {
                 Albums
               </Button>
             </Link>
-            <Link href="/add-favorite">
+            <Link
+              href={
+                selectedCategoryFilter === "all"
+                  ? "/add-favorite"
+                  : `/add-favorite?category=${selectedCategoryFilter}`
+              }
+            >
               <Button variant="outline" size="sm" className="rounded-full">
                 <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
                 Add new

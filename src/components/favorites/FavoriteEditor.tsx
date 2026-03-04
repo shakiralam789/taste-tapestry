@@ -50,6 +50,7 @@ type FavoriteEditorMode = "create" | "edit";
 type FavoriteEditorProps = {
   mode: FavoriteEditorMode;
   initialFavorite?: Favorite;
+  initialCategoryId?: string;
   /** In create mode, full payload; in edit mode, partial payload (only changed fields). */
   onSubmit: (
     payload: FavoriteEditorPayload | Partial<FavoriteEditorPayload>,
@@ -135,6 +136,7 @@ function buildPartialUpdatePayload(
 export function FavoriteEditor({
   mode,
   initialFavorite,
+  initialCategoryId,
   onSubmit,
 }: FavoriteEditorProps) {
   const router = useRouter();
@@ -143,7 +145,7 @@ export function FavoriteEditor({
   const [step, setStep] = useState(1);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    initialFavorite?.categoryId ?? "movies",
+    initialFavorite?.categoryId ?? initialCategoryId ?? "movies",
   );
   const [formData, setFormData] = useState({
     title: initialFavorite?.title ?? "",

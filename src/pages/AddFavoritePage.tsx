@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
 import type { Favorite } from "@/types/wishbook";
@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export function AddFavoritePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   if (typeof window === "undefined") {
     return null;
@@ -41,7 +42,18 @@ export function AddFavoritePageInner() {
     }
   };
 
-  return <FavoriteEditor mode="create" onSubmit={handleSubmit} />;
+  const initialCategoryId =
+    searchParams?.get("category") && searchParams.get("category") !== "all"
+      ? (searchParams.get("category") as string)
+      : undefined;
+
+  return (
+    <FavoriteEditor
+      mode="create"
+      initialCategoryId={initialCategoryId}
+      onSubmit={handleSubmit}
+    />
+  );
 }
 
 export default function AddFavoritePage() {

@@ -107,6 +107,11 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     ? `${displayBannerUrl}${displayBannerUrl.includes("?") ? "&" : "?"}v=${bannerVersion}`
     : "";
 
+  const yearsOnTapestry = Math.max(
+    1,
+    new Date().getFullYear() - displaySinceYear + 1,
+  );
+
   useEffect(() => {
     if (editOpen && profile) {
       setEditForm({
@@ -376,14 +381,14 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                     icon: Users,
                   },
                   {
-                    label: "Stars",
-                    value: 0,
-                    icon: Sparkles,
+                    label: "Member since",
+                    value: String(displaySinceYear),
+                    icon: Calendar,
                   },
                   {
-                    label: "Capsules",
-                    value: 0,
-                    icon: Rocket,
+                    label: "Years here",
+                    value: yearsOnTapestry.toString(),
+                    icon: Sparkles,
                   },
                 ].map((stat, i) => (
                   <div

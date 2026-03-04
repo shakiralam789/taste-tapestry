@@ -83,7 +83,7 @@ export default function CreateCapsulePage() {
       queryClient.invalidateQueries({ queryKey: ["capsules"] });
       if (editId) {
         queryClient.invalidateQueries({ queryKey: ["capsule", savedCapsule.id] });
-        router.push(`/profile/capsules/${savedCapsule.id}`);
+        router.push(`/capsules/${savedCapsule.id}`);
       } else {
         router.push("/profile/capsules");
       }

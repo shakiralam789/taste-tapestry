@@ -30,7 +30,7 @@ export function ProfilePostCardSkeleton({
   }
 
   return (
-    <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-card/40 border border-white/5">
+    <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-card/40 border border-white/5">
       <Skeleton className="h-3/4 w-full rounded-none" />
       <div className="p-3 space-y-2">
         <Skeleton className="h-3 w-24" />
