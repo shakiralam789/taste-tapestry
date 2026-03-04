@@ -398,8 +398,8 @@ export default function CapsuleShowPage() {
                         </div>
                       </div>
                       {isOwner && (
-                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] border border-white/20">
+                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
+                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
                             <button
                               type="button"
                               className={`px-1.5 py-0.5 rounded-full ${
