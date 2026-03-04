@@ -12,6 +12,8 @@ import { ArrowLeft, Upload, Clock, Sparkles, Plus, X } from "lucide-react";
 import { CapsuleMediaUploader } from "@/components/capsules/CapsuleMediaUploader";
 import { createCapsule, getCapsule, updateCapsule } from "@/features/capsules/api";
 import { toast } from "sonner";
+import { TimeCapsule } from "@/types/wishbook";
+import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 
 export default function CreateCapsulePage() {
   const router = useRouter();
@@ -152,9 +154,31 @@ export default function CreateCapsulePage() {
     });
   };
 
+  const posterPreview =
+    coverImage || media.images[0] || media.videos[0] || null;
+
+  const previewCapsule: TimeCapsule = {
+    id: (existingCapsule?.id as string) ?? "preview-id",
+    userId: existingCapsule?.userId ?? "preview-user",
+    title: formData.title || "Untitled capsule",
+    description: formData.description || "",
+    period: formData.period || "",
+    image: posterPreview || undefined,
+    images: media.images,
+    videos: media.videos,
+    favorites: existingCapsule?.favorites ?? [],
+    emotions,
+    story: formData.story || "",
+    visibility: existingCapsule?.visibility ?? "public",
+    unlockAt: existingCapsule?.unlockAt,
+    loveCount: existingCapsule?.loveCount ?? 0,
+    lovedByMe: existingCapsule?.lovedByMe ?? false,
+    createdAt: existingCapsule?.createdAt ?? new Date(),
+  };
+
   return (
     <Layout>
-      <div className="min-h-screen py-12">
+      <div className="min-h-screen py-0">
         <div className="container mx-auto px-0">
           {/* Header */}
           <motion.div
@@ -179,13 +203,13 @@ export default function CreateCapsulePage() {
             </p>
           </motion.div>
 
-          <div className="grid gap-10 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)] items-start">
+          <div className="grid gap-10 md:grid-cols-12 items-start">
             {/* Form */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-500 ease-out hover:shadow-elevated hover:scale-[1.02] active:scale-[0.98]"
+              className="col-span-7 shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-500 ease-out hover:shadow-elevated hover:scale-[1.02] active:scale-[0.98]"
             >
               <div className="space-y-6">
                 {/* Basic Info */}
@@ -367,73 +391,23 @@ export default function CreateCapsulePage() {
                 </Button>
               </div>
             </motion.div>
-            <div className="md:sticky md:top-4">
+            <div className="col-span-5 md:sticky md:top-4">
               <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
                   <p>Live preview</p>
                 </div>
-                <div className="p-4">
-                  {/* Cover preview */}
-                  <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-muted border border-white/5 mb-4 flex items-center justify-center">
-                    {coverImage || media.images[0] || media.videos[0] ? (
-                      media.videos.includes(coverImage || media.images[0] || media.videos[0]) ? (
-                        <video
-                          src={coverImage || media.videos[0]}
-                          className="w-full h-full object-cover pointer-events-none"
-                          autoPlay
-                          muted
-                          loop
-                        />
-                      ) : (
-                        <img
-                          src={coverImage || media.images[0]}
-                          alt=""
-                          className="w-full h-full object-cover pointer-events-none"
-                        />
-                      )
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <Upload className="w-10 h-10 mb-2 opacity-50" />
-                        <span className="text-sm">Cover media</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Text + moods */}
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wide text-primary">
-                        {formData.period || "Time period not set"}
-                      </p>
-                      <h2 className="font-display text-lg font-semibold truncate">
-                        {formData.title || "Untitled capsule"}
-                      </h2>
-                      {formData.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {formData.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {emotions.slice(0, 4).map((emotion) => (
-                        <span
-                          key={emotion}
-                          className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs text-primary"
-                        >
-                          {emotion}
-                        </span>
-                      ))}
-                      {emotions.length === 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          No moods selected yet.
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Memories you link later will appear in this capsule&apos;s
-                      story.
-                    </p>
-                  </div>
+                <div className="p-4 pointer-events-none">
+                  <TimeCapsuleCard
+                    capsule={previewCapsule}
+                    showActions={false}
+                    authorName="You"
+                    authorSubtitle={
+                      formData.period
+                        ? `Chapter from ${formData.period}`
+                        : "Your time capsule"
+                    }
+                    authorAvatar={null}
+                  />
                 </div>
               </div>
             </div>

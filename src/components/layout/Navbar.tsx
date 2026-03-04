@@ -27,6 +27,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/features/notifications/NotificationsContext";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useProfileInfo } from "@/features/profile/useProfileInfo";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -42,7 +44,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const { notifications, unreadCount, markAllRead } = useNotifications();
-
+   const { displayName, displayAvatar } = useProfileInfo();
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-6">
@@ -203,10 +205,10 @@ export function Navbar() {
             <Link href="/profile">
               <Avatar className="w-9 h-9 ring-2 ring-primary/20 cursor-pointer hover:ring-primary/50 transition-all">
                 <AvatarImage
-                  src={wishbookUser.avatar}
-                  alt={wishbookUser.name}
+                  src={displayAvatar}
+                  alt={displayName}
                 />
-                <AvatarFallback>{wishbookUser.name[0]}</AvatarFallback>
+                <AvatarFallback>{displayName}</AvatarFallback>
               </Avatar>
             </Link>
 
