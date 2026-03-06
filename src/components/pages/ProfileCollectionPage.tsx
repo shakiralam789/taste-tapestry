@@ -199,7 +199,7 @@ function ProfileCollectionPageInner() {
 
   return (
     <>
-      <div className="min-h-screen py-8 px-8">
+      <div className="min-h-screen py-8 sm:px-4">
         <div className="container mx-auto px-4">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -271,10 +271,10 @@ function ProfileCollectionPageInner() {
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="rounded-none border-b-2 border-transparent px-0 py-4 mr-6 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-sm gap-1.5"
+                    className="rounded-none border-b-2 border-transparent px-0 py-4 mr-3 sm:mr-6 data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none hover:text-primary transition-colors text-sm gap-1.5"
                   >
-                    {Icon ? <Icon className="w-4 h-4" /> : null}
-                    {tab.label}
+                    <span className="px-3 sm:px-0">{Icon ? <Icon className="w-4 h-4" /> : null}</span>
+                    <span className="hidden sm:block">{tab.label}</span>
                   </TabsTrigger>
                 );
               })}
@@ -291,7 +291,7 @@ function ProfileCollectionPageInner() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {allItems.map((favorite) => (
                       <div key={favorite.id} className="relative group">
                           <ProfilePostCard favorite={favorite} variant="grid" onTitleClick={() => router.push(`/favorites/${favorite.id}`)} />
