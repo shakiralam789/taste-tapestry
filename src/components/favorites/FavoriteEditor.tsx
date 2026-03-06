@@ -759,7 +759,7 @@ export function FavoriteEditor({
                       </div>
                     </div>
                     <div ref={titleDropdownRef} className="relative">
-                      <Label htmlFor="title">Title *</Label>
+                      <Label htmlFor="title">Title <span className="text-red-500">*</span></Label>
                       <Input
                         id="title"
                         placeholder={
@@ -1463,7 +1463,7 @@ export function FavoriteEditor({
 
             {/* Right: Sticky preview */}
             <div className="lg:col-span-5">
-              <div className="lg:sticky lg:top-4">
+              <div className="lg:sticky lg:top-20">
                 <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
                   <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
                     <p>Live preview</p>
@@ -1496,7 +1496,7 @@ export function FavoriteEditor({
                         <img
                           src={formData.image}
                           alt=""
-                          className="w-full h-full object-cover pointer-events-none"
+                          className="aspect-[2/3] w-full h-full object-cover pointer-events-none"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = getDefaultCoverForCategory(selectedCategory);
                           }}

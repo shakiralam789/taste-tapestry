@@ -1,4 +1,9 @@
-import { getFavorites, updateFavorite, deleteFavorite, PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
+import {
+  getFavorites,
+  updateFavorite,
+  deleteFavorite,
+  PROFILE_PREVIEW_LIMIT,
+} from "@/features/favorites/api";
 import { getCookie, setCookie } from "@/lib/cookies";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -66,7 +71,6 @@ export default function MyCollections() {
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [albumPickerFavorite, setAlbumPickerFavorite] =
     useState<Favorite | null>(null);
-  
 
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["favorites", selectedCategoryFilter],
@@ -140,7 +144,7 @@ export default function MyCollections() {
   return (
     <>
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-2xl font-display font-bold">My collection</h3>
             <p className="text-muted-foreground text-sm">
@@ -148,13 +152,13 @@ export default function MyCollections() {
               story.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/albums">
+          <div className="w-full sm:w-auto flex items-center gap-3">
+            <Link href="/albums" className="flex-1 sm:flex-none">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-full"
+                className="w-full sm:w-auto rounded-full"
               >
                 <Images className="w-3.5 h-3.5" />
                 Albums
@@ -166,8 +170,9 @@ export default function MyCollections() {
                   ? "/add-favorite"
                   : `/add-favorite?category=${selectedCategoryFilter}`
               }
+              className="flex-1 sm:flex-none"
             >
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto rounded-full">
                 <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
                 Add new
               </Button>
@@ -190,15 +195,15 @@ export default function MyCollections() {
                   onClick={() => setSelectedCategoryFilter(cat.value)}
                   className={`rounded-full`}
                 >
-                  <span aria-hidden>
+                  <span aria-hidden className="block sm:hidden">
                     {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
                   </span>
-                  {cat.label}
+                  <span className="hidden sm:block">{cat.label}</span>
                 </Button>
               );
             })}
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
+          <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
             <button
               type="button"
               onClick={() => setViewMode("grid")}

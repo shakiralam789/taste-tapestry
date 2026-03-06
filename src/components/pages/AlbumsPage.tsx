@@ -126,7 +126,7 @@ export function AlbumsPageInner() {
   });
 
   return (
-    <Layout>
+    <Layout className="px-0">
       <div className="min-h-screen py-12">
         <div className="container mx-auto px-4">
           {/* Header */}

@@ -193,18 +193,9 @@ export function ProfilePostCard({
                 </p>
               ) : null;
             })()}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTitleClick?.();
-              }}
-              className="text-left w-fit"
-            >
-              <h3 className="font-display md:text-xl text-lg font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
-                {favorite.title}
-              </h3>
-            </button>
+            <p className="truncate font-display md:text-xl text-base sm:text-lg font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
+              {favorite.title}
+            </p>
           </div>
           <div
             onClick={(e) => {

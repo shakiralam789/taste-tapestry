@@ -23,25 +23,8 @@ import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
 import { ClientOnly } from "@/components/common/ClientOnly";
 import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
-
-const USER_PROFILE_TABS = [
-  {
-    label: "My collection",
-    value: "",
-  },
-  {
-    label: "Interests & pursuits",
-    value: "interests",
-  },
-  {
-    label: "Hidden talents",
-    value: "talents",
-  },
-  {
-    label: "Time capsules",
-    value: "capsules",
-  },
-];
+import { PROFILE_TABS } from "@/features/albums/constants";
+const USER_PROFILE_TABS = PROFILE_TABS;
 
 function UserProfilePageInner({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string | undefined }>();
@@ -259,12 +242,13 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
               </motion.div>
 
               <div className="w-full">
-                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
                   {USER_PROFILE_TABS.map((tab) => (
                     <TabsListLink key={tab.value} href={`/users/${id}/${tab.value}`}
                     className={pathname === `/users/${id}${tab?.value ? `/${tab.value}` : ""}` ? "active" : ""}
                     >
-                      {tab.label}
+                      <span className="block sm:hidden px-6"><tab.icon className="w-5 h-5" /></span>
+                      <span className="hidden sm:block">{tab.label}</span>
                     </TabsListLink>
                   ))}
                 </div>

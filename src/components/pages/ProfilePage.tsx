@@ -34,25 +34,7 @@ import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { TabsListLink } from "@/components/ui/tabs";
-
-const PROFILE_TABS = [
-  {
-    label: "My collection",
-    href: "/profile",
-  },
-  {
-    label: "Interests & pursuits",
-    href: "/profile/interests",
-  },
-  {
-    label: "Hidden talents",
-    href: "/profile/talents",
-  },
-  {
-    label: "Time capsules",
-    href: "/profile/capsules",
-  },
-];
+import { PROFILE_TABS } from "@/features/albums/constants";
 
 export default function ProfilePage({
   children,
@@ -409,14 +391,15 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
               </motion.div>
 
               <div className="w-full">
-                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex items-center justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex items-center justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
                   {PROFILE_TABS.map((tab) => (
                     <TabsListLink
-                      key={tab.href}
-                      href={tab.href}
-                      className={pathname === tab.href ? "active" : ""}
+                      key={tab.value}
+                      href={`/profile/${tab.value}`}
+                      className={pathname === `/profile${tab.value.length > 0 ? `/${tab.value}` : ""}` ? "active" : ""}
                     >
-                      {tab.label}
+                      <span className="block sm:hidden px-6"><tab.icon className="w-5 h-5" /></span>
+                      <span className="hidden sm:block">{tab.label}</span>
                     </TabsListLink>
                   ))}
                 </div>

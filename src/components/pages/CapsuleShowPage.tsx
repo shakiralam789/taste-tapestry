@@ -314,7 +314,7 @@ export default function CapsuleShowPage() {
           {/* Left: media + favorites */}
           <div className="space-y-6">
             {/* Gallery */}
-            {(safeImages.length || safeVideos.length) ?  <div className="elevated-card p-4">
+            {(safeImages.length || safeVideos.length) ?  <div className="elevated-card md:p-4">
                 <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-primary" />
                   Visual memories
@@ -444,7 +444,7 @@ export default function CapsuleShowPage() {
               </div> : null}
 
             {/* Favorites timeline */}
-            <div className="elevated-card p-4">
+            <div className="elevated-card md:p-4">
               <h2 className="text-sm font-semibold mb-3">
                 Memories in this chapter
               </h2>
@@ -491,7 +491,7 @@ export default function CapsuleShowPage() {
 
           {/* Right: DNA + story */}
           <div className="space-y-6">
-            <div className="elevated-card p-4 space-y-4">
+            <div className="elevated-card md:p-4 space-y-4">
               <h2 className="text-sm font-semibold">Capsule DNA</h2>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">
@@ -533,7 +533,7 @@ export default function CapsuleShowPage() {
             </div>
 
             {capsule.story && (
-              <div className="elevated-card p-4">
+              <div className="elevated-card md:p-4">
                 <h2 className="text-sm font-semibold mb-2">Story</h2>
                 <p className="text-sm text-muted-foreground whitespace-pre-line">
                   {capsule.story}

@@ -4,7 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Images, LayoutGrid, List } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Images,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 import { ProfilePostCardSkeleton } from "../profile/ProfilePostCardSkeleton";
 import { PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
 import { motion } from "framer-motion";
@@ -16,16 +22,16 @@ const staggerDelay = 0.08;
 
 export default function Collections() {
   const { id } = useParams<{ id: string | undefined }>();
-    const router = useRouter();
-    const {
-        data: profile,
-        isLoading: profileLoading,
-        isError: profileError,
-      } = useQuery({
-        queryKey: ["user-profile", id],
-        queryFn: () => getPublicProfile(id as string),
-        enabled: !!id,
-      });
+  const router = useRouter();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+  } = useQuery({
+    queryKey: ["user-profile", id],
+    queryFn: () => getPublicProfile(id as string),
+    enabled: !!id,
+  });
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["user-favorites", id],
     queryFn: () => getPublicFavorites(id as string),
@@ -39,7 +45,7 @@ export default function Collections() {
     if (selectedCategoryFilter === "all") return favorites;
     return favorites.filter((f) => f.categoryId === selectedCategoryFilter);
   }, [favorites, selectedCategoryFilter]);
-  
+
   if (profileError || !profile) {
     return (
       <>
@@ -57,30 +63,31 @@ export default function Collections() {
   }
 
   const displayName =
-  profile?.displayName?.trim() || profile?.username?.trim() || "User";
+    profile?.displayName?.trim() || profile?.username?.trim() || "User";
   return (
     <>
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
+        <div>
+          <div className="flex items-center justify-between gap-2">
             <h3 className="text-2xl font-display font-bold">
               {displayName}&apos;s collection
             </h3>
-            <p className="text-muted-foreground text-sm">
-              Movies, songs, books, places — their taste in one place.
-            </p>
+            <Link href={`/users/${id}/albums`}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+              >
+                <Images className="w-3.5 h-3.5" />
+                Albums
+              </Button>
+            </Link>
           </div>
-          <Link href={`/users/${id}/albums`}>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-            >
-              <Images className="w-3.5 h-3.5" />
-              Albums
-            </Button>
-          </Link>
+
+          <p className="text-muted-foreground text-sm">
+            Movies, songs, books, places — their taste in one place.
+          </p>
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex flex-wrap gap-2">
@@ -97,15 +104,15 @@ export default function Collections() {
                   onClick={() => setSelectedCategoryFilter(cat.value)}
                   className={`rounded-full`}
                 >
-                  <span aria-hidden>
+                  <span aria-hidden className="block sm:hidden">
                     {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
                   </span>
-                  {cat.label}
+                  <span className="hidden sm:block">{cat.label}</span>
                 </Button>
               );
             })}
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
+          <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
             <button
               type="button"
               onClick={() => setViewMode("grid")}
