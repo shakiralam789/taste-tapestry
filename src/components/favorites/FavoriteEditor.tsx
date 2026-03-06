@@ -694,14 +694,14 @@ export function FavoriteEditor({
       <div className="min-h-screen py-0 pb-16">
         <div className="container mx-auto px-0">
           {/* Header + progress */}
-          <div className="mb-8">
+          <div className="mb-8 flex items-center gap-4">
             <Button
               variant="ghost"
+              size="icon"
               onClick={() => router.back()}
-              className="mb-4 -ml-2"
+              className="border"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>

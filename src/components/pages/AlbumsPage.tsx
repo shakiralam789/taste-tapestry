@@ -17,6 +17,8 @@ import {
   MoreHorizontal,
   Lock,
   Globe,
+  ArrowLeft,
+  Pencil,
 } from "lucide-react";
 import {
   createAlbum,
@@ -53,6 +55,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from "nextjs-toploader/app";
 
 export function AlbumsPageInner() {
   const queryClient = useQueryClient();
@@ -61,6 +64,7 @@ export function AlbumsPageInner() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [albumToEdit, setAlbumToEdit] = useState<Album | null>(null);
+  const router = useRouter();
 
   const {
     data: albums = [],
@@ -126,8 +130,20 @@ export function AlbumsPageInner() {
   });
 
   return (
-    <Layout className="px-0">
+    <Layout className="px-0 md:px-0 pt-0">
+      <header className="px-4 py-3 border-b border-white/5">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="border rounded-full shrink-0"
+          aria-label="Back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+      </header>
       <div className="min-h-screen py-12">
+
         <div className="container mx-auto px-4">
           {/* Header */}
           <motion.div

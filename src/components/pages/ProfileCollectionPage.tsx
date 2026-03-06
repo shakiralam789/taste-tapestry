@@ -59,6 +59,7 @@ import {
   Trash2,
   Images,
   Plus,
+  PenIcon,
 } from "lucide-react";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
@@ -294,7 +295,7 @@ function ProfileCollectionPageInner() {
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {allItems.map((favorite) => (
                       <div key={favorite.id} className="relative group">
-                          <ProfilePostCard favorite={favorite} variant="grid" onTitleClick={() => router.push(`/favorites/${favorite.id}`)} />
+                        <ProfilePostCard favorite={favorite} variant="grid" onTitleClick={() => router.push(`/favorites/${favorite.id}`)} />
                         {authUser && (
                           <div className="absolute top-2 right-2">
                             <DropdownMenu>
@@ -326,6 +327,13 @@ function ProfileCollectionPageInner() {
                                 >
                                   <Images className="w-4 h-4" />
                                   Add to album
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onSelect={(e) => {
+                                  e.preventDefault();
+                                  router.push(`/favorites/${favorite.id}/edit`);
+                                }}>
+                                  <PenIcon className="w-4 h-4" />
+                                  Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="flex items-center gap-2 cursor-pointer"

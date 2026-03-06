@@ -33,6 +33,7 @@ import {
   Globe,
   Trash2,
   ChevronRight,
+  PenIcon,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -301,6 +302,13 @@ export default function MyCollections() {
                       >
                         <Images className="w-4 h-4" />
                         Add to album
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onSelect={(e) => {
+                        e.preventDefault();
+                        router.push(`/favorites/${favorite.id}/edit`);
+                      }}>
+                        <PenIcon className="w-4 h-4" />
+                        Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="flex items-center gap-2 cursor-pointer"

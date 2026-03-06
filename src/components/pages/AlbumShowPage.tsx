@@ -180,7 +180,7 @@ export function AlbumShowPageInner() {
             variant="ghost"
             size="icon"
             onClick={() => router.back()}
-            className="rounded-full shrink-0"
+            className="border rounded-full shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />

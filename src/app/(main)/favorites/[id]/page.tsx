@@ -368,7 +368,9 @@ export default function FavoriteShowPage() {
   };
 
   // ── Loading / error states ────────────────────────────────────────────────
-  if (isLoading || !favorite) return <FullScreenLoader />;
+  if (isLoading || !favorite) return <Layout>
+    <FullScreenLoader />
+  </Layout>;
 
   if (isError) {
     return (
@@ -420,7 +422,7 @@ export default function FavoriteShowPage() {
             variant="ghost"
             size="icon"
             onClick={() => router.back()}
-            className="rounded-full shrink-0"
+            className="border rounded-full shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -999,12 +1001,12 @@ export default function FavoriteShowPage() {
                 curvePoints={
                   Array.isArray(fields.emotionalCurve)
                     ? fields.emotionalCurve.map(
-                        (p, i): { id: string; x: number; y: number } =>
-                          "id" in p &&
+                      (p, i): { id: string; x: number; y: number } =>
+                        "id" in p &&
                           typeof (p as { id?: string }).id === "string"
-                            ? (p as { id: string; x: number; y: number })
-                            : { id: `curve-${i}`, x: p.x, y: p.y },
-                      )
+                          ? (p as { id: string; x: number; y: number })
+                          : { id: `curve-${i}`, x: p.x, y: p.y },
+                    )
                     : []
                 }
                 emotionalSegments={
