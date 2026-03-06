@@ -58,10 +58,12 @@ export async function getFavoritesPage(
   offset: number,
   categoryId?: string,
   search?: string,
+  sortBy: 'newest' | 'oldest' | 'rating_desc' | 'rating_asc' = 'newest',
 ): Promise<FavoritesPageResponse> {
   const params: Record<string, string> = {
     limit: String(COLLECTION_PAGE_SIZE),
     offset: String(offset),
+    sortBy,
   };
   if (categoryId) params.categoryId = categoryId;
   if (search?.trim()) params.q = search.trim();
