@@ -195,7 +195,7 @@ export default function MyCollections() {
                   onClick={() => setSelectedCategoryFilter(cat.value)}
                   className={`rounded-full`}
                 >
-                  <span aria-hidden className="block sm:hidden">
+                  <span aria-hidden >
                     {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
                   </span>
                   <span className="hidden sm:block">{cat.label}</span>
