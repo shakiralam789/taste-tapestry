@@ -1,11 +1,13 @@
-import { useRef, useCallback } from "react";
-import { Upload, X, FilmIcon } from "lucide-react";
+import { useRef, useCallback, useState } from "react";
+import { Upload, X, FilmIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { uploadToCloudinary } from "@/lib/upload";
+import { toast } from "sonner";
 
 interface CoverImageFieldProps {
-  /** Current image value (URL or data URL) */
+  /** Current image value (URL) */
   image: string;
   /** Called whenever the image value changes (upload, URL edit, or clear) */
   onImageChange: (value: string) => void;
@@ -21,18 +23,22 @@ export function CoverImageField({
   className,
 }: CoverImageFieldProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !file.type.startsWith("image/")) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        onImageChange(dataUrl);
-      };
-      reader.readAsDataURL(file);
       e.target.value = "";
+      setUploading(true);
+      try {
+        const url = await uploadToCloudinary(file, "image");
+        onImageChange(url);
+      } catch {
+        toast.error("Failed to upload image. Please try again.");
+      } finally {
+        setUploading(false);
+      }
     },
     [onImageChange],
   );
@@ -47,8 +53,6 @@ export function CoverImageField({
       fileInputRef.current.value = "";
     }
   };
-
-  const displayUrl = image.startsWith("data:") ? "" : image;
 
   return (
     <div
@@ -75,21 +79,24 @@ export function CoverImageField({
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             className="gap-1.5"
+            disabled={uploading}
           >
-            <Upload className="w-4 h-4" />
-            Upload
+            {uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            {uploading ? "Uploading…" : "Upload"}
           </Button>
           <span className="text-muted-foreground text-sm">or</span>
           <Input
             placeholder="Paste image URL"
-            value={displayUrl}
+            value={image}
             onChange={handleUrlChange}
             className="w-64 bg-transparent"
+            disabled={uploading}
           />
         </div>
-        {image.startsWith("data:") && (
-          <p className="text-xs text-muted-foreground">Image set from upload</p>
-        )}
       </div>
       {image ? (
         <div className="w-fit relative flex-shrink-0">
@@ -116,11 +123,16 @@ export function CoverImageField({
         </div>
       ) : (
         <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex flex-col items-center justify-center">
-          <FilmIcon className="w-5 h-5 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground mt-4">Preview</p>
+          {uploading ? (
+            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+          ) : (
+            <>
+              <FilmIcon className="w-5 h-5 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mt-4">Preview</p>
+            </>
+          )}
         </div>
       )}
     </div>
   );
 }
-

@@ -22,6 +22,8 @@ import {
   RotateCcw,
   Loader2,
 } from "lucide-react";
+import { uploadToCloudinary } from "@/lib/upload";
+import { toast } from "sonner";
 
 const GRAPH_HEIGHT = 220;
 const PADDING = { top: 20, right: 20, bottom: 36, left: 44 };
@@ -172,6 +174,8 @@ export function EmotionalJourneyEditor({
   const [hoverEdge, setHoverEdge] = useState<"left" | "right" | null>(null);
   const segmentImageInputRef = useRef<HTMLInputElement>(null);
   const segmentVideoInputRef = useRef<HTMLInputElement>(null);
+  const [segmentImageUploading, setSegmentImageUploading] = useState(false);
+  const [segmentVideoUploading, setSegmentVideoUploading] = useState(false);
   const [fullscreenMedia, setFullscreenMedia] = useState<{
     type: "image" | "video";
     url: string;
@@ -1316,34 +1320,38 @@ export function EmotionalJourneyEditor({
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file || !file.type.startsWith("image/")) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          updateSegment(selectedSegment.id, {
-                            image: reader.result as string,
-                          });
-                        };
-                        reader.readAsDataURL(file);
                         e.target.value = "";
+                        setSegmentImageUploading(true);
+                        try {
+                          const url = await uploadToCloudinary(file, "image");
+                          updateSegment(selectedSegment.id, { image: url });
+                        } catch {
+                          toast.error("Failed to upload image. Please try again.");
+                        } finally {
+                          setSegmentImageUploading(false);
+                        }
                       }}
                     />
                     <Button
                       type="button"
                       size="sm"
                       onClick={() => segmentImageInputRef.current?.click()}
+                      disabled={segmentImageUploading}
+                      className="gap-1"
                     >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      Upload
+                      {segmentImageUploading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      )}
+                      {segmentImageUploading ? "Uploading…" : "Upload"}
                     </Button>
                     <Input
                       placeholder="Or paste image URL"
-                      value={
-                        (selectedSegment.image ?? "").startsWith("data:")
-                          ? ""
-                          : (selectedSegment.image ?? "")
-                      }
+                      value={selectedSegment.image ?? ""}
                       onChange={(e) =>
                         updateSegment(selectedSegment.id, {
                           image: e.target.value.trim() || undefined,
@@ -1352,11 +1360,6 @@ export function EmotionalJourneyEditor({
                       className="text-xs md:text-sm flex-1 min-w-[140px]"
                     />
                   </div>
-                  {(selectedSegment.image ?? "").startsWith("data:") && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Image set from upload
-                    </p>
-                  )}
                 </div>
                 <div>
                   <Label className="flex items-center gap-1">
@@ -1372,17 +1375,19 @@ export function EmotionalJourneyEditor({
                       type="file"
                       accept="video/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file || !file.type.startsWith("video/")) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          updateSegment(selectedSegment.id, {
-                            video: reader.result as string,
-                          });
-                        };
-                        reader.readAsDataURL(file);
                         e.target.value = "";
+                        setSegmentVideoUploading(true);
+                        try {
+                          const url = await uploadToCloudinary(file, "video");
+                          updateSegment(selectedSegment.id, { video: url });
+                        } catch {
+                          toast.error("Failed to upload video. Please try again.");
+                        } finally {
+                          setSegmentVideoUploading(false);
+                        }
                       }}
                     />
                     <Button
@@ -1390,17 +1395,18 @@ export function EmotionalJourneyEditor({
                       size="sm"
                       onClick={() => segmentVideoInputRef.current?.click()}
                       className="gap-1.5"
+                      disabled={segmentVideoUploading}
                     >
-                      <Video className="w-3.5 h-3.5" />
-                      Upload
+                      {segmentVideoUploading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Video className="w-3.5 h-3.5" />
+                      )}
+                      {segmentVideoUploading ? "Uploading…" : "Upload"}
                     </Button>
                     <Input
                       placeholder="Or paste video URL"
-                      value={
-                        (selectedSegment.video ?? "").startsWith("data:")
-                          ? ""
-                          : (selectedSegment.video ?? "")
-                      }
+                      value={selectedSegment.video ?? ""}
                       onChange={(e) =>
                         updateSegment(selectedSegment.id, {
                           video: e.target.value.trim() || undefined,
@@ -1409,11 +1415,6 @@ export function EmotionalJourneyEditor({
                       className="text-xs md:text-sm flex-1 min-w-[140px]"
                     />
                   </div>
-                  {(selectedSegment.video ?? "").startsWith("data:") && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Video set from upload
-                    </p>
-                  )}
                 </div>
                 <div className="md:col-span-2 col-span-1">
                   <Label>Comment (optional)</Label>

@@ -73,16 +73,9 @@ export async function deleteCapsule(id: string): Promise<void> {
 }
 
 export async function uploadCapsuleMedia(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const { data } = await apiClient.post<{ url: string }>(
-    "/capsules/media",
-    formData,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-    },
-  );
-  return data.url;
+  const { uploadToCloudinary } = await import("@/lib/upload");
+  const resourceType = file.type.startsWith("video/") ? "video" : "image";
+  return uploadToCloudinary(file, resourceType);
 }
 
 export async function getCapsuleLove(

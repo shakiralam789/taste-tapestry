@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { uploadToCloudinary } from "@/lib/upload";
 
 /** Keep profile in cache so /users/me isn't called on every page navigation. */
 export const PROFILE_QUERY_STALE_MS = 5 * 60 * 1000; // 5 minutes
@@ -36,22 +37,22 @@ export async function updateProfile(
   return data;
 }
 
-/** Upload avatar image; returns updated profile. */
+/**
+ * Upload avatar directly to Cloudinary, then notify the backend of the new URL.
+ * Returns the updated profile.
+ */
 export async function uploadAvatar(file: File): Promise<Profile | null> {
-  const form = new FormData();
-  form.append("file", file);
-  const { data } = await apiClient.post<Profile | null>("/users/me/avatar", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const url = await uploadToCloudinary(file, "image", "taste-tapestry/avatars");
+  const { data } = await apiClient.post<Profile | null>("/users/me/avatar", { url });
   return data;
 }
 
-/** Upload banner image; returns updated profile. */
+/**
+ * Upload banner directly to Cloudinary, then notify the backend of the new URL.
+ * Returns the updated profile.
+ */
 export async function uploadBanner(file: File): Promise<Profile | null> {
-  const form = new FormData();
-  form.append("file", file);
-  const { data } = await apiClient.post<Profile | null>("/users/me/banner", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const url = await uploadToCloudinary(file, "image", "taste-tapestry/banners");
+  const { data } = await apiClient.post<Profile | null>("/users/me/banner", { url });
   return data;
 }
