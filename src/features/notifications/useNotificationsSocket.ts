@@ -18,7 +18,7 @@ export function useNotificationsSocket() {
     if (!user) return;
 
     if (!socket) {
-      socket = io("http://localhost:4000", {
+      socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000", {
         withCredentials: true,
         auth: { userId: user.id },
       });
