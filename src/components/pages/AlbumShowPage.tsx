@@ -157,7 +157,7 @@ export function AlbumShowPageInner() {
 
   // Only full-screen loader when we have no data yet (initial load). Tab switches use placeholderData.
   if (!infiniteData?.pages?.length || !album || !counts) {
-    return <FullScreenLoader />;
+    return <Layout><FullScreenLoader /></Layout>;
   }
 
   if (showError) {
