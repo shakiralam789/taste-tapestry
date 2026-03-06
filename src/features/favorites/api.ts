@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { uploadToCloudinary } from "@/lib/upload";
 import type { Favorite } from "@/types/wishbook";
 
 export type CreateFavoritePayload = Omit<
@@ -110,20 +111,19 @@ export async function uploadFavoriteMusic(
   id: string,
   file: File,
 ): Promise<Favorite> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const { data } = await apiClient.post<Favorite>(
-    `/favorites/${id}/music`,
-    formData,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-    },
-  );
+  // Upload directly browser → Cloudinary (resource_type "video" accepts audio files too)
+  const musicUrl = await uploadToCloudinary(file, "video", "taste-tapestry/music");
+
+  // Persist only the resulting URL to the backend
+  const { data } = await apiClient.patch<Favorite>(`/favorites/${id}`, {
+    fields: { musicUrl },
+  });
   return {
     ...data,
     createdAt: new Date(data.createdAt),
   };
 }
+
 
 export async function getFavoriteLove(
   id: string,
