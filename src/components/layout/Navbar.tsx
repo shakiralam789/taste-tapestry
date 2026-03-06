@@ -205,7 +205,7 @@ export function Navbar() {
             <Link href="/profile">
               <Avatar className="w-9 h-9 ring-2 ring-primary/20 cursor-pointer hover:ring-primary/50 transition-all">
                 <AvatarImage
-                  src={displayAvatar}
+                  src={displayAvatar || "/images/default-user.jpg"}
                   alt={displayName}
                 />
                 <AvatarFallback>{displayName}</AvatarFallback>
