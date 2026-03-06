@@ -560,7 +560,7 @@ export default function FavoriteShowPage() {
                         </div>
                         <div className="flex flex-col">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Theme music
+                            Music
                           </p>
                           {musicUrl && (
                             <p className="text-[11px] text-muted-foreground">
@@ -674,8 +674,48 @@ export default function FavoriteShowPage() {
                             ))}
                           </div>
                           <span className="text-[11px] text-muted-foreground">
-                            {ytPlaying ? "Now playing" : "Paused"}
+                            {ytPlaying ? "Playing" : "Paused"}
                           </span>
+                        </div>
+                        {/* Controls row */}
+                        <div className="flex items-center justify-center gap-3">
+                          {/* Back 10s */}
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() =>
+                              handleYtSeek(Math.max(0, ytCurrentTime - 10))
+                            }
+                            aria-label="Back 10 seconds"
+                          >
+                            <SkipBack className="w-3.5 h-3.5 text-primary" />
+                          </button>
+                          {/* Play / Pause */}
+                          <button
+                            type="button"
+                            className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/15 hover:bg-primary/25 transition-colors"
+                            onClick={handleYtTogglePlay}
+                            aria-label={ytPlaying ? "Pause" : "Play"}
+                          >
+                            {ytPlaying ? (
+                              <Pause className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Play className="w-4 h-4 text-primary" />
+                            )}
+                          </button>
+                          {/* Forward 10s */}
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() =>
+                              handleYtSeek(
+                                Math.min(ytDuration, ytCurrentTime + 10),
+                              )
+                            }
+                            aria-label="Forward 10 seconds"
+                          >
+                            <SkipForward className="w-3.5 h-3.5 text-primary" />
+                          </button>
                         </div>
                         {/* Volume */}
                         <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -733,46 +773,7 @@ export default function FavoriteShowPage() {
                         </span>
                       </div>
 
-                      {/* Controls row */}
-                      <div className="flex items-center justify-center gap-3">
-                        {/* Back 10s */}
-                        <button
-                          type="button"
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
-                          onClick={() =>
-                            handleYtSeek(Math.max(0, ytCurrentTime - 10))
-                          }
-                          aria-label="Back 10 seconds"
-                        >
-                          <SkipBack className="w-3.5 h-3.5 text-primary" />
-                        </button>
-                        {/* Play / Pause */}
-                        <button
-                          type="button"
-                          className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/15 hover:bg-primary/25 transition-colors"
-                          onClick={handleYtTogglePlay}
-                          aria-label={ytPlaying ? "Pause" : "Play"}
-                        >
-                          {ytPlaying ? (
-                            <Pause className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Play className="w-4 h-4 text-primary" />
-                          )}
-                        </button>
-                        {/* Forward 10s */}
-                        <button
-                          type="button"
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
-                          onClick={() =>
-                            handleYtSeek(
-                              Math.min(ytDuration, ytCurrentTime + 10),
-                            )
-                          }
-                          aria-label="Forward 10 seconds"
-                        >
-                          <SkipForward className="w-3.5 h-3.5 text-primary" />
-                        </button>
-                      </div>
+
                     </div>
                   )}
 
@@ -831,8 +832,64 @@ export default function FavoriteShowPage() {
                             ))}
                           </div>
                           <span className="text-[11px] text-muted-foreground">
-                            {audioPlaying ? "Now playing" : "Paused"}
+                            {audioPlaying ? "Playing" : "Paused"}
                           </span>
+                        </div>
+                        {/* Controls */}
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              if (!audioRef.current) return;
+                              const t = Math.max(
+                                0,
+                                audioRef.current.currentTime - 10,
+                              );
+                              audioRef.current.currentTime = t;
+                              setAudioCurrentTime(t);
+                            }}
+                            aria-label="Back 10 seconds"
+                          >
+                            <SkipBack className="w-3.5 h-3.5 text-primary" />
+                          </button>
+                          <button
+                            type="button"
+                            className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/15 hover:bg-primary/25 transition-colors"
+                            onClick={() => {
+                              if (!audioRef.current) return;
+                              if (audioPlaying) {
+                                audioRef.current.pause();
+                              } else {
+                                audioRef.current
+                                  .play()
+                                  .catch(() => setAudioPlaying(false));
+                              }
+                            }}
+                            aria-label={audioPlaying ? "Pause" : "Play"}
+                          >
+                            {audioPlaying ? (
+                              <Pause className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Play className="w-4 h-4 text-primary" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              if (!audioRef.current) return;
+                              const t = Math.min(
+                                audioDuration,
+                                audioRef.current.currentTime + 10,
+                              );
+                              audioRef.current.currentTime = t;
+                              setAudioCurrentTime(t);
+                            }}
+                            aria-label="Forward 10 seconds"
+                          >
+                            <SkipForward className="w-3.5 h-3.5 text-primary" />
+                          </button>
                         </div>
                         <div className="hidden sm:flex items-center gap-1.5">
                           <Volume2 className="w-3 h-3 text-primary" />
@@ -872,62 +929,7 @@ export default function FavoriteShowPage() {
                           {formatTime(audioDuration)}
                         </span>
                       </div>
-                      {/* Controls */}
-                      <div className="flex items-center justify-center gap-3">
-                        <button
-                          type="button"
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
-                          onClick={() => {
-                            if (!audioRef.current) return;
-                            const t = Math.max(
-                              0,
-                              audioRef.current.currentTime - 10,
-                            );
-                            audioRef.current.currentTime = t;
-                            setAudioCurrentTime(t);
-                          }}
-                          aria-label="Back 10 seconds"
-                        >
-                          <SkipBack className="w-3.5 h-3.5 text-primary" />
-                        </button>
-                        <button
-                          type="button"
-                          className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/15 hover:bg-primary/25 transition-colors"
-                          onClick={() => {
-                            if (!audioRef.current) return;
-                            if (audioPlaying) {
-                              audioRef.current.pause();
-                            } else {
-                              audioRef.current
-                                .play()
-                                .catch(() => setAudioPlaying(false));
-                            }
-                          }}
-                          aria-label={audioPlaying ? "Pause" : "Play"}
-                        >
-                          {audioPlaying ? (
-                            <Pause className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Play className="w-4 h-4 text-primary" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"
-                          onClick={() => {
-                            if (!audioRef.current) return;
-                            const t = Math.min(
-                              audioDuration,
-                              audioRef.current.currentTime + 10,
-                            );
-                            audioRef.current.currentTime = t;
-                            setAudioCurrentTime(t);
-                          }}
-                          aria-label="Forward 10 seconds"
-                        >
-                          <SkipForward className="w-3.5 h-3.5 text-primary" />
-                        </button>
-                      </div>
+
                     </div>
                   )}
                 </section>
