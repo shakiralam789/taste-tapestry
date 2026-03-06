@@ -205,7 +205,7 @@ export default function FavoriteShowPage() {
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
       <div className="min-h-screen bg-background">
         {/* Compact top bar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <header className="hidden sm:flex sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
           <Button
             variant="ghost"
             size="icon"
@@ -228,10 +228,32 @@ export default function FavoriteShowPage() {
           )}
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 py-6 pb-16">
+        <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6 pb-16">
           {/* Cover + title block — compact single row on larger screens */}
           <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
-            <div className="shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[2/3] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
+            <div className="relative shrink-0 w-full sm:w-56 sm:max-h-[400px] aspect-[2/3] rounded-2xl overflow-hidden bg-muted border border-white/5 ring-1 ring-black/5">
+              <div className="flex sm:hidden items-center justify-between w-full p-4 absolute top-0 right-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.back()}
+                  className="border border-white/30 bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-full shrink-0"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                {isOwner && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="text-white border border-white/30 bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-full gap-1.5 shrink-0"
+                    onClick={() => router.push(`/favorites/${id}/edit`)}
+                  >
+                    <Pencil className="w-2.5 h-2.5" />
+                    Edit
+                  </Button>
+                )}
+              </div>
               <img
                 src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
                 alt=""
