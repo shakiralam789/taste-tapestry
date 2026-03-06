@@ -84,7 +84,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
 
   if (profileError || !profile) {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
           <p className="text-lg text-muted-foreground">User not found.</p>
           <Link href="/profile">
@@ -94,7 +94,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
             </Button>
           </Link>
         </div>
-      </Layout>
+      </>
     );
   }
 

@@ -330,15 +330,6 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </Link>
-                <Link href="/capsules" className="block">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <Rocket className="w-4 h-4 text-primary" />
-                      Time capsules
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </Link>
               </div>
             </motion.div>
 
