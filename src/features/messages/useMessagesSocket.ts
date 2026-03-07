@@ -40,8 +40,22 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
   }, [socket]);
 
   const sendMessage = useCallback(
-    (conversationId: string, content: string) => {
-      socket?.emit("messages:send", { conversationId, content });
+    (
+      conversationId: string,
+      content: string,
+      type: "text" | "image" | "video" | "file" = "text",
+      mediaUrl?: string,
+      fileName?: string,
+      fileSize?: number,
+    ) => {
+      socket?.emit("messages:send", {
+        conversationId,
+        content,
+        type,
+        mediaUrl,
+        fileName,
+        fileSize,
+      });
     },
     [socket],
   );

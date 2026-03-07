@@ -15,6 +15,10 @@ export interface Message {
   conversationId: string;
   senderId: string;
   content: string;
+  type: "text" | "image" | "video" | "file";
+  mediaUrl?: string;
+  fileName?: string;
+  fileSize?: number;
   readBy: string[];
   createdAt: string;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Loader2, CheckCheck } from "lucide-react";
+import { Loader2, CheckCheck, FileIcon, Download, PlayCircle } from "lucide-react";
 import { TypingIndicator } from "./TypingIndicator";
 import { getMessages } from "@/features/messages/api";
 import type { Message } from "@/types/messages";
@@ -157,13 +157,58 @@ export function MessageThread({
                             >
                                 <div
                                     className={cn(
-                                        "max-w-[75%] px-4 py-2 rounded-2xl text-sm leading-relaxed break-words",
+                                        "max-w-[75%] rounded-2xl text-sm leading-relaxed break-words",
                                         isMine
                                             ? "bg-primary text-primary-foreground rounded-br-sm"
                                             : "bg-muted/60 border border-white/10 rounded-bl-sm",
+                                        msg.type === "text" ? "px-4 py-2" : "p-1",
                                     )}
                                 >
-                                    <p>{msg.content}</p>
+                                    {msg.type === "image" && (
+                                        <div className="rounded-xl overflow-hidden mb-1">
+                                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                                <img
+                                                    src={msg.mediaUrl}
+                                                    alt="Image attachment"
+                                                    className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
+                                                />
+                                            </a>
+                                        </div>
+                                    )}
+
+                                    {msg.type === "video" && (
+                                        <div className="rounded-xl overflow-hidden mb-1 bg-black/20 aspect-video flex items-center justify-center relative group">
+                                            <video
+                                                src={msg.mediaUrl}
+                                                className="max-h-60 w-full"
+                                                controls
+                                            />
+                                        </div>
+                                    )}
+
+                                    {msg.type === "file" && (
+                                        <a
+                                            href={msg.mediaUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mb-1 min-w-[200px]"
+                                        >
+                                            <div className="p-2 rounded-lg bg-primary/20">
+                                                <FileIcon className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-medium truncate">{msg.fileName || "Attachment"}</p>
+                                                {msg.fileSize && (
+                                                    <p className="text-[10px] opacity-60">
+                                                        {(msg.fileSize / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Download className="w-4 h-4 opacity-40" />
+                                        </a>
+                                    )}
+
+                                    {msg.content && <p className={msg.type !== 'text' ? 'px-3 py-1 pb-2' : ''}>{msg.content}</p>}
                                     <div
                                         className={cn(
                                             "flex items-center gap-1 mt-0.5 text-[10px] opacity-60",

@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +27,17 @@ import { searchUsers, getPublicProfile } from "@/features/users/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Conversation, Message } from "@/types/messages";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { format, isToday, isYesterday } from "date-fns";
+import { cn } from "@/lib/utils";
+import { ClientOnly } from "@/components/common/ClientOnly";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
   Search,
   MessageCircle,
   PenSquare,
@@ -33,18 +49,11 @@ import {
   User,
   Trash2,
   Bell,
+  Paperclip,
+  Image as ImageIcon,
+  Film,
+  File as FileIconLucide,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { format, isToday, isYesterday } from "date-fns";
-import { cn } from "@/lib/utils";
-import { ClientOnly } from "@/components/common/ClientOnly";
-import { useSearchParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 // ── Types & Helpers ────────────────────────────────────────────────────────────
 
@@ -176,7 +185,7 @@ function ConversationItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push(`/users/${partnerId}`)}>
+            <DropdownMenuItem onClick={() => router.push(`/ users / ${partnerId} `)}>
               <User className="w-4 h-4 mr-2" /> View Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => muteMutation.mutate()}>
@@ -394,8 +403,16 @@ function MessagesPageInner() {
   };
 
   const sendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim() || (!activeConvoId && !pendingPartner)) return;
+    async (
+      content: string,
+      type: "text" | "image" | "video" | "file" = "text",
+      mediaUrl = "",
+      fileName = "",
+      fileSize = 0
+    ) => {
+      const trimmedContent = content.trim();
+      if (!trimmedContent && !mediaUrl) return;
+
       let convoId = activeConvoId;
       if (!convoId && pendingPartner) {
         try {
@@ -406,20 +423,27 @@ function MessagesPageInner() {
           void qc.invalidateQueries({ queryKey: ["conversations"] });
         } catch (err) {
           console.error("Failed to create conversation:", err);
+          toast.error("Failed to start conversation");
           return;
         }
       }
       if (!convoId) return;
+
       const tempMsg: Message = {
         id: `temp-${Date.now()}`,
         conversationId: convoId,
         senderId: user?.id || "",
-        content,
+        content: trimmedContent,
+        type,
+        mediaUrl,
+        fileName,
+        fileSize,
         readBy: [user?.id || ""],
         createdAt: new Date().toISOString(),
       };
+
       setMessages((prev) => [...prev, tempMsg]);
-      socketSendMessage(convoId, content);
+      socketSendMessage(convoId, trimmedContent, type, mediaUrl, fileName, fileSize);
     },
     [activeConvoId, pendingPartner, user, socketSendMessage, qc],
   );
