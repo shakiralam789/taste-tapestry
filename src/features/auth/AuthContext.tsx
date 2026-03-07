@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AuthUser } from "./api";
 import { login, register as registerRequest } from "./api";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, setAccessToken } from "@/lib/api-client";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -33,43 +33,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
-  const persistAccessToken = useCallback((token: string | null) => {
-    if (typeof window === "undefined") return;
-    if (!token) {
-      window.localStorage.removeItem("accessToken");
-    } else {
-      window.localStorage.setItem("accessToken", token);
-    }
+  // Called on mount and after any token refresh failure to reset auth state
+  const clearAuth = useCallback(() => {
+    setAccessToken(null);
+    setUser(null);
   }, []);
 
+  // On mount: attempt a silent refresh using the HttpOnly cookie.
+  // If the cookie is present and valid the backend will return a fresh
+  // access token that we keep only in memory.
   const initialize = useCallback(async () => {
     try {
       const { data } = await apiClient.post<{
         user: AuthUser;
         accessToken: string;
       }>("/auth/refresh");
-      persistAccessToken(data.accessToken);
+      setAccessToken(data.accessToken);
       setUser(data.user);
     } catch {
-      persistAccessToken(null);
-      setUser(null);
+      clearAuth();
     } finally {
       setLoading(false);
     }
-  }, [persistAccessToken]);
+  }, [clearAuth]);
 
   useEffect(() => {
     void initialize();
   }, [initialize]);
 
+  // Listen for the event dispatched by the response interceptor when refresh
+  // fails mid-session (e.g. cookie expired while the tab was open).
+  useEffect(() => {
+    const handler = () => {
+      clearAuth();
+      queryClient.clear();
+    };
+    window.addEventListener("auth:logout", handler);
+    return () => window.removeEventListener("auth:logout", handler);
+  }, [clearAuth, queryClient]);
+
   const loginWithEmail = useCallback(
     async (emailOrUsername: string, password: string) => {
       const res = await login({ emailOrUsername, password });
-      persistAccessToken(res.accessToken);
+      // The backend sets the HttpOnly refresh cookie automatically.
+      // We only keep the access token in memory.
+      setAccessToken(res.accessToken);
       setUser(res.user);
       queryClient.clear();
     },
-    [persistAccessToken, queryClient],
+    [queryClient],
   );
 
   const registerWithEmail = useCallback(
@@ -88,19 +100,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         displayName,
       });
-      persistAccessToken(res.accessToken);
+      setAccessToken(res.accessToken);
       setUser(res.user);
       queryClient.clear();
     },
-    [persistAccessToken, queryClient],
+    [queryClient],
   );
 
   const logout = useCallback(async () => {
-    await apiClient.post("/auth/logout");
-    persistAccessToken(null);
-    setUser(null);
-    queryClient.clear();
-  }, [persistAccessToken, queryClient]);
+    try {
+      // The backend clears the HttpOnly cookie; we clear the in-memory token.
+      await apiClient.post("/auth/logout");
+    } finally {
+      clearAuth();
+      queryClient.clear();
+    }
+  }, [clearAuth, queryClient]);
 
   const value: AuthContextValue = {
     user,
@@ -116,20 +131,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    // During Next.js prerender/export, some legacy pages may be rendered
-    // outside of the AuthProvider. In that case, return a safe fallback
-    // instead of crashing the build; on the client we still enforce usage.
+    // During Next.js prerender/export, some pages may be rendered outside the
+    // provider. Return a safe fallback on the server; enforce usage on the client.
     if (typeof window === "undefined") {
       return {
         user: null,
         loading: true,
-        loginWithEmail: async () => {},
-        registerWithEmail: async () => {},
-        logout: async () => {},
+        loginWithEmail: async () => { },
+        registerWithEmail: async () => { },
+        logout: async () => { },
       };
     }
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return ctx;
 }
-

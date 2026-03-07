@@ -1,41 +1,56 @@
 import axios from "axios";
 
+// ── In-memory access token store ──────────────────────────────────────────────
+// Never written to localStorage/sessionStorage. Lives only in JS heap.
+// Cleared on page refresh (user re-authenticates via the HttpOnly refresh cookie).
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void {
+  _accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return _accessToken;
+}
+
+// ── Axios instance ────────────────────────────────────────────────────────────
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
-  withCredentials: true,
+  withCredentials: true, // required so the HttpOnly refresh cookie is sent
 });
 
-// Attach access token from localStorage on every request
+// ── Request interceptor — attach in-memory token ──────────────────────────────
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = window.localStorage.getItem("accessToken");
-    if (token) {
-      config.headers = config.headers ?? {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  if (_accessToken) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${_accessToken}`;
   }
   return config;
 });
 
-// On 401, try to refresh access token once, then retry the original request
+// ── Response interceptor — silent token refresh on 401 ───────────────────────
+// When any request gets a 401 we attempt one silent refresh via the HttpOnly
+// cookie. If that succeeds we update the in-memory token and replay the
+// original request. If it fails the user is effectively logged out (the
+// AuthContext will clear its state on the next auth check).
+
+let refreshPromise: Promise<string> | null = null; // deduplicate concurrent refreshes
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If there's no response or it's not 401, just reject
-    if (!error.response || error.response.status !== 401) {
-      return Promise.reject(error);
-    }
-
-    // Avoid infinite loop and skip auth endpoints themselves
+    // Only handle 401s once per request; skip auth endpoints themselves
     if (
+      !error.response ||
+      error.response.status !== 401 ||
       originalRequest._retry ||
       typeof originalRequest.url !== "string" ||
-      originalRequest.url.startsWith("/auth/login") ||
-      originalRequest.url.startsWith("/auth/register") ||
-      originalRequest.url.startsWith("/auth/refresh") ||
-      originalRequest.url.startsWith("/auth/logout")
+      originalRequest.url.includes("/auth/login") ||
+      originalRequest.url.includes("/auth/register") ||
+      originalRequest.url.includes("/auth/refresh") ||
+      originalRequest.url.includes("/auth/logout")
     ) {
       return Promise.reject(error);
     }
@@ -43,26 +58,31 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      const res = await apiClient.post<{
-        user: { id: string; email: string; accessToken?: string };
-        accessToken: string;
-      }>("/auth/refresh");
-
-      const newToken = res.data.accessToken;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("accessToken", newToken);
+      // If multiple requests fail at the same time, deduplicate to a single refresh call
+      if (!refreshPromise) {
+        refreshPromise = apiClient
+          .post<{ accessToken: string }>("/auth/refresh")
+          .then((res) => res.data.accessToken)
+          .finally(() => {
+            refreshPromise = null;
+          });
       }
 
+      const newToken = await refreshPromise;
+      setAccessToken(newToken);
+
+      // Replay the original request with the fresh token
       originalRequest.headers = originalRequest.headers ?? {};
       originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
       return apiClient(originalRequest);
-    } catch (refreshError) {
+    } catch {
+      // Refresh failed — clear in-memory token; the HttpOnly cookie is gone too
+      setAccessToken(null);
+      // Dispatch a custom event so the AuthContext can react (clear user state)
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("accessToken");
+        window.dispatchEvent(new Event("auth:logout"));
       }
-      return Promise.reject(refreshError);
+      return Promise.reject(error);
     }
   },
 );
-
