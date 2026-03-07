@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal, Paperclip, X, FileIcon, Loader2 } from "lucide-react";
+import { SendHorizonal, Paperclip, X, FileIcon, Loader2, Reply, Edit2 } from "lucide-react";
 import { uploadToCloudinary } from "@/lib/upload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Message } from "@/types/messages";
 
 interface MessageInputProps {
     onSend: (
@@ -14,13 +15,26 @@ interface MessageInputProps {
         type?: "text" | "image" | "video" | "file",
         mediaUrl?: string,
         fileName?: string,
-        fileSize?: number
+        fileSize?: number,
+        replyToId?: string
     ) => void;
+    onEdit?: (id: string, content: string) => void;
     onTypingChange: (typing: boolean) => void;
     disabled?: boolean;
+    editingMessage?: Message | null;
+    replyingToMessage?: Message | null;
+    onCancelAction?: () => void;
 }
 
-export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputProps) {
+export function MessageInput({
+    onSend,
+    onEdit,
+    onTypingChange,
+    disabled,
+    editingMessage,
+    replyingToMessage,
+    onCancelAction,
+}: MessageInputProps) {
     const [value, setValue] = useState("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadPreview, setUploadPreview] = useState<string | null>(null);
@@ -44,11 +58,20 @@ export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputP
         }
     };
 
-    const clearSelectedFile = () => {
+    const handleRemoveFile = () => {
         setSelectedFile(null);
         setUploadPreview(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
+
+    // Populate input when editing
+    useEffect(() => {
+        if (editingMessage) {
+            setValue(editingMessage.content);
+        } else if (!replyingToMessage) {
+            setValue("");
+        }
+    }, [editingMessage, replyingToMessage]);
 
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -68,9 +91,16 @@ export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputP
         [onTypingChange],
     );
 
-    const handleSend = useCallback(async () => {
+    const handleSubmit = useCallback(async () => {
         const trimmed = value.trim();
         if ((!trimmed && !selectedFile) || disabled || isUploading) return;
+
+        if (editingMessage) {
+            onEdit?.(editingMessage.id, trimmed);
+            onCancelAction?.();
+            setValue("");
+            return;
+        }
 
         let type: "text" | "image" | "video" | "file" = "text";
         let mediaUrl = "";
@@ -101,19 +131,28 @@ export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputP
             }
         }
 
-        onSend(trimmed, type, mediaUrl, fileName, fileSize);
+        onSend(
+            trimmed,
+            type,
+            mediaUrl,
+            fileName,
+            fileSize,
+            replyingToMessage?.id
+        );
+
         setValue("");
-        clearSelectedFile();
+        handleRemoveFile();
+        onCancelAction?.();
 
         clearTimeout(stopTypingTimeout.current);
         typingRef.current = false;
         onTypingChange(false);
-    }, [value, selectedFile, disabled, isUploading, onSend, onTypingChange]);
+    }, [value, selectedFile, disabled, isUploading, onSend, onEdit, onTypingChange, editingMessage, replyingToMessage, onCancelAction]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleSubmit();
         }
     };
 
@@ -144,8 +183,33 @@ export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputP
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 rounded-full hover:bg-white/10"
-                        onClick={clearSelectedFile}
+                        onClick={handleRemoveFile}
                         disabled={isUploading}
+                    >
+                        <X className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
+
+            {/* Editing / Replying Banner */}
+            {(editingMessage || replyingToMessage) && (
+                <div className="px-4 py-3 flex items-center gap-3 border-b border-primary/20 bg-primary/5 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                        {editingMessage ? <Edit2 className="w-4 h-4 text-primary" /> : <Reply className="w-4 h-4 text-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-primary mb-0.5">
+                            {editingMessage ? "Editing message" : `Replying to message`}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate italic opacity-80">
+                            "{(editingMessage || replyingToMessage)?.content || "Attachment"}"
+                        </p>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full hover:bg-white/10"
+                        onClick={onCancelAction}
                     >
                         <X className="w-4 h-4" />
                     </Button>
@@ -185,7 +249,7 @@ export function MessageInput({ onSend, onTypingChange, disabled }: MessageInputP
 
                 <Button
                     size="icon"
-                    onClick={handleSend}
+                    onClick={handleSubmit}
                     disabled={(!value.trim() && !selectedFile) || disabled || isUploading}
                     className="rounded-full shrink-0 w-10 h-10 shadow-lg shadow-primary/20"
                     aria-label="Send message"

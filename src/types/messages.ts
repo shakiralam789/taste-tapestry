@@ -20,6 +20,9 @@ export interface Message {
   fileName?: string;
   fileSize?: number;
   readBy: string[];
+  isEdited: boolean;
+  isDeleted: boolean;
+  replyToId?: string;
   createdAt: string;
 }
 

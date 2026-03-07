@@ -2,11 +2,19 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Loader2, CheckCheck, FileIcon, Download, PlayCircle } from "lucide-react";
+import { Loader2, CheckCheck, FileIcon, Download, PlayCircle, MoreHorizontal, Reply, Edit2, Trash2 } from "lucide-react";
 import { TypingIndicator } from "./TypingIndicator";
 import { getMessages } from "@/features/messages/api";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Message } from "@/types/messages";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface MessageThreadProps {
     conversationId: string;
@@ -14,6 +22,9 @@ interface MessageThreadProps {
     messages: Message[];
     onOlderMessages: (msgs: Message[]) => void;
     isPartnerTyping: boolean;
+    onReply?: (msg: Message) => void;
+    onEdit?: (msg: Message) => void;
+    onDelete?: (msgId: string) => void;
 }
 
 function dateLabel(dateStr: string): string {
@@ -29,12 +40,16 @@ export function MessageThread({
     messages,
     onOlderMessages,
     isPartnerTyping,
+    onReply,
+    onEdit,
+    onDelete,
 }: MessageThreadProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [loadingOlder, setLoadingOlder] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
 
     const isFirstLoad = useRef(true);
 
@@ -157,58 +172,97 @@ export function MessageThread({
                             >
                                 <div
                                     className={cn(
-                                        "max-w-[75%] rounded-2xl text-sm leading-relaxed break-words",
+                                        "relative group max-w-[75%] rounded-2xl text-sm leading-relaxed break-words transition-all",
                                         isMine
-                                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                                            ? msg.isDeleted ? "bg-muted/30 text-muted-foreground italic border border-white/5" : "bg-primary text-primary-foreground rounded-br-sm shadow-lg shadow-primary/10"
                                             : "bg-muted/60 border border-white/10 rounded-bl-sm",
-                                        msg.type === "text" ? "px-4 py-2" : "p-1",
+                                        msg.type === "text" || msg.isDeleted ? "px-4 py-2" : "p-1",
                                     )}
                                 >
-                                    {msg.type === "image" && (
-                                        <div className="rounded-xl overflow-hidden mb-1">
-                                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
-                                                <img
-                                                    src={msg.mediaUrl}
-                                                    alt="Image attachment"
-                                                    className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
-                                                />
-                                            </a>
+                                    {/* Reply Thread Context */}
+                                    {msg.replyToId && !msg.isDeleted && (
+                                        <div className={cn(
+                                            "mb-2 p-2 rounded-lg text-xs border-l-2 bg-black/10 flex flex-col gap-0.5",
+                                            isMine ? "border-primary-foreground/30" : "border-primary"
+                                        )}>
+                                            {(() => {
+                                                const parent = messages.find(m => m.id === msg.replyToId);
+                                                if (!parent) return <span className="opacity-50 italic">Original message missing</span>;
+                                                return (
+                                                    <>
+                                                        <span className="font-bold opacity-70">
+                                                            {parent.senderId === myUserId ? "You" : "Them"}
+                                                        </span>
+                                                        <span className="truncate opacity-60">
+                                                            {parent.isDeleted ? "This message was deleted" : parent.content || (parent.type !== 'text' ? `Attachment (${parent.type})` : "")}
+                                                        </span>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
 
-                                    {msg.type === "video" && (
-                                        <div className="rounded-xl overflow-hidden mb-1 bg-black/20 aspect-video flex items-center justify-center relative group">
-                                            <video
-                                                src={msg.mediaUrl}
-                                                className="max-h-60 w-full"
-                                                controls
-                                            />
+                                    {!msg.isDeleted ? (
+                                        <>
+                                            {msg.type === "image" && (
+                                                <div className="rounded-xl overflow-hidden mb-1">
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                                        <img
+                                                            src={msg.mediaUrl}
+                                                            alt="Image attachment"
+                                                            className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
+                                                        />
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            {msg.type === "video" && (
+                                                <div className="rounded-xl overflow-hidden mb-1 bg-black/20 aspect-video flex items-center justify-center relative group">
+                                                    <video
+                                                        src={msg.mediaUrl}
+                                                        className="max-h-60 w-full"
+                                                        controls
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {msg.type === "file" && (
+                                                <a
+                                                    href={msg.mediaUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mb-1 min-w-[200px]"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-primary/20">
+                                                        <FileIcon className="w-5 h-5 text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs font-medium truncate">{msg.fileName || "Attachment"}</p>
+                                                        {msg.fileSize && (
+                                                            <p className="text-[10px] opacity-60">
+                                                                {(msg.fileSize / 1024 / 1024).toFixed(2)} MB
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <Download className="w-4 h-4 opacity-40" />
+                                                </a>
+                                            )}
+
+                                            {msg.content && (
+                                                <p className={cn(
+                                                    msg.type !== 'text' ? 'px-3 py-1 pb-2' : '',
+                                                    "whitespace-pre-wrap"
+                                                )}>
+                                                    {msg.content}
+                                                </p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center gap-2 opacity-60">
+                                            <Trash2 className="w-3 h-3" />
+                                            <span>This message was deleted</span>
                                         </div>
                                     )}
-
-                                    {msg.type === "file" && (
-                                        <a
-                                            href={msg.mediaUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mb-1 min-w-[200px]"
-                                        >
-                                            <div className="p-2 rounded-lg bg-primary/20">
-                                                <FileIcon className="w-5 h-5 text-primary" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-medium truncate">{msg.fileName || "Attachment"}</p>
-                                                {msg.fileSize && (
-                                                    <p className="text-[10px] opacity-60">
-                                                        {(msg.fileSize / 1024 / 1024).toFixed(2)} MB
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <Download className="w-4 h-4 opacity-40" />
-                                        </a>
-                                    )}
-
-                                    {msg.content && <p className={msg.type !== 'text' ? 'px-3 py-1 pb-2' : ''}>{msg.content}</p>}
                                     <div
                                         className={cn(
                                             "flex items-center gap-1 mt-0.5 text-[10px] opacity-60",
@@ -218,15 +272,54 @@ export function MessageThread({
                                         <span>
                                             {format(new Date(msg.createdAt), "h:mm a")}
                                         </span>
+                                        {msg.isEdited && !msg.isDeleted && (
+                                            <span className="italic ml-1">(edited)</span>
+                                        )}
                                         {isMine && (
                                             <CheckCheck
                                                 className={cn(
-                                                    "w-3 h-3",
+                                                    "w-3 h-3 ml-0.5",
                                                     isRead ? "text-blue-400" : "opacity-60",
                                                 )}
                                             />
                                         )}
                                     </div>
+
+                                    {/* Action Dropdown Toggle */}
+                                    {!msg.isDeleted && (
+                                        <div className={cn(
+                                            "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                                            isMine ? "-left-12 pr-2" : "-right-12 pl-2"
+                                        )}>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10">
+                                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align={isMine ? "end" : "start"} className="w-32">
+                                                    <DropdownMenuItem onClick={() => onReply?.(msg)}>
+                                                        <Reply className="w-4 h-4 mr-2" /> Reply
+                                                    </DropdownMenuItem>
+                                                    {isMine && (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => onEdit?.(msg)}>
+                                                                <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="text-red-500 focus:text-red-500"
+                                                                onClick={() => {
+                                                                    setMessageToDelete(msg.id);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -243,6 +336,21 @@ export function MessageThread({
             )}
 
             <div ref={bottomRef} />
+
+            <ConfirmDialog
+                open={!!messageToDelete}
+                onOpenChange={(open) => !open && setMessageToDelete(null)}
+                title="Delete Message"
+                description="Are you sure you want to delete this message? This action cannot be undone."
+                confirmText="Delete for everyone"
+                variant="destructive"
+                onConfirm={() => {
+                    if (messageToDelete) {
+                        onDelete?.(messageToDelete);
+                        setMessageToDelete(null);
+                    }
+                }}
+            />
         </div>
     );
 }

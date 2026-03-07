@@ -6,6 +6,7 @@ interface UseMessagesSocketOptions {
   onNewMessage?: (msg: Message) => void;
   onTyping?: (event: TypingEvent) => void;
   onRead?: (event: ReadEvent) => void;
+  onUpdate?: (msg: Message) => void;
   onUserOnline?: (event: OnlineEvent) => void;
   onUserOffline?: (event: OnlineEvent) => void;
 }
@@ -21,12 +22,14 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
     const onNewMessage = (msg: Message) => optionsRef.current.onNewMessage?.(msg);
     const onTyping = (event: TypingEvent) => optionsRef.current.onTyping?.(event);
     const onRead = (event: ReadEvent) => optionsRef.current.onRead?.(event);
+    const onUpdate = (msg: Message) => optionsRef.current.onUpdate?.(msg);
     const onUserOnline = (event: OnlineEvent) => optionsRef.current.onUserOnline?.(event);
     const onUserOffline = (event: OnlineEvent) => optionsRef.current.onUserOffline?.(event);
 
     socket.on("messages:new", onNewMessage);
     socket.on("messages:typing", onTyping);
     socket.on("messages:read", onRead);
+    socket.on("messages:updated", onUpdate);
     socket.on("user:online", onUserOnline);
     socket.on("user:offline", onUserOffline);
 
@@ -34,6 +37,7 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
       socket.off("messages:new", onNewMessage);
       socket.off("messages:typing", onTyping);
       socket.off("messages:read", onRead);
+      socket.off("messages:updated", onUpdate);
       socket.off("user:online", onUserOnline);
       socket.off("user:offline", onUserOffline);
     };
@@ -47,6 +51,7 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
       mediaUrl?: string,
       fileName?: string,
       fileSize?: number,
+      replyToId?: string,
     ) => {
       socket?.emit("messages:send", {
         conversationId,
@@ -55,6 +60,7 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
         mediaUrl,
         fileName,
         fileSize,
+        replyToId,
       });
     },
     [socket],
@@ -67,13 +73,38 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
     [socket],
   );
 
-  const sendRead = useCallback((conversationId: string) => {
-    socket?.emit("messages:read", { conversationId });
-  }, [socket]);
+  const sendRead = useCallback(
+    (conversationId: string) => {
+      socket?.emit("messages:read", { conversationId });
+    },
+    [socket],
+  );
+
+  const editMessage = useCallback(
+    (id: string, content: string) => {
+      socket?.emit("messages:edit", { id, content });
+    },
+    [socket],
+  );
+
+  const deleteMessage = useCallback(
+    (id: string) => {
+      socket?.emit("messages:delete", { id });
+    },
+    [socket],
+  );
 
   const joinConversation = useCallback((conversationId: string) => {
     socket?.emit("messages:join", { conversationId });
   }, [socket]);
 
-  return { connected, sendMessage, sendTyping, sendRead, joinConversation };
+  return {
+    connected,
+    sendMessage,
+    editMessage,
+    deleteMessage,
+    sendTyping,
+    sendRead,
+    joinConversation,
+  };
 }

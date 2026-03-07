@@ -25,6 +25,7 @@ import {
 } from "@/features/messages/api";
 import { searchUsers, getPublicProfile } from "@/features/users/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Conversation, Message } from "@/types/messages";
 import {
   DropdownMenu,
@@ -108,6 +109,8 @@ function ConversationItem({
   const name = partner?.displayName || partner?.username || "Loading…";
   const isMuted = convo.mutedBy.includes(myId);
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   const muteMutation = useMutation({
     mutationFn: () => muteConversation(convo.id),
     onSuccess: () => {
@@ -185,7 +188,7 @@ function ConversationItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push(`/ users / ${partnerId} `)}>
+            <DropdownMenuItem onClick={() => router.push(`/users/${partnerId}`)}>
               <User className="w-4 h-4 mr-2" /> View Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => muteMutation.mutate()}>
@@ -201,16 +204,26 @@ function ConversationItem({
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-500 focus:text-red-500"
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this conversation for you? Older messages will be hidden.")) {
-                  clearMutation.mutate();
-                }
-              }}
+              onClick={() => setIsConfirmOpen(true)}
             >
               <Trash2 className="w-4 h-4 mr-2" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <ConfirmDialog
+          open={isConfirmOpen}
+          onOpenChange={setIsConfirmOpen}
+          title="Delete Conversation"
+          description="Are you sure you want to delete this conversation for you? Older messages will be hidden."
+          confirmText="Clear History"
+          variant="destructive"
+          onConfirm={() => {
+            clearMutation.mutate();
+            setIsConfirmOpen(false);
+          }}
+          isLoading={clearMutation.isPending}
+        />
       </div>
     </div>
   );
@@ -229,6 +242,8 @@ function MessagesPageInner() {
   // Message State
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
 
   // Real-time Presence/Typing
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -250,6 +265,8 @@ function MessagesPageInner() {
   // ── Socket Hooks ────────────────────────────────────────────────────────────
   const {
     sendMessage: socketSendMessage,
+    editMessage,
+    deleteMessage,
     sendTyping,
     sendRead,
     joinConversation,
@@ -283,6 +300,10 @@ function MessagesPageInner() {
             : m,
         ),
       );
+    },
+    onUpdate: (msg) => {
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
+      void qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onUserOnline: (e) =>
       setOnlineUsers((prev) => new Set([...prev, e.userId])),
@@ -408,7 +429,8 @@ function MessagesPageInner() {
       type: "text" | "image" | "video" | "file" = "text",
       mediaUrl = "",
       fileName = "",
-      fileSize = 0
+      fileSize = 0,
+      replyToId = ""
     ) => {
       const trimmedContent = content.trim();
       if (!trimmedContent && !mediaUrl) return;
@@ -439,13 +461,31 @@ function MessagesPageInner() {
         fileName,
         fileSize,
         readBy: [user?.id || ""],
+        isEdited: false,
+        isDeleted: false,
+        replyToId: replyToId || undefined,
         createdAt: new Date().toISOString(),
       };
 
       setMessages((prev) => [...prev, tempMsg]);
-      socketSendMessage(convoId, trimmedContent, type, mediaUrl, fileName, fileSize);
+      socketSendMessage(convoId, trimmedContent, type, mediaUrl, fileName, fileSize, replyToId);
     },
     [activeConvoId, pendingPartner, user, socketSendMessage, qc],
+  );
+
+  const editMessageLocal = useCallback(
+    (id: string, content: string) => {
+      editMessage(id, content);
+      setEditingMessage(null);
+    },
+    [editMessage],
+  );
+
+  const deleteMessageLocal = useCallback(
+    (id: string) => {
+      deleteMessage(id);
+    },
+    [deleteMessage],
   );
 
   const { data: searchResults = [], isFetching: searching } = useQuery({
@@ -619,6 +659,9 @@ function MessagesPageInner() {
                   onOlderMessages={(older) =>
                     setMessages((prev) => [...older, ...prev])
                   }
+                  onReply={setReplyingToMessage}
+                  onEdit={setEditingMessage}
+                  onDelete={deleteMessageLocal}
                 />
               )}
             </div>
@@ -626,9 +669,17 @@ function MessagesPageInner() {
             {/* Input Area */}
             <MessageInput
               onSend={sendMessage}
+              onEdit={editMessageLocal}
               onTypingChange={(typing) =>
                 activeConvoId && sendTyping(activeConvoId, typing)
               }
+              disabled={!user}
+              editingMessage={editingMessage}
+              replyingToMessage={replyingToMessage}
+              onCancelAction={() => {
+                setEditingMessage(null);
+                setReplyingToMessage(null);
+              }}
             />
           </>
         ) : (
