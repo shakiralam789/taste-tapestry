@@ -18,6 +18,7 @@ import {
   Users,
   Rocket,
   Calendar,
+  MessageCircle,
 } from "lucide-react";
 import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
@@ -43,7 +44,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
     displayLocation,
     displaySinceYear,
   } = usePublicProfileInfo(id);
-  
+
 
   const { data: followStatus, isLoading: followStatusLoading } = useQuery({
     queryKey: ["user-follow-status", id],
@@ -99,15 +100,15 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
     );
   }
   console.log(profile);
-  
+
 
   return (
     <>
       <div className="min-h-screen pb-12">
         {/* Banner - same as ProfilePage */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" 
-           style={{
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60"
+            style={{
               backgroundImage:
                 !profileLoading && profile.bannerUrl
                   ? `url(${profile.bannerUrl})`
@@ -162,38 +163,51 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 w-full">
-                {!isOwnProfile && authUser && (
+              <div className="flex flex-col gap-3 w-full">
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  {!isOwnProfile && authUser && (
+                    <Button
+                      className="w-full rounded-xl"
+                      variant={isFollowing ? "outline" : "default"}
+                      size="sm"
+                      disabled={
+                        followStatusLoading ||
+                        followMutation.isPending ||
+                        unfollowMutation.isPending
+                      }
+                      onClick={() =>
+                        isFollowing
+                          ? unfollowMutation.mutate()
+                          : followMutation.mutate()
+                      }
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {followMutation.isPending || unfollowMutation.isPending
+                        ? "..."
+                        : isFollowing
+                          ? "Following"
+                          : "Follow"}
+                    </Button>
+                  )}
                   <Button
                     className="w-full rounded-xl"
-                    variant={isFollowing ? "outline" : "default"}
+                    variant="outline"
                     size="sm"
-                    disabled={
-                      followStatusLoading ||
-                      followMutation.isPending ||
-                      unfollowMutation.isPending
-                    }
-                    onClick={() =>
-                      isFollowing
-                        ? unfollowMutation.mutate()
-                        : followMutation.mutate()
-                    }
                   >
-                    <Users className="w-4 h-4 mr-2" />
-                    {followMutation.isPending || unfollowMutation.isPending
-                      ? "..."
-                      : isFollowing
-                        ? "Following"
-                        : "Follow"}
+                    <Share2 className="w-4 h-4 mr-2" /> Share
                   </Button>
+                </div>
+
+                {!isOwnProfile && authUser && (
+                  <Link href={`/messages?userId=${id}`} className="w-full">
+                    <Button
+                      variant="gradient"
+                      className="w-full rounded-xl py-6 font-semibold"
+                    >
+                      <MessageCircle className="w-5 h-5 mr-2" /> Message {displayName}
+                    </Button>
+                  </Link>
                 )}
-                <Button
-                  className="w-full rounded-xl"
-                  variant="outline"
-                  size="sm"
-                >
-                  <Share2 className="w-4 h-4 mr-2" /> Share
-                </Button>
               </div>
             </motion.div>
 
@@ -255,7 +269,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                 <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
                   {USER_PROFILE_TABS.map((tab) => (
                     <TabsListLink key={tab.value} href={`/users/${id}/${tab.value}`}
-                    className={pathname === `/users/${id}${tab?.value ? `/${tab.value}` : ""}` ? "active" : ""}
+                      className={pathname === `/users/${id}${tab?.value ? `/${tab.value}` : ""}` ? "active" : ""}
                     >
                       <span className="block sm:hidden px-6"><tab.icon className="w-5 h-5" /></span>
                       <span className="hidden sm:block">{tab.label}</span>

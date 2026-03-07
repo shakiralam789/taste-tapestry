@@ -29,6 +29,8 @@ import {
 import { useNotifications } from "@/features/notifications/NotificationsContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
+import { useQuery } from "@tanstack/react-query";
+import { getTotalUnreadCount } from "@/features/messages/api";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -40,11 +42,18 @@ const navItems = [
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user: wishbookUser } = useWishbook();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
-  const { notifications, unreadCount, markAllRead } = useNotifications();
-   const { displayName, displayAvatar } = useProfileInfo();
+  const { notifications, unreadCount: notificationsUnreadCount, markAllRead } = useNotifications();
+  const { displayName, displayAvatar } = useProfileInfo();
+  const { user } = useAuth();
+
+  const { data: messagesUnreadCount = 0 } = useQuery({
+    queryKey: ["messages", "unread-count"],
+    queryFn: getTotalUnreadCount,
+    enabled: !!user,
+    refetchInterval: 30_000,
+  });
+
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 sm:px-6">
@@ -69,17 +78,16 @@ export function Navbar() {
             {navItems.map((item) => {
               const isActive = pathname === item.path;
               return (
-                  <Button
-                    key={item.path}
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    className={`gap-2 ${
-                      isActive ? "bg-primary text-primary-foreground" : ""
+                <Button
+                  key={item.path}
+                  variant={isActive ? "default" : "ghost"}
+                  size="sm"
+                  className={`gap-2 ${isActive ? "bg-primary text-primary-foreground" : ""
                     }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </Button>
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
               );
             })}
           </div>
@@ -91,9 +99,9 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
+                  {notificationsUnreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center">
-                      {unreadCount > 9 ? "9+" : unreadCount}
+                      {notificationsUnreadCount > 9 ? "9+" : notificationsUnreadCount}
                     </span>
                   )}
                 </Button>
@@ -132,9 +140,8 @@ export function Navbar() {
                       ).map((n) => (
                         <DropdownMenuItem
                           key={n.id}
-                          className={`flex items-center gap-3 ${
-                            !n.read ? "" : ""
-                          }`}
+                          className={`flex items-center gap-3 ${!n.read ? "" : ""
+                            }`}
                         >
                           {n.actorId && (
                             <button
@@ -196,8 +203,13 @@ export function Navbar() {
 
             {/* Messages */}
             <Link href="/messages">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative">
                 <MessageCircle className="w-5 h-5" />
+                {messagesUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center">
+                    {messagesUnreadCount > 9 ? "9+" : messagesUnreadCount}
+                  </span>
+                )}
               </Button>
             </Link>
 
