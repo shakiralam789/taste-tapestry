@@ -6,6 +6,8 @@ export interface Conversation {
   // Enriched by backend
   lastMessage: Message | null;
   unreadCount: number;
+  mutedBy: string[];
+  clearedAt: Record<string, string>;
 }
 
 export interface Message {

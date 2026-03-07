@@ -38,3 +38,17 @@ export async function getTotalUnreadCount(): Promise<number> {
   );
   return data.count;
 }
+
+export async function clearConversation(id: string): Promise<{ success: boolean }> {
+  const { data } = await apiClient.post<{ success: boolean }>(
+    `/messages/conversations/${id}/clear`,
+  );
+  return data;
+}
+
+export async function muteConversation(id: string): Promise<{ isMuted: boolean }> {
+  const { data } = await apiClient.post<{ isMuted: boolean }>(
+    `/messages/conversations/${id}/mute`,
+  );
+  return data;
+}

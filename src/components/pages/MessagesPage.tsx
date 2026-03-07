@@ -15,6 +15,8 @@ import {
   getConversations,
   getMessages,
   getOrCreateConversation,
+  muteConversation,
+  clearConversation,
 } from "@/features/messages/api";
 import { searchUsers, getPublicProfile } from "@/features/users/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,11 +28,23 @@ import {
   X,
   Loader2,
   Send,
+  MoreVertical,
+  BellOff,
+  User,
+  Trash2,
+  Bell,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format, isToday, isYesterday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ClientOnly } from "@/components/common/ClientOnly";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ── Types & Helpers ────────────────────────────────────────────────────────────
 
@@ -73,6 +87,8 @@ function ConversationItem({
   isOnline: boolean;
 }) {
   const partnerId = getPartnerId(convo, myId);
+  const qc = useQueryClient();
+  const router = useRouter();
 
   const { data: partner } = useQuery({
     queryKey: ["user-profile", partnerId],
@@ -81,47 +97,113 @@ function ConversationItem({
   });
 
   const name = partner?.displayName || partner?.username || "Loading…";
+  const isMuted = convo.mutedBy.includes(myId);
+
+  const muteMutation = useMutation({
+    mutationFn: () => muteConversation(convo.id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: () => clearConversation(convo.id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["conversations"] });
+      void qc.invalidateQueries({ queryKey: ["messages", "unread-count"] });
+      if (isActive) {
+        onClick(); // Deselect if clearing active
+      }
+      toast.success("Conversation history cleared");
+    },
+  });
+
+  const handleAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
-        isActive
-          ? "bg-primary/10 border border-primary/20"
-          : "hover:bg-white/5 border border-transparent",
-      )}
-    >
-      <div className="relative shrink-0">
-        <Avatar className="w-12 h-12">
-          {partner?.avatar && <AvatarImage src={partner.avatar} />}
-          <AvatarFallback>{initials(name)}</AvatarFallback>
-        </Avatar>
-        {isOnline && (
-          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
+    <div className="relative group/item">
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
+          isActive
+            ? "bg-primary/10 border border-primary/20"
+            : "hover:bg-white/5 border border-transparent",
         )}
-      </div>
-      <div className="flex-1 min-w-0 text-left">
-        <div className="flex justify-between items-baseline gap-2 mb-0.5">
-          <p className="text-sm font-medium truncate">{name}</p>
-          {convo.lastMessage && (
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              {shortTime(convo.lastMessage.createdAt)}
-            </span>
+      >
+        <div className="relative shrink-0">
+          <Avatar className="w-12 h-12">
+            {partner?.avatar && <AvatarImage src={partner.avatar} />}
+            <AvatarFallback>{initials(name)}</AvatarFallback>
+          </Avatar>
+          {isOnline && (
+            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
           )}
         </div>
-        <div className="flex justify-between items-center gap-2">
-          <p className="text-xs text-muted-foreground truncate">
-            {lastMessagePreview(convo.lastMessage)}
-          </p>
-          {convo.unreadCount > 0 && (
-            <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-              {convo.unreadCount}
-            </span>
-          )}
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-sm font-medium truncate">{name}</p>
+              {isMuted && <BellOff className="w-3 h-3 text-muted-foreground/60" />}
+            </div>
+            {convo.lastMessage && (
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                {shortTime(convo.lastMessage.createdAt)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground truncate">
+              {lastMessagePreview(convo.lastMessage)}
+            </p>
+            {convo.unreadCount > 0 && (
+              <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {convo.unreadCount}
+              </span>
+            )}
+          </div>
         </div>
+      </button>
+
+      {/* Actions dropdown */}
+      <div className="absolute top-1/2 -translate-y-1/2 right-2 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={handleAction}>
+            <Button variant="ghost" size="icon" className="sm:h-7 sm:w-7 rounded-full hover:bg-white/10">
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => router.push(`/users/${partnerId}`)}>
+              <User className="w-4 h-4 mr-2" /> View Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => muteMutation.mutate()}>
+              {isMuted ? (
+                <>
+                  <Bell className="w-4 h-4 mr-2" /> Unmute
+                </>
+              ) : (
+                <>
+                  <BellOff className="w-4 h-4 mr-2" /> Mute
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-500 focus:text-red-500"
+              onClick={() => {
+                if (confirm("Are you sure you want to delete this conversation for you? Older messages will be hidden.")) {
+                  clearMutation.mutate();
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -151,6 +233,7 @@ function MessagesPageInner() {
   const { data: conversations = [], isLoading: convosLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: getConversations,
+    staleTime: 10_000,
     refetchInterval: 30_000,
     enabled: !!user,
   });
@@ -175,8 +258,6 @@ function MessagesPageInner() {
         if (filtered.some((m) => m.id === msg.id)) return filtered;
         return [...filtered, msg];
       });
-      void qc.invalidateQueries({ queryKey: ["conversations"] });
-      void qc.invalidateQueries({ queryKey: ["messages", "unread-count"] });
     },
     onTyping: (event) => {
       if (event.userId === user?.id) return;
@@ -206,6 +287,7 @@ function MessagesPageInner() {
 
   const searchParams = useSearchParams();
   const targetUserId = searchParams.get("userId");
+  const router = useRouter();
 
   // Handle incoming userId from query params (e.g. from Profile Message button)
   useEffect(() => {
@@ -214,8 +296,12 @@ function MessagesPageInner() {
         c.participantIds.includes(targetUserId),
       );
       if (existing) {
-        setActiveConvoId(existing.id);
-        setPendingPartner(null);
+        if (activeConvoId !== existing.id) {
+          setActiveConvoId(existing.id);
+          setPendingPartner(null);
+        }
+        // Clear param after selection so user can click other items
+        router.replace("/messages", { scroll: false });
       } else {
         // If not in current list, fetch profile and set as pending
         getPublicProfile(targetUserId).then((p) => {
@@ -227,36 +313,45 @@ function MessagesPageInner() {
               avatar: p.avatar,
             });
             setActiveConvoId(null);
+            // Clear param
+            router.replace("/messages", { scroll: false });
           }
         });
       }
     }
-  }, [targetUserId, user, conversations]);
+  }, [targetUserId, user, conversations, activeConvoId, router]);
 
   // ── Load messages when active conversation changes ────────────────────────
   useEffect(() => {
+    let ignore = false;
     if (!activeConvoId) {
       setMessages([]);
+      setLoadingMessages(false);
       return;
     }
+
     setLoadingMessages(true);
-    getMessages(activeConvoId, 20)
-      .then((msgs) => setMessages(msgs))
-      .catch(() => setMessages([]))
-      .finally(() => setLoadingMessages(false));
-
     joinConversation(activeConvoId);
-    sendRead(activeConvoId);
-  }, [activeConvoId, joinConversation, sendRead]);
 
-  // Mark read
-  useEffect(() => {
-    if (activeConvoId && messages.length > 0) {
-      sendRead(activeConvoId);
-      void qc.invalidateQueries({ queryKey: ["conversations"] });
-      void qc.invalidateQueries({ queryKey: ["messages", "unread-count"] });
-    }
-  }, [activeConvoId, messages.length, sendRead, qc]);
+    getMessages(activeConvoId, 20)
+      .then((msgs) => {
+        if (ignore) return;
+        setMessages(msgs);
+        // Mark as read after messages are loaded
+        sendRead(activeConvoId);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error("Failed to load messages:", err);
+        setMessages([]);
+      })
+      .finally(() => {
+        if (ignore) return;
+        setLoadingMessages(false);
+      });
+
+    return () => { ignore = true; };
+  }, [activeConvoId, joinConversation, sendRead]);
 
   // ── Partner Info Fetching for Header ────────────────────────────────────────
 

@@ -6,6 +6,7 @@ import {
     useEffect,
     useRef,
     useState,
+    useMemo,
     type ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
@@ -82,8 +83,13 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
         };
     }, [user, queryClient]);
 
+    const value = useMemo(() => ({
+        socket: socketRef.current,
+        connected
+    }), [connected]);
+
     return (
-        <MessagesContext.Provider value={{ socket: socketRef.current, connected }}>
+        <MessagesContext.Provider value={value}>
             {children}
         </MessagesContext.Provider>
     );
