@@ -22,6 +22,7 @@ export interface PublicProfile {
   createdAt: string;
   followersCount?: number;
   followingCount?: number;
+  bannerUrl?: string;
 }
 
 export async function searchUsers(

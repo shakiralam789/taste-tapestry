@@ -43,6 +43,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
     displayLocation,
     displaySinceYear,
   } = usePublicProfileInfo(id);
+  
 
   const { data: followStatus, isLoading: followStatusLoading } = useQuery({
     queryKey: ["user-follow-status", id],
@@ -97,13 +98,22 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
       </>
     );
   }
+  console.log(profile);
+  
 
   return (
     <>
       <div className="min-h-screen pb-12">
         {/* Banner - same as ProfilePage */}
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" />
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop')] bg-cover bg-center opacity-60" 
+           style={{
+              backgroundImage:
+                !profileLoading && profile.bannerUrl
+                  ? `url(${profile.bannerUrl})`
+                  : 'https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop',
+            }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 mix-blend-overlay" />
         </div>
