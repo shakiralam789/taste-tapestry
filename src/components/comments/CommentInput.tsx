@@ -9,24 +9,28 @@ import { useQuery } from "@tanstack/react-query";
 import { searchUsers } from "@/features/users/api";
 import { Send, Smile, AtSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface CommentInputProps {
     onSubmit: (content: string) => void;
     placeholder?: string;
     autoFocus?: boolean;
     className?: string;
+    isSmall?: boolean;
 }
 
-export function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus, className }: CommentInputProps) {
+export function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus, className, isSmall = false }: CommentInputProps) {
     const [content, setContent] = useState("");
     const [mentionSearch, setMentionSearch] = useState("");
     const [isMentionOpen, setIsMentionOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [cursorPos, setCursorPos] = useState(0);
 
+    const debouncedSearch = useDebounce(mentionSearch, 300);
+
     const { data: users = [] } = useQuery({
-        queryKey: ["users-search", mentionSearch],
-        queryFn: () => searchUsers(mentionSearch),
+        queryKey: ["users-search", debouncedSearch],
+        queryFn: () => searchUsers(debouncedSearch),
         enabled: isMentionOpen,
     });
 
@@ -79,42 +83,91 @@ export function CommentInput({ onSubmit, placeholder = "Write a comment...", aut
         }
     };
 
+    const insertEmoji = (emoji: string) => {
+        const position = textareaRef.current?.selectionStart || content.length;
+        const before = content.slice(0, position);
+        const after = content.slice(position);
+        setContent(`${before}${emoji}${after}`);
+        textareaRef.current?.focus();
+    };
+
+    const popularEmojis = ["😀", "😂", "🥰", "😍", "🤩", "😊", "🤔", "🧐", "🙄", "😤", "😭", "😮", "😴", "😋", "😎", "✨", "🔥", "❤️", "👍", "🙌", "🎉", "💯", "🚀", "🌈"];
+
     return (
         <div className={cn("relative flex flex-col gap-2", className)}>
-            <div className="relative">
+            <div className="relative flex flex-col bg-background border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <textarea
                     ref={textareaRef}
                     value={content}
                     onChange={handleInput}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
-                    className="w-full min-h-[80px] p-3 pt-4 bg-background border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                    data-gramm="false"
+                    className={cn(
+                        "w-full p-3 bg-transparent resize-none focus:outline-none text-sm",
+                        isSmall ? "min-h-[45px]" : "min-h-[80px]"
+                    )}
                 />
 
-                <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                <div className="flex items-center justify-between px-2 pb-2 gap-1 border-t border-border/10">
+                    <div className="flex items-center">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => {
+                                setMentionSearch("");
+                                setIsMentionOpen(true);
+                            }}
+                        >
+                            <AtSign className="w-3.5 h-3.5" />
+                        </Button>
+
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                >
+                                    <Smile className="w-3.5 h-3.5" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" align="start" className="w-64 p-2 bg-background border border-border shadow-xl rounded-xl">
+                                <div className="grid grid-cols-8 gap-1">
+                                    {popularEmojis.map((emoji) => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => insertEmoji(emoji)}
+                                            className="text-lg p-1 hover:bg-muted rounded transition-colors"
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
                     <Button
-                        type="button"
-                        variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground"
-                        onClick={() => setIsMentionOpen(true)}
-                    >
-                        <AtSign className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
+                        className={cn(
+                            "rounded-lg transition-all",
+                            isSmall ? "h-7 w-7" : "h-8 w-8"
+                        )}
                         disabled={!content.trim()}
                         onClick={() => handleSubmit()}
                     >
-                        <Send className="w-4 h-4" />
+                        <Send className={cn(isSmall ? "w-3 h-3" : "w-4 h-4")} />
                     </Button>
                 </div>
             </div>
 
             {isMentionOpen && (
                 <div className="absolute z-50 bottom-full mb-2 left-0 w-64 bg-background border border-border shadow-xl rounded-xl overflow-hidden">
-                    <Command className="rounded-xl border-none">
+                    <Command className="rounded-xl border-none" shouldFilter={false}>
                         <CommandInput
                             placeholder="Search user..."
                             value={mentionSearch}

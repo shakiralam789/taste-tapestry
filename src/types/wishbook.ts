@@ -182,6 +182,7 @@ export interface TimeCapsule {
   /** Social love reaction metadata */
   loveCount?: number;
   lovedByMe?: boolean;
+  commentCount?: number;
   createdAt: Date;
 }
 

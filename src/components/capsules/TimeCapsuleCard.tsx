@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
+import { CommentSection } from "@/components/comments/CommentSection";
+import { cn } from "@/lib/utils";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -58,6 +60,8 @@ export function TimeCapsuleCard({
   const queryClient = useQueryClient();
   const [loved, setLoved] = useState(capsule.lovedByMe ?? false);
   const [loveCount, setLoveCount] = useState(capsule.loveCount ?? 0);
+  const [commentCount, setCommentCount] = useState(capsule.commentCount ?? 0);
+  const [showComments, setShowComments] = useState(false);
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =
@@ -66,7 +70,8 @@ export function TimeCapsuleCard({
   useEffect(() => {
     setLoved(capsule.lovedByMe ?? false);
     setLoveCount(capsule.loveCount ?? 0);
-  }, [capsule.lovedByMe, capsule.loveCount]);
+    setCommentCount(capsule.commentCount ?? 0);
+  }, [capsule.lovedByMe, capsule.loveCount, capsule.commentCount]);
 
   const loveMutation = useMutation({
     mutationFn: () => toggleCapsuleLove(capsule.id),
@@ -247,14 +252,17 @@ export function TimeCapsuleCard({
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 px-2 rounded-full group"
+            className={cn(
+              "inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 px-2 py-1 rounded-full group transition-colors",
+              showComments && "text-primary bg-primary/10"
+            )}
             onClick={(e) => {
               e.stopPropagation();
-              onClick?.();
+              setShowComments(!showComments);
             }}
           >
-            <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            <span>Comment</span>
+            <MessageCircle className={cn("w-4 h-4 group-hover:scale-110 transition-transform", showComments && "fill-current")} />
+            <span>{commentCount > 0 ? `${commentCount} Comment${commentCount > 1 ? 's' : ''}` : 'Comment'}</span>
           </button>
 
           <div
@@ -266,6 +274,13 @@ export function TimeCapsuleCard({
 
           </div>
         </div>
+
+        {/* Inline Comment Section */}
+        {showComments && (
+          <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+            <CommentSection capsuleId={capsule.id} isInline />
+          </div>
+        )}
       </div>
     </motion.div>
   );
