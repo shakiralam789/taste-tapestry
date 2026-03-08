@@ -2,23 +2,19 @@
 
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+
 import { Sidebar } from "./Sidebar";
 import { RightSidebar } from "./RightSidebar";
 import { MobileNav } from "./MobileNav";
 import { Navbar } from "./Navbar";
+
 import { cn } from "@/lib/utils";
-import { useNotificationsSocket } from "@/features/notifications/useNotificationsSocket";
 import { NotificationsProvider } from "@/features/notifications/NotificationsContext";
 import { MessagesProvider } from "@/features/messages/MessagesContext";
 
 interface LayoutProps {
   children: ReactNode;
   className?: string;
-}
-
-function NotificationsSocketRoot() {
-  useNotificationsSocket();
-  return null;
 }
 
 export function Layout({ children, className }: LayoutProps) {
@@ -40,8 +36,6 @@ export function Layout({ children, className }: LayoutProps) {
         >
           {/* Top navigation */}
           <Navbar />
-
-          <NotificationsSocketRoot />
 
           {/* Left sidebar */}
           {isClient && <Sidebar />}

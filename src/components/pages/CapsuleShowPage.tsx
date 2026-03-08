@@ -19,10 +19,12 @@ import {
   Pencil,
   Heart,
   Play,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VideoThumbnail } from "@/components/common/VideoThumbnail";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
+import { CommentSection } from "@/components/comments/CommentSection";
 
 function getFavoritesForCapsule(
   capsule: TimeCapsule,
@@ -41,9 +43,9 @@ export default function CapsuleShowPage() {
   const queryClient = useQueryClient();
   const [preview, setPreview] = useState<
     | {
-        type: "image" | "video";
-        src: string;
-      }
+      type: "image" | "video";
+      src: string;
+    }
     | null
   >(null);
 
@@ -87,10 +89,10 @@ export default function CapsuleShowPage() {
         (old) =>
           old
             ? {
-                ...old,
-                lovedByMe: loved,
-                loveCount: count,
-              }
+              ...old,
+              lovedByMe: loved,
+              loveCount: count,
+            }
             : old,
       );
       queryClient.setQueriesData<TimeCapsule[] | undefined>(
@@ -98,8 +100,8 @@ export default function CapsuleShowPage() {
         (old) =>
           old
             ? old.map((c) =>
-                c.id === id ? { ...c, lovedByMe: loved, loveCount: count } : c,
-              )
+              c.id === id ? { ...c, lovedByMe: loved, loveCount: count } : c,
+            )
             : old,
       );
     },
@@ -123,18 +125,18 @@ export default function CapsuleShowPage() {
         (old) =>
           old
             ? old.map((c) =>
-                c.id === id
-                  ? {
-                      ...c,
-                      image:
-                        vars.kind === "poster" ? vars.src : c.image ?? vars.src,
-                      bannerImage:
-                        vars.kind === "banner"
-                          ? vars.src
-                          : c.bannerImage ?? vars.src,
-                    }
-                  : c,
-              )
+              c.id === id
+                ? {
+                  ...c,
+                  image:
+                    vars.kind === "poster" ? vars.src : c.image ?? vars.src,
+                  bannerImage:
+                    vars.kind === "banner"
+                      ? vars.src
+                      : c.bannerImage ?? vars.src,
+                }
+                : c,
+            )
             : old,
       );
       toast.success(
@@ -298,13 +300,22 @@ export default function CapsuleShowPage() {
                 onClick={() => loveMutation.mutate()}
               >
                 <Heart
-                  className={`w-3.5 h-3.5 ${
-                    loved
-                      ? "fill-red-500 text-red-500"
-                      : "fill-white/20"
-                  }`}
+                  className={`w-3.5 h-3.5 ${loved
+                    ? "fill-red-500 text-red-500"
+                    : "fill-white/20"
+                    }`}
                 />
                 <span>{loveCount}</span>
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 border border-white/10 hover:border-primary/60 hover:text-primary transition-colors text-xs"
+                onClick={() => {
+                  document.getElementById("comments-section")?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Comment</span>
               </button>
             </div>
           </div>
@@ -314,134 +325,130 @@ export default function CapsuleShowPage() {
           {/* Left: media + favorites */}
           <div className="space-y-6">
             {/* Gallery */}
-            {(safeImages.length || safeVideos.length) ?  <div className="elevated-card md:p-4">
-                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  Visual memories
-                </h2>
-                <div className="columns-2 md:columns-3 gap-0 [column-fill:_balance]">
-                  {safeImages.map((src, idx) => (
-                    <div
-                      key={`img-${idx}-${src}`}
-                      className="relative break-inside-avoid overflow-hidden cursor-pointer group"
-                      onClick={() =>
-                        setPreview({
-                          type: "image",
-                          src,
-                        })
-                      }
-                    >
-                      <img
-                        src={src}
-                        alt=""
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                      {isOwner && (
-                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
-                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
-                            <button
-                              type="button"
-                              className={`font-semibold px-1.5 py-0.5 rounded-full ${
-                                capsule.image === src
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-white/80 hover:bg-white/10"
+            {(safeImages.length || safeVideos.length) ? <div className="elevated-card md:p-4">
+              <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" />
+                Visual memories
+              </h2>
+              <div className="columns-2 md:columns-3 gap-0 [column-fill:_balance]">
+                {safeImages.map((src, idx) => (
+                  <div
+                    key={`img-${idx}-${src}`}
+                    className="relative break-inside-avoid overflow-hidden cursor-pointer group"
+                    onClick={() =>
+                      setPreview({
+                        type: "image",
+                        src,
+                      })
+                    }
+                  >
+                    <img
+                      src={src}
+                      alt=""
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    {isOwner && (
+                      <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
+                        <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
+                          <button
+                            type="button"
+                            className={`font-semibold px-1.5 py-0.5 rounded-full ${capsule.image === src
+                              ? "bg-primary text-primary-foreground"
+                              : "text-white/80 hover:bg-white/10"
                               }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverMutation.mutate({
-                                  kind: "poster",
-                                  src,
-                                });
-                              }}
-                            >
-                              Poster
-                            </button>
-                            <span className="text-white/30">·</span>
-                            <button
-                              type="button"
-                              className={`font-semibold px-1.5 py-0.5 rounded-full ${
-                                capsule.bannerImage === src
-                                  ? "bg-primary/80 text-primary-foreground"
-                                  : "text-white/80 hover:bg-white/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverMutation.mutate({
+                                kind: "poster",
+                                src,
+                              });
+                            }}
+                          >
+                            Poster
+                          </button>
+                          <span className="text-white/30">·</span>
+                          <button
+                            type="button"
+                            className={`font-semibold px-1.5 py-0.5 rounded-full ${capsule.bannerImage === src
+                              ? "bg-primary/80 text-primary-foreground"
+                              : "text-white/80 hover:bg-white/10"
                               }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverMutation.mutate({
-                                  kind: "banner",
-                                  src,
-                                });
-                              }}
-                            >
-                              Banner
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {safeVideos.map((src, idx) => (
-                    <div
-                      key={`vid-${idx}-${src}`}
-                      className="relative break-inside-avoid overflow-hidden bg-black/60 cursor-pointer group"
-                      onClick={() =>
-                        setPreview({
-                          type: "video",
-                          src,
-                        })
-                      }
-                    >
-                      <VideoThumbnail src={src} className="w-full" />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="rounded-full bg-black/60 p-3 text-white border border-white/20">
-                          <Play className="w-6 h-6 fill-current pl-0.5" />
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverMutation.mutate({
+                                kind: "banner",
+                                src,
+                              });
+                            }}
+                          >
+                            Banner
+                          </button>
                         </div>
                       </div>
-                      {isOwner && (
-                        <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
-                          <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
-                            <button
-                              type="button"
-                              className={`px-1.5 py-0.5 rounded-full ${
-                                capsule.image === src
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-white/80 hover:bg-white/10"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverMutation.mutate({
-                                  kind: "poster",
-                                  src,
-                                });
-                              }}
-                            >
-                              Poster
-                            </button>
-                            <span className="text-white/30">·</span>
-                            <button
-                              type="button"
-                              className={`px-1.5 py-0.5 rounded-full ${
-                                capsule.bannerImage === src
-                                  ? "bg-primary/80 text-primary-foreground"
-                                  : "text-white/80 hover:bg-white/10"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverMutation.mutate({
-                                  kind: "banner",
-                                  src,
-                                });
-                              }}
-                            >
-                              Banner
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                    )}
+                  </div>
+                ))}
+                {safeVideos.map((src, idx) => (
+                  <div
+                    key={`vid-${idx}-${src}`}
+                    className="relative break-inside-avoid overflow-hidden bg-black/60 cursor-pointer group"
+                    onClick={() =>
+                      setPreview({
+                        type: "video",
+                        src,
+                      })
+                    }
+                  >
+                    <VideoThumbnail src={src} className="w-full" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="rounded-full bg-black/60 p-3 text-white border border-white/20">
+                        <Play className="w-6 h-6 fill-current pl-0.5" />
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div> : null}
+                    {isOwner && (
+                      <div className="absolute inset-x-0 bottom-1 z-10 flex justify-end px-2 transition-opacity">
+                        <div className="inline-flex items-center gap-1 rounded-full bg-black/70 px-0.5 py-0.5 text-[10px] border border-white/20">
+                          <button
+                            type="button"
+                            className={`px-1.5 py-0.5 rounded-full ${capsule.image === src
+                              ? "bg-primary text-primary-foreground"
+                              : "text-white/80 hover:bg-white/10"
+                              }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverMutation.mutate({
+                                kind: "poster",
+                                src,
+                              });
+                            }}
+                          >
+                            Poster
+                          </button>
+                          <span className="text-white/30">·</span>
+                          <button
+                            type="button"
+                            className={`px-1.5 py-0.5 rounded-full ${capsule.bannerImage === src
+                              ? "bg-primary/80 text-primary-foreground"
+                              : "text-white/80 hover:bg-white/10"
+                              }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverMutation.mutate({
+                                kind: "banner",
+                                src,
+                              });
+                            }}
+                          >
+                            Banner
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div> : null}
 
             {/* Favorites timeline */}
             <div className="elevated-card md:p-4">
@@ -541,6 +548,10 @@ export default function CapsuleShowPage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div id="comments-section" className="container mx-auto px-4 mt-12 pt-12 border-t border-white/5">
+          <CommentSection capsuleId={id} />
         </div>
       </div>
 

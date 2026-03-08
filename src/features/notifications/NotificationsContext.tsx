@@ -4,94 +4,124 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
-
-export type AppNotification = {
-  id: string;
-  type: "follow" | "favorite_love" | "capsule_love" | "other";
-  title: string;
-  description?: string;
-  actorId?: string;
-  actorDisplayName?: string;
-  actorAvatar?: string | null;
-  createdAt: Date;
-  read: boolean;
-};
+import { Notification, NotificationType } from "@/types/notifications";
+import { getNotifications, getUnreadNotificationsCount, markAllNotificationsAsRead, markNotificationAsRead } from "./api";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNotificationsSocket } from "./useNotificationsSocket";
+import { toast } from "sonner";
 
 type NotificationsContextValue = {
-  notifications: AppNotification[];
+  notifications: Notification[];
   unreadCount: number;
-  addNotification: (n: Omit<AppNotification, "id" | "createdAt" | "read"> & { createdAt?: Date }) => void;
-  markAllRead: () => void;
+  isLoading: boolean;
+  markAsRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
+  refresh: () => void;
+  joinCapsule: (id: string) => void;
+  leaveCapsule: (id: string) => void;
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = window.localStorage.getItem("wishbook_notifications");
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as Array<
-        Omit<AppNotification, "createdAt"> & { createdAt: string }
-      >;
-      return parsed.map((n) => ({
-        ...n,
-        createdAt: new Date(n.createdAt),
-      }));
-    } catch {
-      return [];
-    }
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { socket, joinCapsule, leaveCapsule } = useNotificationsSocket();
+
+  const { data: notifications = [], isLoading, refetch } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => getNotifications(50),
+    enabled: !!user,
   });
 
-  const addNotification: NotificationsContextValue["addNotification"] = (n) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const createdAt = n.createdAt ?? new Date();
-    setNotifications((prev) => {
-      const next: AppNotification[] = [
-        { ...n, id, createdAt, read: false },
-        ...prev,
-      ];
-      // keep only latest 100 in memory/storage
-      return next.slice(0, 100);
-    });
-  };
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: getUnreadNotificationsCount,
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications],
-  );
-
-  // Persist to localStorage whenever notifications change
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const serializable = notifications.map((n) => ({
-        ...n,
-        createdAt: n.createdAt.toISOString(),
-      }));
-      window.localStorage.setItem(
-        "wishbook_notifications",
-        JSON.stringify(serializable),
-      );
-    } catch {
-      // ignore storage errors
-    }
-  }, [notifications]);
+    if (!socket || !user) return;
+
+    const handleNotification = (payload: any) => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+
+      switch (payload.type) {
+        case NotificationType.MENTION:
+          toast(`@${payload.actor?.username || 'Someone'} mentioned you`);
+          break;
+        case NotificationType.NEW_COMMENT:
+          toast(`${payload.actor?.username || 'Someone'} commented on your capsule`);
+          break;
+        case NotificationType.NEW_REPLY:
+          toast(`${payload.actor?.username || 'Someone'} replied to your comment`);
+          break;
+        case NotificationType.REACTION:
+          toast(`${payload.actor?.username || 'Someone'} reacted to your content`);
+          break;
+        default:
+          toast("New activity notification");
+      }
+    };
+
+    const handleCapsuleUpdate = (payload: any) => {
+      if (payload.type === 'comment' || payload.type === 'reaction' || payload.type === 'love') {
+        void queryClient.invalidateQueries({ queryKey: ["comments", payload.capsuleId] });
+        if (payload.capsuleId) {
+          void queryClient.invalidateQueries({ queryKey: ["capsule", payload.capsuleId] });
+        }
+        void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      }
+    };
+
+    socket.on("notification", handleNotification);
+    socket.on("capsule_update", handleCapsuleUpdate);
+
+    return () => {
+      socket.off("notification", handleNotification);
+      socket.off("capsule_update", handleCapsuleUpdate);
+    };
+  }, [socket, user, queryClient]);
+
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+
+  const unreadCount = unreadData?.count ?? 0;
 
   const value: NotificationsContextValue = {
     notifications,
     unreadCount,
-    addNotification,
-    markAllRead,
+    isLoading,
+    markAsRead: async (id) => {
+      await markReadMutation.mutateAsync(id);
+    },
+    markAllRead: async () => {
+      await markAllReadMutation.mutateAsync();
+    },
+    refresh: () => {
+      void refetch();
+    },
+    joinCapsule,
+    leaveCapsule,
   };
 
   return (
@@ -108,4 +138,3 @@ export function useNotifications(): NotificationsContextValue {
   }
   return ctx;
 }
-

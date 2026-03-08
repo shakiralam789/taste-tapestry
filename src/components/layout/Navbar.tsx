@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useWishbook } from "@/contexts/WishbookContext";
+import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +45,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showAllNotifications, setShowAllNotifications] = useState(false);
-  const { notifications, unreadCount: notificationsUnreadCount, markAllRead } = useNotifications();
+  const { notifications, unreadCount: notificationsUnreadCount, markAllRead, markAsRead } = useNotifications();
   const { displayName, displayAvatar } = useProfileInfo();
   const { user } = useAuth();
 
@@ -82,11 +84,14 @@ export function Navbar() {
                   key={item.path}
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
+                  asChild
                   className={`gap-2 ${isActive ? "bg-primary text-primary-foreground" : ""
                     }`}
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
+                  <Link href={item.path}>
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </Link>
                 </Button>
               );
             })}
@@ -100,7 +105,7 @@ export function Navbar() {
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
                   {notificationsUnreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center border-2 border-background">
                       {notificationsUnreadCount > 9 ? "9+" : notificationsUnreadCount}
                     </span>
                   )}
@@ -116,12 +121,12 @@ export function Navbar() {
                   style={{ maxHeight: "calc(100vh - 70px)" }}
                 >
                   <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
-                    <span>Notifications</span>
+                    <span className="text-sm font-semibold">Notifications</span>
                     {notifications.length > 0 && (
                       <button
                         type="button"
-                        onClick={markAllRead}
-                        className="text-xs text-primary hover:underline"
+                        onClick={() => markAllRead()}
+                        className="text-xs text-primary hover:underline font-medium"
                       >
                         Mark all as read
                       </button>
@@ -129,8 +134,9 @@ export function Navbar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {notifications.length === 0 ? (
-                    <div className="px-3 py-6 text-xs text-muted-foreground text-center">
-                      No notifications yet.
+                    <div className="px-4 py-8 text-center">
+                      <Bell className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">No notifications yet.</p>
                     </div>
                   ) : (
                     <>
@@ -140,57 +146,64 @@ export function Navbar() {
                       ).map((n) => (
                         <DropdownMenuItem
                           key={n.id}
-                          className={`flex items-center gap-3 ${!n.read ? "" : ""
-                            }`}
+                          onClick={() => markAsRead(n.id)}
+                          className={cn(
+                            "flex items-start gap-3 p-3 cursor-pointer transition-colors",
+                            !n.isRead ? "bg-primary/5" : "opacity-70"
+                          )}
                         >
-                          {n.actorId && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                router.push(`/users/${n.actorId}`);
-                              }}
-                              className="shrink-0"
-                            >
-                              <Avatar className="w-7 h-7 ring-1 ring-primary/30">
+                          {n.actor && (
+                            <div className="shrink-0 mt-0.5">
+                              <Avatar className="w-8 h-8 ring-1 ring-border">
                                 <AvatarImage
-                                  src={n.actorAvatar ?? undefined}
-                                  alt={n.actorDisplayName ?? "User"}
+                                  src={n.actor.avatar ?? undefined}
+                                  alt={n.actor.username}
                                 />
                                 <AvatarFallback className="text-[10px]">
-                                  {(n.actorDisplayName ?? "?")[0]}
+                                  {n.actor.username[0].toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                            </button>
+                            </div>
                           )}
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className="text-xs font-medium">
-                              {n.title}
-                            </span>
-                            {n.description && (
-                              <span className="text-[11px] text-muted-foreground">
-                                {n.description}
-                              </span>
+                          <div className="flex flex-col items-start gap-0.5 min-w-0">
+                            <p className="text-xs leading-normal">
+                              <span className="font-semibold">@{n.actor.username}</span>{" "}
+                              {n.type === "MENTION" ? "mentioned you in a comment" :
+                                n.type === "NEW_COMMENT" ? "commented on your capsule" :
+                                  n.type === "NEW_REPLY" ? "replied to your comment" :
+                                    n.type === "REACTION" ? "reacted to your comment" :
+                                      "sent you a notification"}
+                            </p>
+                            {n.content && (
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 italic">
+                                "{n.content}"
+                              </p>
                             )}
-                            <span className="text-[10px] text-muted-foreground mt-0.5">
-                              {n.createdAt.toLocaleTimeString()}
+                            <span className="text-[10px] text-muted-foreground mt-1">
+                              {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                             </span>
                           </div>
+                          {!n.isRead && (
+                            <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2 ml-auto" />
+                          )}
                         </DropdownMenuItem>
                       ))}
                       {notifications.length > 10 && (
                         <>
                           <DropdownMenuSeparator />
-                          <div className="px-3 py-1.5 flex justify-center">
+                          <div className="px-3 py-2 flex justify-center bg-muted/30">
                             <button
                               type="button"
-                              className="text-[11px] text-primary hover:underline"
-                              onClick={() =>
-                                setShowAllNotifications((prev) => !prev)
-                              }
+                              className="text-[11px] font-medium text-primary hover:underline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowAllNotifications((prev) => !prev);
+                              }}
                             >
                               {showAllNotifications
                                 ? "Show latest 10"
-                                : "See more"}
+                                : `View all ${notifications.length} notifications`}
                             </button>
                           </div>
                         </>

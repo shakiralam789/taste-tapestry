@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 export interface User {
   id: string;
   name: string;
+  displayName?: string | null;
   username: string;
   avatar: string;
+  bannerUrl?: string | null;
   bio: string;
   location?: string;
   followers: number;

@@ -7,6 +7,7 @@ import {
   Film,
   MoreHorizontal,
   Heart,
+  MessageCircle,
   ArrowRight,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -81,10 +82,10 @@ export function TimeCapsuleCard({
         (old) =>
           old
             ? {
-                ...old,
-                lovedByMe: loved,
-                loveCount: count,
-              }
+              ...old,
+              lovedByMe: loved,
+              loveCount: count,
+            }
             : old,
       );
       queryClient.setQueriesData<TimeCapsule[] | undefined>(
@@ -92,10 +93,10 @@ export function TimeCapsuleCard({
         (old) =>
           old
             ? old.map((c) =>
-                c.id === capsule.id
-                  ? { ...c, lovedByMe: loved, loveCount: count }
-                  : c,
-              )
+              c.id === capsule.id
+                ? { ...c, lovedByMe: loved, loveCount: count }
+                : c,
+            )
             : old,
       );
     },
@@ -243,6 +244,19 @@ export function TimeCapsuleCard({
             />
             <span>{loveCount}</span>
           </button>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 px-2 rounded-full group"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <span>Comment</span>
+          </button>
+
           <div
             onClick={onClick}
             className="capitalize text-primary/60 inline-flex items-center gap-1.5 text-xs hover:text-primary cursor-pointer"
