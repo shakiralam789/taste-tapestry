@@ -569,7 +569,7 @@ export default function CapsuleShowPage() {
                 />
               </div>
             ) : (
-              <div className="w-full max-w-3xl max-h-[80vh] bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+              <div className="w-full max-w-3xl h-full bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
                 <img
                   src={preview.src}
                   alt=""
