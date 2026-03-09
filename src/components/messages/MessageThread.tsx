@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Loader2, CheckCheck, FileIcon, Download, PlayCircle, MoreHorizontal, Reply, Edit2, Trash2 } from "lucide-react";
+import { Loader2, CheckCheck, FileIcon, Download, MoreHorizontal, Reply, Edit2, Trash2 } from "lucide-react";
 import { TypingIndicator } from "./TypingIndicator";
 import { getMessages } from "@/features/messages/api";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -147,7 +147,7 @@ export function MessageThread({
             )}
 
             {grouped.map(({ label, msgs }) => (
-                <div key={label}>
+                <div key={label} className="flex flex-col gap-1">
                     {/* Date separator */}
                     <div className="flex items-center gap-3 my-3">
                         <div className="flex-1 h-px bg-white/10" />
@@ -159,15 +159,14 @@ export function MessageThread({
 
                     {msgs.map((msg) => {
                         const isMine = msg.senderId === myUserId;
-                        const isRead =
-                            isMine && msg.readBy.some((id) => id !== myUserId);
+                        const isRead = isMine && msg.readBy.some((id) => id !== myUserId);
 
                         return (
                             <div
                                 key={msg.id}
                                 className={cn(
-                                    "flex mb-1",
-                                    isMine ? "justify-end" : "justify-start",
+                                    "flex flex-col mb-2",
+                                    isMine ? "items-end" : "items-start",
                                 )}
                             >
                                 <div
@@ -179,7 +178,7 @@ export function MessageThread({
                                         msg.type === "text" || msg.isDeleted ? "px-4 py-2" : "p-1",
                                     )}
                                 >
-                                    {/* Reply Thread Context */}
+                                    {/* Reply Context */}
                                     {msg.replyToId && !msg.isDeleted && (
                                         <div className={cn(
                                             "mb-2 p-2 rounded-lg text-xs border-l-2 bg-black/10 flex flex-col gap-0.5",
@@ -263,29 +262,8 @@ export function MessageThread({
                                             <span>This message was deleted</span>
                                         </div>
                                     )}
-                                    <div
-                                        className={cn(
-                                            "flex items-center gap-1 mt-0.5 text-[10px] opacity-60",
-                                            isMine ? "justify-end" : "justify-start",
-                                        )}
-                                    >
-                                        <span>
-                                            {format(new Date(msg.createdAt), "h:mm a")}
-                                        </span>
-                                        {msg.isEdited && !msg.isDeleted && (
-                                            <span className="italic ml-1">(edited)</span>
-                                        )}
-                                        {isMine && (
-                                            <CheckCheck
-                                                className={cn(
-                                                    "w-3 h-3 ml-0.5",
-                                                    isRead ? "text-blue-400" : "opacity-60",
-                                                )}
-                                            />
-                                        )}
-                                    </div>
 
-                                    {/* Action Dropdown Toggle */}
+                                    {/* Actions */}
                                     {!msg.isDeleted && (
                                         <div className={cn(
                                             "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity",
@@ -308,9 +286,7 @@ export function MessageThread({
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 className="text-red-500 focus:text-red-500"
-                                                                onClick={() => {
-                                                                    setMessageToDelete(msg.id);
-                                                                }}
+                                                                onClick={() => setMessageToDelete(msg.id)}
                                                             >
                                                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
                                                             </DropdownMenuItem>
@@ -321,6 +297,27 @@ export function MessageThread({
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Metadata Outside Bubble */}
+                                <div className={cn(
+                                    "flex items-center gap-2 mt-1 px-1",
+                                    isMine ? "justify-end" : "justify-start"
+                                )}>
+                                    <span className="text-[10px] text-muted-foreground/60">
+                                        {format(new Date(msg.createdAt), "h:mm a")}
+                                    </span>
+                                    {msg.isEdited && !msg.isDeleted && (
+                                        <span className="text-[10px] text-muted-foreground/40 italic">(edited)</span>
+                                    )}
+                                    {isMine && (
+                                        <CheckCheck
+                                            className={cn(
+                                                "w-3 h-3",
+                                                isRead ? "text-sky-400" : "text-muted-foreground/50",
+                                            )}
+                                        />
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
@@ -329,7 +326,7 @@ export function MessageThread({
 
             {isPartnerTyping && (
                 <div className="flex justify-start mt-1">
-                    <div className="bg-muted/60 border border-white/10 rounded-2xl rounded-bl-sm">
+                    <div className="bg-muted/60 border border-white/10 rounded-2xl rounded-bl-sm p-2">
                         <TypingIndicator />
                     </div>
                 </div>
