@@ -71,12 +71,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
 
     const handleCapsuleUpdate = (payload: any) => {
-      if (payload.type === 'comment' || payload.type === 'reaction' || payload.type === 'love') {
+      const handledTypes = ['comment', 'comment_edit', 'comment_delete', 'reaction', 'love'];
+      if (handledTypes.includes(payload.type)) {
         void queryClient.invalidateQueries({ queryKey: ["comments", payload.capsuleId] });
         if (payload.capsuleId) {
           void queryClient.invalidateQueries({ queryKey: ["capsule", payload.capsuleId] });
         }
         void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+        void queryClient.invalidateQueries({ queryKey: ["user-capsules"] });
       }
     };
 

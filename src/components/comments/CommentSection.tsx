@@ -2,7 +2,8 @@
 
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCommentsByCapsule, createComment, addCommentReaction, removeCommentReaction } from "@/features/comments/api";
+import { getCommentsByCapsule, createComment, addCommentReaction, removeCommentReaction, updateComment, deleteComment } from "@/features/comments/api";
+import { getCapsule } from "@/features/capsules/api";
 import { CommentInput } from "./CommentInput";
 import { CommentItem } from "./CommentItem";
 import { MessageSquare, Loader2 } from "lucide-react";
@@ -19,6 +20,13 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { joinCapsule, leaveCapsule } = useNotifications();
+
+    // Fetch capsule to get ownerId
+    const { data: capsule } = useQuery({
+        queryKey: ["capsule", capsuleId],
+        queryFn: () => getCapsule(capsuleId),
+        enabled: !!capsuleId,
+    });
 
     const [showAll, setShowAll] = React.useState(false);
 
@@ -52,6 +60,26 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
         },
     });
 
+    const editMutation = useMutation({
+        mutationFn: ({ id, content }: { id: string, content: string }) => updateComment(id, content),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
+            toast.success("Comment updated");
+        },
+        onError: () => toast.error("Could not update comment"),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteComment,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
+            void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+            void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
+            toast.success("Comment deleted");
+        },
+        onError: () => toast.error("Could not delete comment"),
+    });
+
     const handleCreateComment = (content: string) => {
         if (!user) {
             toast.error("You must be logged in to comment");
@@ -80,6 +108,14 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
 
         const hasAlreadyReacted = comment.reactions?.some(r => r.userId === user.id && r.type === type);
         reactMutation.mutate({ id: commentId, type, isRemove: !!hasAlreadyReacted });
+    };
+
+    const handleEdit = (id: string, content: string) => {
+        editMutation.mutate({ id, content });
+    };
+
+    const handleDelete = (id: string) => {
+        deleteMutation.mutate(id);
     };
 
     const displayedComments = isInline && !showAll ? comments.slice(0, 3) : comments;
@@ -122,7 +158,10 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
                                 comment={comment}
                                 onReply={handleReply}
                                 onReact={handleReact}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
                                 isSmall={isInline}
+                                capsuleOwnerId={(capsule as any)?.userId}
                             />
                         ))}
                     </div>

@@ -9,18 +9,28 @@ import { MessageSquare, Heart, Bookmark, Smile, MoreHorizontal } from "lucide-re
 import { cn } from "@/lib/utils";
 import { CommentInput } from "./CommentInput";
 import { useAuth } from "@/features/auth/AuthContext";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 
 interface CommentItemProps {
     comment: Comment;
     onReply: (content: string, parentId: string) => void;
     onReact: (commentId: string, type: string) => void;
+    onEdit?: (commentId: string, content: string) => void;
+    onDelete?: (commentId: string) => void;
     depth?: number;
     isSmall?: boolean;
+    capsuleOwnerId?: string;
 }
 
-export function CommentItem({ comment, onReply, onReact, depth = 0, isSmall = false }: CommentItemProps) {
+export function CommentItem({ comment, onReply, onReact, onEdit, onDelete, depth = 0, isSmall = false, capsuleOwnerId }: CommentItemProps) {
     const [isReplying, setIsReplying] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const { user } = useAuth();
     const maxDepth = 2;
 
@@ -56,7 +66,24 @@ export function CommentItem({ comment, onReply, onReact, depth = 0, isSmall = fa
         setIsReplying(false);
     };
 
+    const handleEditSubmit = (content: string) => {
+        if (onEdit) {
+            onEdit(comment.id, content);
+        }
+        setIsEditing(false);
+    };
+
+    const handleDelete = () => {
+        if (onDelete && window.confirm("Are you sure you want to delete this comment?")) {
+            onDelete(comment.id);
+        }
+    };
+
     const myReaction = comment.reactions?.find(r => r.userId === user?.id)?.type;
+    const isOwner = user?.id && String(user.id) === String(comment.userId);
+    const isCapsuleOwner = user?.id && capsuleOwnerId && String(user.id) === String(capsuleOwnerId);
+    const canEdit = isOwner;
+    const canDelete = isOwner || isCapsuleOwner;
 
     return (
         <div className={cn(
@@ -80,13 +107,30 @@ export function CommentItem({ comment, onReply, onReact, depth = 0, isSmall = fa
                         <span className="text-[10px] text-muted-foreground">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                         </span>
+                        {comment.updatedAt !== comment.createdAt && (
+                            <span className="text-[10px] text-muted-foreground italic">
+                                (edited)
+                            </span>
+                        )}
                     </div>
 
-                    <div className={cn("text-foreground/90 leading-relaxed mb-2", isSmall ? "text-xs" : "text-sm")}>
-                        {renderContent(comment.content)}
-                    </div>
+                    {isEditing ? (
+                        <div className="mt-2">
+                            <CommentInput
+                                onSubmit={handleEditSubmit}
+                                initialValue={comment.content}
+                                autoFocus
+                                isSmall={isSmall}
+                                onCancel={() => setIsEditing(false)}
+                            />
+                        </div>
+                    ) : (
+                        <div className={cn("text-foreground/90 leading-relaxed mb-2", isSmall ? "text-xs" : "text-sm")}>
+                            {renderContent(comment.content)}
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-4 text-muted-foreground">
+                    <div className="flex items-center gap-4 text-muted-foreground w-full">
                         <button
                             onClick={() => onReact(comment.id, "❤️")}
                             className={cn(
@@ -106,6 +150,33 @@ export function CommentItem({ comment, onReply, onReact, depth = 0, isSmall = fa
                                 <MessageSquare className="w-3 h-3" />
                                 <span>Reply</span>
                             </button>
+                        )}
+
+                        {(canEdit || canDelete) && !isEditing && (
+                            <div className="ml-auto">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="p-1 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-foreground">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {canEdit && (
+                                            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                                                Edit
+                                            </DropdownMenuItem>
+                                        )}
+                                        {canDelete && (
+                                            <DropdownMenuItem
+                                                onClick={handleDelete}
+                                                className="text-red-500 focus:text-red-500"
+                                            >
+                                                Delete
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         )}
                     </div>
 
@@ -130,8 +201,11 @@ export function CommentItem({ comment, onReply, onReact, depth = 0, isSmall = fa
                             comment={reply}
                             onReply={onReply}
                             onReact={onReact}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
                             depth={depth + 1}
                             isSmall={isSmall}
+                            capsuleOwnerId={capsuleOwnerId}
                         />
                     ))}
                 </div>

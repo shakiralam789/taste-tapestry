@@ -17,10 +17,20 @@ interface CommentInputProps {
     autoFocus?: boolean;
     className?: string;
     isSmall?: boolean;
+    initialValue?: string;
+    onCancel?: () => void;
 }
 
-export function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus, className, isSmall = false }: CommentInputProps) {
-    const [content, setContent] = useState("");
+export function CommentInput({
+    onSubmit,
+    placeholder = "Write a comment...",
+    autoFocus,
+    className,
+    isSmall = false,
+    initialValue = "",
+    onCancel
+}: CommentInputProps) {
+    const [content, setContent] = useState(initialValue);
     const [mentionSearch, setMentionSearch] = useState("");
     const [isMentionOpen, setIsMentionOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -151,17 +161,30 @@ export function CommentInput({ onSubmit, placeholder = "Write a comment...", aut
                         </Popover>
                     </div>
 
-                    <Button
-                        size="icon"
-                        className={cn(
-                            "rounded-lg transition-all",
-                            isSmall ? "h-7 w-7" : "h-8 w-8"
+                    <div className="flex items-center gap-2">
+                        {onCancel && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={onCancel}
+                                className="h-7 px-2 text-[10px]"
+                            >
+                                Cancel
+                            </Button>
                         )}
-                        disabled={!content.trim()}
-                        onClick={() => handleSubmit()}
-                    >
-                        <Send className={cn(isSmall ? "w-3 h-3" : "w-4 h-4")} />
-                    </Button>
+                        <Button
+                            size="icon"
+                            className={cn(
+                                "rounded-lg transition-all",
+                                isSmall ? "h-7 w-7" : "h-8 w-8"
+                            )}
+                            disabled={!content.trim()}
+                            onClick={() => handleSubmit()}
+                        >
+                            <Send className={cn(isSmall ? "w-3 h-3" : "w-4 h-4")} />
+                        </Button>
+                    </div>
                 </div>
             </div>
 

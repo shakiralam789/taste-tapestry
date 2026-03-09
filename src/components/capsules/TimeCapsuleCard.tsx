@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { cn } from "@/lib/utils";
+import { useNotifications } from "@/features/notifications/NotificationsContext";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -62,6 +63,7 @@ export function TimeCapsuleCard({
   const [loveCount, setLoveCount] = useState(capsule.loveCount ?? 0);
   const [commentCount, setCommentCount] = useState(capsule.commentCount ?? 0);
   const [showComments, setShowComments] = useState(false);
+  const { joinCapsule, leaveCapsule } = useNotifications();
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =
@@ -72,6 +74,11 @@ export function TimeCapsuleCard({
     setLoveCount(capsule.loveCount ?? 0);
     setCommentCount(capsule.commentCount ?? 0);
   }, [capsule.lovedByMe, capsule.loveCount, capsule.commentCount]);
+
+  useEffect(() => {
+    joinCapsule(capsule.id);
+    return () => leaveCapsule(capsule.id);
+  }, [capsule.id, joinCapsule, leaveCapsule]);
 
   const loveMutation = useMutation({
     mutationFn: () => toggleCapsuleLove(capsule.id),
@@ -262,7 +269,7 @@ export function TimeCapsuleCard({
             }}
           >
             <MessageCircle className={cn("w-4 h-4 group-hover:scale-110 transition-transform", showComments && "fill-current")} />
-            <span>{commentCount > 0 ? `${commentCount} Comment${commentCount > 1 ? 's' : ''}` : 'Comment'}</span>
+            <span>{commentCount} {commentCount === 1 ? 'Comment' : 'Comments'}</span>
           </button>
 
           <div

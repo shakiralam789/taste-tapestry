@@ -43,10 +43,10 @@ export function ProfilePostCard({
         (old) =>
           old
             ? {
-                ...old,
-                lovedByMe: loved,
-                loveCount: count,
-              }
+              ...old,
+              lovedByMe: loved,
+              loveCount: count,
+            }
             : old,
       );
       queryClient.setQueriesData<Favorite[]>(
@@ -54,10 +54,10 @@ export function ProfilePostCard({
         (old) =>
           old
             ? old.map((f) =>
-                f.id === favorite.id
-                  ? { ...f, lovedByMe: loved, loveCount: count }
-                  : f,
-              )
+              f.id === favorite.id
+                ? { ...f, lovedByMe: loved, loveCount: count }
+                : f,
+            )
             : old,
       );
     },
@@ -136,14 +136,13 @@ export function ProfilePostCard({
               }}
             >
               <Heart
-                className={`w-3.5 h-3.5 ${
-                  loved ? "fill-red-500 text-red-500" : "fill-white/10"
-                }`}
+                className={`w-3.5 h-3.5 ${loved ? "fill-red-500 text-red-500" : "fill-white/10"
+                  }`}
               />
               <span>{loveCount}</span>
             </button>
             <span className="flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" /> 8
+              <MessageCircle className="w-3.5 h-3.5" /> 0 Comments
             </span>
           </div>
         </div>
@@ -213,14 +212,13 @@ export function ProfilePostCard({
                 }}
               >
                 <Heart
-                  className={`w-4 h-4 ${
-                    loved ? "fill-red-500 text-red-500" : "fill-white/20"
-                  }`}
+                  className={`w-4 h-4 ${loved ? "fill-red-500 text-red-500" : "fill-white/20"
+                    }`}
                 />{" "}
                 {loveCount}
               </button>
               <span className="flex items-center gap-1.5">
-                <MessageCircle className="w-4 h-4" /> 8
+                <MessageCircle className="w-4 h-4" /> 0 Comments
               </span>
             </div>
             {favorite.rating != null && (

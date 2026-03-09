@@ -26,3 +26,12 @@ export async function removeCommentReaction(commentId: string, type: string): Pr
   });
   return data;
 }
+
+export async function updateComment(id: string, content: string): Promise<Comment> {
+  const { data } = await apiClient.patch<Comment>(`/comments/${id}`, { content });
+  return data;
+}
+
+export async function deleteComment(id: string): Promise<void> {
+  await apiClient.delete(`/comments/${id}`);
+}
