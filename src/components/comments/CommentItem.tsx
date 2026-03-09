@@ -16,6 +16,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface CommentItemProps {
     comment: Comment;
@@ -31,6 +32,7 @@ interface CommentItemProps {
 export function CommentItem({ comment, onReply, onReact, onEdit, onDelete, depth = 0, isSmall = false, capsuleOwnerId }: CommentItemProps) {
     const [isReplying, setIsReplying] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const { user } = useAuth();
     const maxDepth = 2;
 
@@ -74,9 +76,14 @@ export function CommentItem({ comment, onReply, onReact, onEdit, onDelete, depth
     };
 
     const handleDelete = () => {
-        if (onDelete && window.confirm("Are you sure you want to delete this comment?")) {
+        setIsDeleting(true);
+    };
+
+    const confirmDelete = () => {
+        if (onDelete) {
             onDelete(comment.id);
         }
+        setIsDeleting(false);
     };
 
     const myReaction = comment.reactions?.find(r => r.userId === user?.id)?.type;
@@ -210,6 +217,16 @@ export function CommentItem({ comment, onReply, onReact, onEdit, onDelete, depth
                     ))}
                 </div>
             )}
+
+            <ConfirmDialog
+                open={isDeleting}
+                onOpenChange={setIsDeleting}
+                title="Delete Comment"
+                description="Are you sure you want to delete this comment? This action cannot be undone."
+                confirmText="Delete"
+                onConfirm={confirmDelete}
+                variant="destructive"
+            />
         </div>
     );
 }
