@@ -7,7 +7,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { searchUsers } from "@/features/users/api";
-import { Send, Smile, AtSign } from "lucide-react";
+import { Send, Smile, AtSign, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -33,8 +33,14 @@ export function CommentInput({
     const [content, setContent] = useState(initialValue);
     const [mentionSearch, setMentionSearch] = useState("");
     const [isMentionOpen, setIsMentionOpen] = useState(false);
+    const [isEmojiOpen, setIsEmojiOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const mentionRef = useRef<HTMLDivElement>(null);
+    const emojiRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [cursorPos, setCursorPos] = useState(0);
+    const [mentionDropdownDirection, setMentionDropdownDirection] = useState<"up" | "down">("up");
+    const [emojiDropdownDirection, setEmojiDropdownDirection] = useState<"up" | "down">("up");
 
     const debouncedSearch = useDebounce(mentionSearch, 300);
 
@@ -50,6 +56,28 @@ export function CommentInput({
         }
     }, [autoFocus]);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (mentionRef.current && !mentionRef.current.contains(event.target as Node)) {
+                setIsMentionOpen(false);
+            }
+            if (emojiRef.current && !emojiRef.current.contains(event.target as Node)) {
+                // Check if we clicked the trigger button as well to avoid immediate re-opening
+                const target = event.target as HTMLElement;
+                if (!target.closest('.emoji-trigger')) {
+                    setIsEmojiOpen(false);
+                }
+            }
+        };
+
+        if (isMentionOpen || isEmojiOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isMentionOpen, isEmojiOpen]);
+
     const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         const position = e.target.selectionStart;
@@ -62,6 +90,17 @@ export function CommentInput({
             const query = value.slice(lastAtIdx + 1, position);
             if (!query.includes(" ")) {
                 setMentionSearch(query);
+
+                // Calculate direction before opening
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const spaceAbove = rect.top;
+                    const dropdownHeight = 280; // Buffer for max height
+                    const direction = spaceAbove < dropdownHeight ? "down" : "up";
+                    console.log("[Mention] rect.top:", rect.top, "direction:", direction);
+                    setMentionDropdownDirection(direction);
+                }
+
                 setIsMentionOpen(true);
                 return;
             }
@@ -104,8 +143,8 @@ export function CommentInput({
     const popularEmojis = ["😀", "😂", "🥰", "😍", "🤩", "😊", "🤔", "🧐", "🙄", "😤", "😭", "😮", "😴", "😋", "😎", "✨", "🔥", "❤️", "👍", "🙌", "🎉", "💯", "🚀", "🌈"];
 
     return (
-        <div className={cn("relative flex flex-col gap-2", className)}>
-            <div className="relative flex flex-col bg-background border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+        <div ref={containerRef} className={cn("relative flex flex-col gap-2", className)}>
+            <div className="relative flex flex-col bg-background border border-border rounded-xl focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <textarea
                     ref={textareaRef}
                     value={content}
@@ -114,12 +153,12 @@ export function CommentInput({
                     placeholder={placeholder}
                     data-gramm="false"
                     className={cn(
-                        "w-full p-3 bg-transparent resize-none focus:outline-none text-sm",
+                        "w-full p-3 bg-transparent resize-none focus:outline-none text-sm rounded-t-xl",
                         isSmall ? "min-h-[45px]" : "min-h-[80px]"
                     )}
                 />
 
-                <div className="flex items-center justify-between px-2 pb-2 gap-1 border-t border-border/10">
+                <div className="flex items-center justify-between px-2 pb-2 gap-1 border-t border-border/10 rounded-b-xl bg-muted/5">
                     <div className="flex items-center">
                         <Button
                             type="button"
@@ -128,37 +167,70 @@ export function CommentInput({
                             className="h-7 w-7 text-muted-foreground hover:text-primary"
                             onClick={() => {
                                 setMentionSearch("");
+                                if (containerRef.current) {
+                                    const rect = containerRef.current.getBoundingClientRect();
+                                    const spaceAbove = rect.top;
+                                    setMentionDropdownDirection(spaceAbove < 280 ? "down" : "up");
+                                }
+                                setIsEmojiOpen(false); // Close emoji if mention opens
                                 setIsMentionOpen(true);
                             }}
                         >
                             <AtSign className="w-3.5 h-3.5" />
                         </Button>
 
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        <div className="relative">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-7 w-7 text-muted-foreground hover:text-primary emoji-trigger", isEmojiOpen && "text-primary bg-primary/10")}
+                                onClick={() => {
+                                    if (containerRef.current) {
+                                        const rect = containerRef.current.getBoundingClientRect();
+                                        setEmojiDropdownDirection(rect.top < 280 ? "down" : "up");
+                                    }
+                                    setIsEmojiOpen(!isEmojiOpen);
+                                    setIsMentionOpen(false); // Close mention if emoji opens
+                                }}
+                            >
+                                <Smile className="w-3.5 h-3.5" />
+                            </Button>
+
+                            {isEmojiOpen && (
+                                <div
+                                    ref={emojiRef}
+                                    className={cn(
+                                        "absolute z-50 w-64 bg-background border border-border shadow-xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200",
+                                        emojiDropdownDirection === "up" ? "bottom-full mb-2" : "top-full mt-2",
+                                        "left-0"
+                                    )}
                                 >
-                                    <Smile className="w-3.5 h-3.5" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent side="top" align="start" className="w-64 p-2 bg-background border border-border shadow-xl rounded-xl">
-                                <div className="grid grid-cols-8 gap-1">
-                                    {popularEmojis.map((emoji) => (
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border/50">
+                                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pick an emoji</span>
                                         <button
-                                            key={emoji}
-                                            onClick={() => insertEmoji(emoji)}
-                                            className="text-lg p-1 hover:bg-muted rounded transition-colors"
+                                            type="button"
+                                            onClick={() => setIsEmojiOpen(false)}
+                                            className="p-1 hover:bg-muted rounded-md transition-colors"
                                         >
-                                            {emoji}
+                                            <X className="w-3 h-3 text-muted-foreground" />
                                         </button>
-                                    ))}
+                                    </div>
+                                    <div className="p-2 grid grid-cols-8 gap-1">
+                                        {popularEmojis.map((emoji) => (
+                                            <button
+                                                key={emoji}
+                                                type="button"
+                                                onClick={() => insertEmoji(emoji)}
+                                                className="text-lg p-1 hover:bg-muted rounded transition-colors"
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </PopoverContent>
-                        </Popover>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -189,7 +261,23 @@ export function CommentInput({
             </div>
 
             {isMentionOpen && (
-                <div className="absolute z-50 bottom-full mb-2 left-0 w-64 bg-background border border-border shadow-xl rounded-xl overflow-hidden">
+                <div
+                    ref={mentionRef}
+                    className={cn(
+                        "absolute z-50 left-0 w-64 bg-background border border-border shadow-xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200",
+                        mentionDropdownDirection === "up" ? "bottom-full mb-2" : "top-full mt-2"
+                    )}
+                >
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border/50">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Mention someone</span>
+                        <button
+                            type="button"
+                            onClick={() => setIsMentionOpen(false)}
+                            className="p-1 hover:bg-muted rounded-md transition-colors"
+                        >
+                            <X className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                    </div>
                     <Command className="rounded-xl border-none" shouldFilter={false}>
                         <CommandInput
                             placeholder="Search user..."
