@@ -59,7 +59,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 sm:px-6">
-        <div className="grid grid-cols-12 items-center justify-between h-16">
+        <div className="grid grid-cols-12 items-center justify-between h-12 sm:h-16">
           <div className="col-span-6 md:col-span-2">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">

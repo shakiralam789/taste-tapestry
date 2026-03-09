@@ -382,14 +382,14 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
               </motion.div>
 
               <div className="w-full">
-                <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex items-center justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
+                <div className="bg-background/80 backdrop-blur-sm sticky sm:top-16 top-12 z-10 w-full flex items-center justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
                   {PROFILE_TABS.map((tab) => (
                     <TabsListLink
                       key={tab.value}
                       href={`/profile/${tab.value}`}
                       className={pathname === `/profile${tab.value.length > 0 ? `/${tab.value}` : ""}` ? "active" : ""}
                     >
-                      <span className="block sm:hidden px-6"><tab.icon className="w-5 h-5" /></span>
+                      <span className="block sm:hidden px-6"><tab.icon className="w-4 h-4" /></span>
                       <span className="hidden sm:block">{tab.label}</span>
                     </TabsListLink>
                   ))}

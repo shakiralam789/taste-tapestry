@@ -25,7 +25,7 @@ const TabsListLink = React.forwardRef<
   React.ElementRef<typeof Link>,
   React.ComponentPropsWithoutRef<typeof Link>
 >(({ className, ...props }, ref) => (
-  <Link ref={ref} className={cn(className, "rounded-none border-b-2 border-transparent px-0 py-4 [&.active]:bg-transparent [&.active]:border-primary [&.active]:text-primary [&.active]:shadow-none hover:text-primary transition-colors text-base hover:border-primary")} {...props} />
+  <Link ref={ref} className={cn(className, "rounded-none border-b-2 border-transparent px-0 py-3 sm:py-4 [&.active]:bg-transparent [&.active]:border-primary [&.active]:text-primary [&.active]:shadow-none hover:text-primary transition-colors text-base hover:border-primary")} {...props} />
 ));
 TabsListLink.displayName = "TabsListLink";
 
