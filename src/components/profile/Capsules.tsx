@@ -1,6 +1,7 @@
 import React from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
+import { TimeCapsuleCardSkeleton } from "@/components/capsules/TimeCapsuleCardSkeleton";
 import { deleteCapsule, updateCapsule } from "@/features/capsules/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ export default function Capsules() {
   } = useProfileInfo();
 
   const queryClient = useQueryClient();
-  const { data: capsules = [] } = useQuery({
+  const { data: capsules = [], isLoading } = useQuery({
     queryKey: ["capsules"],
     queryFn: () =>
       import("@/features/capsules/api").then((m) => m.getMyCapsules()),
@@ -75,7 +76,13 @@ export default function Capsules() {
           </Button>
         </Link>
       </div>
-      {capsules.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-4 mx-auto">
+          {[...Array(3)].map((_, i) => (
+            <TimeCapsuleCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : capsules.length === 0 ? (
         <Link href="/create-capsule">
           <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
             <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50 group-hover:opacity-80" />
@@ -101,7 +108,7 @@ export default function Capsules() {
                 showActions
                 authorName={displayName || "You"}
                 authorSubtitle="Your time capsule"
-                authorAvatar={ displayAvatar || null}
+                authorAvatar={displayAvatar || null}
                 onEdit={() => router.push(`/update-captule/${capsule.id}`)}
                 onToggleVisibility={(visibility) =>
                   updateCapsuleVisibilityMutation.mutate({
