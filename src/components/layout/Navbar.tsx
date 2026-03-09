@@ -56,6 +56,24 @@ export function Navbar() {
     refetchInterval: 30_000,
   });
 
+  const handleNotificationClick = (n: any) => {
+    markAsRead(n.id);
+
+    let path = "";
+    if (n.targetId) {
+      // Most notifications (MENTION, NEW_COMMENT, NEW_REPLY, REACTION) 
+      // are related to capsules currently.
+      path = `/capsules/${n.targetId}`;
+    } else if (n.actorId) {
+      // Fallback to actor's profile if no targetId
+      path = `/users/${n.actorId}`;
+    }
+
+    if (path) {
+      router.push(path);
+    }
+  };
+
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 sm:px-6">
@@ -146,7 +164,7 @@ export function Navbar() {
                       ).map((n) => (
                         <DropdownMenuItem
                           key={n.id}
-                          onClick={() => markAsRead(n.id)}
+                          onClick={() => handleNotificationClick(n)}
                           className={cn(
                             "flex items-start gap-3 p-3 cursor-pointer transition-colors",
                             !n.isRead ? "bg-primary/5" : "opacity-70"

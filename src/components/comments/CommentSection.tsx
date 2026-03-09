@@ -121,7 +121,7 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
     const displayedComments = isInline && !showAll ? comments.slice(0, 3) : comments;
 
     return (
-        <div className={isInline ? "mt-4" : "mt-12 py-8 border-t border-border"}>
+        <div className={isInline ? "mt-4" : "mt-12 py-8 border-t border-border w-full md:w-10/12"}>
             {!isInline && (
                 <div className="flex items-center gap-2 mb-8">
                     <MessageSquare className="w-5 h-5 text-primary" />
