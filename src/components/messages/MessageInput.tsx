@@ -239,7 +239,7 @@ export function MessageInput({
                     value={value}
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={isUploading ? "Uploading..." : "Type a message… (Enter to send)"}
+                    placeholder={isUploading ? "Uploading..." : "Type a message…"}
                     rows={1}
                     disabled={disabled || isUploading}
                     className="resize-none min-h-[40px] max-h-32 flex-1 rounded-2xl bg-muted/50 border-white/10 text-sm focus-visible:ring-1"

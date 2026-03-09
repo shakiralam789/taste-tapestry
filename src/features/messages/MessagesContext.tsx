@@ -17,6 +17,8 @@ import { getAccessToken } from "@/lib/api-client";
 type MessagesContextValue = {
     socket: Socket | null;
     connected: boolean;
+    isChatOpen: boolean;
+    setIsChatOpen: (isOpen: boolean) => void;
 };
 
 const MessagesContext = createContext<MessagesContextValue | undefined>(undefined);
@@ -83,10 +85,14 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
         };
     }, [user, queryClient]);
 
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
     const value = useMemo(() => ({
         socket: socketRef.current,
-        connected
-    }), [connected]);
+        connected,
+        isChatOpen,
+        setIsChatOpen
+    }), [connected, isChatOpen]);
 
     return (
         <MessagesContext.Provider value={value}>

@@ -16,6 +16,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { MessageInput } from "@/components/messages/MessageInput";
 import { useMessagesSocket } from "@/features/messages/useMessagesSocket";
+import { useMessages } from "@/features/messages/MessagesContext";
 import {
   getConversations,
   getMessages,
@@ -233,6 +234,7 @@ function ConversationItem({
 
 function MessagesPageInner() {
   const { user } = useAuth();
+  const { setIsChatOpen } = useMessages();
   const qc = useQueryClient();
 
   // Navigation State
@@ -248,6 +250,12 @@ function MessagesPageInner() {
   // Real-time Presence/Typing
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [typingInConvo, setTypingInConvo] = useState<Record<string, boolean>>({});
+
+  // Sync with global context for layout visibility
+  useEffect(() => {
+    setIsChatOpen(!!(activeConvoId || pendingPartner));
+    return () => setIsChatOpen(false);
+  }, [activeConvoId, pendingPartner, setIsChatOpen]);
 
   // Search State
   const [showNewChat, setShowNewChat] = useState(false);
