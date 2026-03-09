@@ -257,11 +257,11 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                   aria-label="Upload avatar"
                 />
                 <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-full opacity-75 blur transition duration-500 group-hover:opacity-100" />
-                <Avatar className="w-40 h-40 ring-4 ring-background relative">
+                <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
                   <AvatarImage
                     src={displayAvatarUrl || displayAvatar}
                     alt={displayName}
-                    className="object-cover"
+                    className="object-cover w-full h-full"
                   />
                   <AvatarFallback className="text-4xl bg-background text-foreground">
                     {displayName[0] || "?"}
@@ -334,7 +334,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
             </motion.div>
 
             {/* Right: Content & Stats */}
-            <div className="flex-1 w-full space-y-8 pt-8 lg:pt-0">
+            <div className="flex-1 w-full space-y-4 sm:space-y-6 pt-8 lg:pt-0">
               {/* Stats Bar */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
