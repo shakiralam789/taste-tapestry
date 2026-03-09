@@ -5,8 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
-import { getFavorite, updateFavorite } from "@/features/favorites/api";
+import { getFavorite, updateFavorite, uploadFavoriteMusic } from "@/features/favorites/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
@@ -30,6 +31,7 @@ import {
   Link2,
   Check,
   X,
+  Upload,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -163,6 +165,9 @@ export default function FavoriteShowPage() {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+
+  // ── Music upload state ────────────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Volume (shared) ───────────────────────────────────────────────────────
   const [volume, setVolume] = useState(() => {
@@ -350,6 +355,30 @@ export default function FavoriteShowPage() {
       queryClient.setQueryData(["favorite", id], updated);
     } finally {
       setMusicBusy(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || typeof id !== "string") return;
+
+    // Basic validation
+    if (!file.type.startsWith("audio/")) {
+      toast.error("Please select an audio file.");
+      return;
+    }
+
+    setMusicBusy(true);
+    const loadingToast = toast.loading("Uploading your music...");
+    try {
+      const updated = await uploadFavoriteMusic(id, file);
+      queryClient.setQueryData(["favorite", id], updated);
+      toast.success("Music uploaded!", { id: loadingToast });
+    } catch (error) {
+      toast.error("Upload failed. Please try again.", { id: loadingToast });
+    } finally {
+      setMusicBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -592,20 +621,40 @@ export default function FavoriteShowPage() {
                           </Button>
                         )}
                         {!linkInputOpen && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-[11px] rounded-full gap-1"
-                            onClick={() => {
-                              setLinkDraft(musicUrl ?? "");
-                              setLinkInputOpen(true);
-                            }}
-                            disabled={musicBusy}
-                          >
-                            <Link2 className="w-3 h-3" />
-                            {musicUrl ? "Replace link" : "Paste link"}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              accept="audio/*"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-[11px] rounded-full gap-1"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={musicBusy}
+                            >
+                              <Upload className="w-3 h-3" />
+                              {musicUrl ? "Change music" : "Upload music"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-[11px] rounded-full gap-1"
+                              onClick={() => {
+                                setLinkDraft(musicUrl ?? "");
+                                setLinkInputOpen(true);
+                              }}
+                              disabled={musicBusy}
+                            >
+                              <Link2 className="w-3 h-3" />
+                              {musicUrl ? "Replace link" : "Paste link"}
+                            </Button>
+                          </div>
                         )}
                       </div>
                     )}
