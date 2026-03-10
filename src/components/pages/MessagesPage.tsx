@@ -280,6 +280,11 @@ function MessagesPageInner() {
     joinConversation,
   } = useMessagesSocket({
     onNewMessage: (msg) => {
+      // Trigger read if this message is for the active conversation and not from me
+      if (activeConvoId === msg.conversationId && msg.senderId !== user?.id) {
+        sendRead(msg.conversationId);
+      }
+
       setMessages((prev) => {
         if (msg.conversationId !== activeConvoId) return prev;
         const isFromMe = msg.senderId === user?.id;
@@ -390,6 +395,18 @@ function MessagesPageInner() {
 
     return () => { ignore = true; };
   }, [activeConvoId, joinConversation, sendRead]);
+
+  // ── Mark as Read on Window Focus ───────────────────────────────────────────
+  useEffect(() => {
+    if (!activeConvoId || typeof window === "undefined") return;
+
+    const handleFocus = () => {
+      sendRead(activeConvoId);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [activeConvoId, sendRead]);
 
   // ── Partner Info Fetching for Header ────────────────────────────────────────
 
