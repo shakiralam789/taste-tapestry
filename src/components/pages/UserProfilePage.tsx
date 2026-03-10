@@ -201,10 +201,9 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                 {!isOwnProfile && authUser && (
                   <Link href={`/messages?userId=${id}`} className="w-full">
                     <Button
-                      variant="gradient"
-                      className="w-full rounded-xl py-6 font-semibold"
+                      className="w-full"
                     >
-                      <MessageCircle className="w-5 h-5 mr-2" /> Message {displayName}
+                      <MessageCircle className="w-5 h-5" /> Message
                     </Button>
                   </Link>
                 )}

@@ -1465,7 +1465,7 @@ export function FavoriteEditor({
             <div className="lg:col-span-5">
               <div className="lg:sticky lg:top-20">
                 <div className="shadow-glow rounded-2xl border border-white/10 bg-primary/5 backdrop-blur-sm overflow-hidden">
-                  <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 border-b border-white/5">
+                  <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2 border-b border-white/5">
                     <p>Live preview</p>
                     <div className="flex items-center gap-2">
                       {Array.from({ length: totalSteps }).map((_, i) => (

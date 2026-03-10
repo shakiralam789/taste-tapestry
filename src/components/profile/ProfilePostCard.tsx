@@ -217,9 +217,6 @@ export function ProfilePostCard({
                 />{" "}
                 {loveCount}
               </button>
-              <span className="flex items-center gap-1.5">
-                <MessageCircle className="w-4 h-4" /> 0 Comments
-              </span>
             </div>
             {favorite.rating != null && (
               <span className="flex items-center gap-1 text-yellow-500 font-bold">

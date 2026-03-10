@@ -131,7 +131,7 @@ export function AlbumsPageInner() {
 
   return (
     <Layout className="px-0 md:px-0 pt-0">
-      <header className="px-4 py-3 border-b border-white/5">
+      <header className="px-4 py-2 border-b border-white/5">
         <Button
           variant="ghost"
           size="icon"

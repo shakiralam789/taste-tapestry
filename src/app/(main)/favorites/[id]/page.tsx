@@ -32,6 +32,7 @@ import {
   Check,
   X,
   Upload,
+  Edit3,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -446,7 +447,7 @@ export default function FavoriteShowPage() {
         )}
 
         {/* Compact top bar — hidden on mobile (mobile nav is overlaid on cover) */}
-        <header className="hidden sm:flex sticky top-0 z-20 items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <header className="hidden sm:flex sticky top-0 z-20 items-center justify-between gap-3 px-4 py-2 border-b border-white/5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
           <Button
             variant="ghost"
             size="icon"
@@ -458,13 +459,14 @@ export default function FavoriteShowPage() {
           </Button>
           {isOwner && (
             <Button
-              variant="default"
-              size="sm"
-              className="rounded-full gap-1.5 shrink-0"
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              aria-label="Edit album"
               onClick={() => router.push(`/favorites/${id}/edit`)}
+
             >
-              <Pencil className="w-3.5 h-3.5" />
-              Edit
+              <Edit3 className="w-4 h-4" />
             </Button>
           )}
         </header>
