@@ -4,6 +4,7 @@ import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCommentsByCapsule, createComment, addCommentReaction, removeCommentReaction, updateComment, deleteComment } from "@/features/comments/api";
 import { getCapsule } from "@/features/capsules/api";
+import { Comment } from "@/types/comments";
 import { CommentInput } from "./CommentInput";
 import { CommentItem } from "./CommentItem";
 import { MessageSquare, Loader2 } from "lucide-react";
@@ -40,44 +41,144 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
         queryFn: () => getCommentsByCapsule(capsuleId),
     });
 
+    const recursiveUpdate = (nodes: any[], id: string, updater: (node: any) => any | null): any[] => {
+        return nodes.map(node => {
+            if (node.id === id) {
+                return updater(node);
+            }
+            if (node.replies && node.replies.length > 0) {
+                return { ...node, replies: recursiveUpdate(node.replies, id, updater).filter(Boolean) };
+            }
+            return node;
+        }).filter(Boolean);
+    };
+
     const createMutation = useMutation({
         mutationFn: createComment,
+        onMutate: async (newCommentInput) => {
+            await queryClient.cancelQueries({ queryKey: ["comments", capsuleId] });
+            const previousComments = queryClient.getQueryData<Comment[]>(["comments", capsuleId]);
+
+            const tempComment: any = {
+                id: `temp-${Date.now()}`,
+                content: newCommentInput.content,
+                userId: user?.id || "",
+                user: user as any,
+                capsuleId,
+                parentId: newCommentInput.parentId || null,
+                reactions: [],
+                replies: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            if (newCommentInput.parentId) {
+                queryClient.setQueryData<Comment[]>(["comments", capsuleId], (old) => {
+                    if (!old) return [tempComment];
+                    return old.map(c => {
+                        if (c.id === newCommentInput.parentId) {
+                            return { ...c, replies: [...(c.replies || []), tempComment] };
+                        }
+                        return c;
+                    });
+                });
+            } else {
+                queryClient.setQueryData<Comment[]>(["comments", capsuleId], (old) => [tempComment, ...(old || [])]);
+            }
+
+            return { previousComments };
+        },
+        onError: (_err, _newComment, context) => {
+            queryClient.setQueryData(["comments", capsuleId], context?.previousComments);
+            toast.error("Could not post comment");
+        },
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
-            // Also invalidate capsules to update count
-            void queryClient.invalidateQueries({ queryKey: ["capsules"] });
-            void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
             toast.success("Comment posted!");
         },
-        onError: () => toast.error("Could not post comment"),
+        onSettled: () => {
+            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
+            void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+            void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
+        },
     });
 
     const reactMutation = useMutation({
         mutationFn: ({ id, type, isRemove }: { id: string, type: string, isRemove: boolean }) =>
             isRemove ? removeCommentReaction(id, type) : addCommentReaction(id, type),
-        onSuccess: () => {
+        onMutate: async ({ id, type, isRemove }) => {
+            await queryClient.cancelQueries({ queryKey: ["comments", capsuleId] });
+            const previousComments = queryClient.getQueryData<Comment[]>(["comments", capsuleId]);
+
+            queryClient.setQueryData<Comment[]>(["comments", capsuleId], (old) => {
+                if (!old) return [];
+                return recursiveUpdate(old, id, (node) => {
+                    const reactions = isRemove
+                        ? node.reactions.filter(r => !(r.userId === user?.id && r.type === type))
+                        : [...node.reactions, { type, userId: user?.id || "" }];
+                    return { ...node, reactions };
+                });
+            });
+
+            return { previousComments };
+        },
+        onError: (_err, _variables, context) => {
+            queryClient.setQueryData(["comments", capsuleId], context?.previousComments);
+        },
+        onSettled: () => {
             void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
         },
     });
 
     const editMutation = useMutation({
         mutationFn: ({ id, content }: { id: string, content: string }) => updateComment(id, content),
+        onMutate: async ({ id, content }) => {
+            await queryClient.cancelQueries({ queryKey: ["comments", capsuleId] });
+            const previousComments = queryClient.getQueryData<Comment[]>(["comments", capsuleId]);
+
+            queryClient.setQueryData<Comment[]>(["comments", capsuleId], (old) => {
+                if (!old) return [];
+                return recursiveUpdate(old, id, (node) => ({ ...node, content, updatedAt: new Date().toISOString() }));
+            });
+
+            return { previousComments };
+        },
+        onError: (_err, _variables, context) => {
+            queryClient.setQueryData(["comments", capsuleId], context?.previousComments);
+            toast.error("Could not update comment");
+        },
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
             toast.success("Comment updated");
         },
-        onError: () => toast.error("Could not update comment"),
+        onSettled: () => {
+            void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteComment,
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ["comments", capsuleId] });
+            const previousComments = queryClient.getQueryData<Comment[]>(["comments", capsuleId]);
+
+            queryClient.setQueryData<Comment[]>(["comments", capsuleId], (old) => {
+                if (!old) return [];
+                return recursiveUpdate(old, id, () => null as any);
+            });
+
+            return { previousComments };
+        },
+        onError: (_err, _variables, context) => {
+            queryClient.setQueryData(["comments", capsuleId], context?.previousComments);
+            toast.error("Could not delete comment");
+        },
         onSuccess: () => {
+            toast.success("Comment deleted");
+        },
+        onSettled: () => {
             void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
             void queryClient.invalidateQueries({ queryKey: ["capsules"] });
             void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
-            toast.success("Comment deleted");
         },
-        onError: () => toast.error("Could not delete comment"),
     });
 
     const handleCreateComment = (content: string) => {
