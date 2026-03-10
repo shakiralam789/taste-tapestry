@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { EmotionalSegment } from "@/types/wishbook";
 import { EMOTION_COLOR_PRESETS, getEmotionFill } from "@/data/emotionColors";
+import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,8 @@ import {
   X,
   ImageIcon,
   Video,
+  Play,
+  Zap,
   ZoomIn,
   ZoomOut,
   Split,
@@ -740,99 +743,78 @@ export function EmotionalJourneyEditor({
 
   return (
     <div className={className} ref={containerRef}>
-      <div className="mb-4">
-        <h3 className="font-display font-semibold text-lg flex items-center gap-2 mb-1">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Your emotional journey
-        </h3>
-        <p className="text-sm text-muted-foreground mb-3">
-          Map how your mood changes over time. Set the total duration, then
-          split the timeline into segments and set intensity (0–10) for each
-          part.
-        </p>
-        <div className="rounded-xl border border-white/10 bg-card/20 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setHowItWorksExpanded((v) => !v)}
-            className="w-full flex items-center gap-2 text-sm font-medium text-foreground p-4 text-left hover:bg-white/5 transition-colors"
-            aria-expanded={howItWorksExpanded}
-          >
-            <HelpCircle className="w-4 h-4 text-primary flex-shrink-0" />
-            How it works
-            {howItWorksExpanded ? (
-              <ChevronDown className="w-4 h-4 ml-auto flex-shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-4 h-4 ml-auto flex-shrink-0 text-muted-foreground" />
-            )}
-          </button>
-          {howItWorksExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-t border-white/10"
-            >
-              <ul className="text-sm text-muted-foreground space-y-2 list-none p-4 pt-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-medium flex-shrink-0">
-                    1.
-                  </span>
-                  <span>
-                    <strong className="text-foreground">Split</strong> —
-                    Double-click a bar to split it at the cursor, or enter a
-                    time (seconds) and click Split below. You can have multiple
-                    segments (e.g. 0–50s, 50–60s, 60–120s).
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-medium flex-shrink-0">
-                    2.
-                  </span>
-                  <span>
-                    <strong className="text-foreground">Intensity</strong> —
-                    Drag a bar up or down to set how strong the feeling is (0 =
-                    low, 10 = high). The bar follows your cursor and stays where
-                    you release.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-medium flex-shrink-0">
-                    3.
-                  </span>
-                  <span>
-                    <strong className="text-foreground">Resize</strong> — Drag
-                    the left or right edge of a bar to change its start or end
-                    time. You can extend a segment left or right (the neighbor
-                    segment shrinks or grows).
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-medium flex-shrink-0">
-                    4.
-                  </span>
-                  <span>
-                    <strong className="text-foreground">Moment</strong> — Click
-                    a bar to select it, then add an optional image URL and
-                    comment. Segments with a note or image show an{" "}
-                    <strong className="text-foreground">i</strong> badge.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-medium flex-shrink-0">
-                    5.
-                  </span>
-                  <span>
-                    <strong className="text-foreground">Join</strong> — Select a
-                    segment and click &quot;Join with previous&quot; or
-                    &quot;Join with next&quot; to merge it with the adjacent
-                    one.
-                  </span>
-                </li>
-              </ul>
-            </motion.div>
-          )}
+      {/* Glassy Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+          <Zap className="w-6 h-6 text-blue-400 fill-blue-400/20" />
         </div>
+        <div className="flex flex-col items-start">
+          <h2 className="text-xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 uppercase font-display text-left">
+            Journey Editor
+          </h2>
+          <p className="text-[10px] font-black tracking-widest text-blue-400/60 uppercase">
+            Timeline HUD System v2.0
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-card/20 overflow-hidden mb-6">
+        <button
+          type="button"
+          onClick={() => setHowItWorksExpanded((v) => !v)}
+          className="w-full flex items-center gap-2 text-sm font-medium text-foreground p-4 text-left hover:bg-white/5 transition-colors"
+          aria-expanded={howItWorksExpanded}
+        >
+          <HelpCircle className="w-4 h-4 text-primary flex-shrink-0" />
+          How it works
+          {howItWorksExpanded ? (
+            <ChevronDown className="w-4 h-4 ml-auto flex-shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="w-4 h-4 ml-auto flex-shrink-0 text-muted-foreground" />
+          )}
+        </button>
+        {howItWorksExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-white/10"
+          >
+            <ul className="text-sm text-muted-foreground space-y-2 list-none p-4 pt-2">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-medium flex-shrink-0">1.</span>
+                <span>
+                  <strong className="text-foreground">Split</strong> — Double-click a bar to split it at the cursor, or enter a time (seconds) and click Split below. You can have multiple segments (e.g. 0–50s, 50–60s, 60–120s).
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-medium flex-shrink-0">2.</span>
+                <span>
+                  <strong className="text-foreground">Intensity</strong> — Drag a bar up or down to set how strong the feeling is (0 = low, 10 = high). The bar follows your cursor and stays where you release.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-medium flex-shrink-0">3.</span>
+                <span>
+                  <strong className="text-foreground">Resize</strong> — Drag the left or right edge of a bar to change its start or end time. You can extend a segment left or right (the neighbor segment shrinks or grows).
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-medium flex-shrink-0">4.</span>
+                <span>
+                  <strong className="text-foreground">Moment</strong> — Click a bar to select it, then add an optional image URL and comment. Segments with a note or image show an <strong className="text-foreground">i</strong> badge.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-medium flex-shrink-0">5.</span>
+                <span>
+                  <strong className="text-foreground">Join</strong> — Select a segment and click &quot;Join with previous&quot; or &quot;Join with next&quot; to merge it with the adjacent one.
+                </span>
+              </li>
+            </ul>
+          </motion.div>
+        )}
       </div>
 
       {children}
@@ -1007,20 +989,38 @@ export function EmotionalJourneyEditor({
                   id="segmentGradient"
                   x1="0%"
                   y1="0%"
-                  x2="100%"
-                  y2="0%"
+                  x2="0%"
+                  y2="100%"
                 >
                   <stop
                     offset="0%"
-                    stopColor="hsl(var(--primary))"
-                    stopOpacity={0.9}
+                    stopColor="#4a5568"
+                    stopOpacity={1}
                   />
                   <stop
                     offset="100%"
-                    stopColor="hsl(var(--secondary))"
-                    stopOpacity={0.9}
+                    stopColor="#1a202c"
+                    stopOpacity={1}
                   />
                 </linearGradient>
+
+                {EMOTION_COLOR_PRESETS.map((preset) => (
+                  <linearGradient
+                    key={`grad-edit-${preset.id}`}
+                    id={`grad-edit-${preset.id}`}
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor={preset.color} stopOpacity={1} />
+                    <stop
+                      offset="100%"
+                      stopColor={preset.colorSecondary || preset.color}
+                      stopOpacity={1}
+                    />
+                  </linearGradient>
+                ))}
               </defs>
               {/* Y grid */}
               {[0, 2, 4, 6, 8, 10].map((v) => (
@@ -1042,8 +1042,7 @@ export function EmotionalJourneyEditor({
                   : Math.max(60, Math.floor(windowSpan / 6 / 60) * 60);
                 const ticks: number[] = [];
                 const t0 = Math.floor(visibleWindowStart / step) * step;
-                for (let t = t0; t <= visibleWindowEnd; t += step)
-                  ticks.push(t);
+                for (let t = t0; t <= visibleWindowEnd; t += step) ticks.push(t);
                 if (
                   ticks.length > 0 &&
                   ticks[ticks.length - 1] !== visibleWindowEnd
@@ -1078,11 +1077,13 @@ export function EmotionalJourneyEditor({
                     seg.endSeconds > visibleWindowStart &&
                     seg.startSeconds < visibleWindowEnd,
                 )
+                .sort((a, b) => {
+                  if (a.id === selectedSegmentId) return 1;
+                  if (b.id === selectedSegmentId) return -1;
+                  return a.startSeconds - b.startSeconds;
+                })
                 .map((seg) => {
-                  const drawStart = Math.max(
-                    seg.startSeconds,
-                    visibleWindowStart,
-                  );
+                  const drawStart = Math.max(seg.startSeconds, visibleWindowStart);
                   const drawEnd = Math.min(seg.endSeconds, visibleWindowEnd);
                   const x1 = svgX(drawStart);
                   const x2 = svgX(drawEnd);
@@ -1098,21 +1099,35 @@ export function EmotionalJourneyEditor({
                       style={{ cursor: isDragging ? "grabbing" : "grab" }}
                       className="touch-none"
                     >
-                      <motion.rect
-                        x={x1}
-                        y={yTop}
-                        width={x2 - x1}
-                        height={yBottom - yTop}
-                        fill={fillColor}
-                        fillOpacity={isSelected ? 0.6 : 0.45}
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={isSelected ? 2.5 : 1}
-                        strokeOpacity={0.9}
-                        rx={2}
+                      <motion.path
+                        d={`
+                          M ${x1},${yBottom}
+                          V ${yTop + Math.min(8, (x2 - x1) / 2)}
+                          Q ${x1},${yTop} ${x1 + Math.min(8, (x2 - x1) / 2)},${yTop}
+                          H ${x2 - Math.min(8, (x2 - x1) / 2)}
+                          Q ${x2},${yTop} ${x2},${yTop + Math.min(8, (x2 - x1) / 2)}
+                          V ${yBottom}
+                          Z
+                        `.replace(/\s+/g, " ").trim()}
+                        fill={
+                          seg.emotionColor
+                            ? `url(#grad-edit-${seg.emotionColor})`
+                            : "url(#segmentGradient)"
+                        }
+                        fillOpacity={1.0}
+                        stroke={isSelected
+                          ? "#ffffff"
+                          : (seg.emotionColor
+                            ? (EMOTION_COLOR_PRESETS.find(p => p.id === seg.emotionColor)?.colorSecondary || "hsl(var(--primary))")
+                            : "#1a202c")
+                        }
+                        strokeWidth={isSelected ? 5.0 : 3.0}
+                        strokeOpacity={1}
                       />
                       {(seg.note || seg.image) && (
                         <g
-                          transform={`translate(${x1 + (x2 - x1) / 2}, ${yTop + (yBottom - yTop) / 2})`}
+                          transform={`translate(${x1 + (x2 - x1) / 2}, ${yTop + (yBottom - yTop) / 2
+                            })`}
                           pointerEvents="none"
                         >
                           <title>Moment with note or image</title>
@@ -1139,40 +1154,44 @@ export function EmotionalJourneyEditor({
                   );
                 })}
               {/* Hover playhead: vertical line + time */}
-              {hoverTimeSeconds != null && (
-                <g pointerEvents="none">
-                  <line
-                    x1={svgX(hoverTimeSeconds)}
-                    y1={PADDING.top}
-                    x2={svgX(hoverTimeSeconds)}
-                    y2={height - PADDING.bottom}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    strokeOpacity={0.9}
-                    strokeDasharray="4 4"
-                  />
-                  <rect
-                    x={svgX(hoverTimeSeconds) - 28}
-                    y={PADDING.top - 14}
-                    width={56}
-                    height={14}
-                    rx={4}
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.95}
-                  />
-                  <text
-                    x={svgX(hoverTimeSeconds)}
-                    y={PADDING.top - 5}
-                    textAnchor="middle"
-                    fill="hsl(var(--background))"
-                    fontSize={10}
-                    fontWeight="600"
-                    fontFamily="system-ui, sans-serif"
-                  >
-                    {formatTimeMinutesSeconds(hoverTimeSeconds)}
-                  </text>
-                </g>
-              )}
+              {(() => {
+                const hoverTime = hoverTimeSeconds;
+                if (hoverTime == null) return null;
+                return (
+                  <g pointerEvents="none">
+                    <line
+                      x1={svgX(hoverTime)}
+                      y1={PADDING.top}
+                      x2={svgX(hoverTime)}
+                      y2={height - PADDING.bottom}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      strokeOpacity={0.9}
+                      strokeDasharray="4 4"
+                    />
+                    <rect
+                      x={svgX(hoverTime) - 28}
+                      y={PADDING.top - 14}
+                      width={56}
+                      height={14}
+                      rx={4}
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.95}
+                    />
+                    <text
+                      x={svgX(hoverTime)}
+                      y={PADDING.top - 5}
+                      textAnchor="middle"
+                      fill="hsl(var(--background))"
+                      fontSize={10}
+                      fontWeight="600"
+                      fontFamily="system-ui, sans-serif"
+                    >
+                      {formatTimeMinutesSeconds(hoverTime)}
+                    </text>
+                  </g>
+                );
+              })()}
             </svg>
             <div
               className="absolute bottom-1 left-0 right-0 flex justify-between text-[10px] text-muted-foreground"
@@ -1182,15 +1201,10 @@ export function EmotionalJourneyEditor({
               }}
             >
               <span>{formatTimeMinutesSeconds(visibleWindowStart)}</span>
-              {xAxisInSeconds
-                ? [...Array(4)].map((_, i) => {
-                    const t = visibleWindowStart + (windowSpan * (i + 1)) / 5;
-                    return <span key={i}>{formatTimeMinutesSeconds(t)}</span>;
-                  })
-                : [...Array(4)].map((_, i) => {
-                    const t = visibleWindowStart + (windowSpan * (i + 1)) / 5;
-                    return <span key={i}>{formatTimeMinutesSeconds(t)}</span>;
-                  })}
+              {[...Array(4)].map((_, i) => {
+                const t = visibleWindowStart + (windowSpan * (i + 1)) / 5;
+                return <span key={i}>{formatTimeMinutesSeconds(t)}</span>;
+              })}
               <span>{formatTimeMinutesSeconds(visibleWindowEnd)}</span>
             </div>
             <div className="absolute left-1 top-4 text-[10px] text-muted-foreground">
@@ -1245,8 +1259,8 @@ export function EmotionalJourneyEditor({
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-sm font-medium">
                   {formatTimeMinutesSeconds(selectedSegment.startSeconds)} –{" "}
-                  {formatTimeMinutesSeconds(selectedSegment.endSeconds)} ·
-                  intensity {selectedSegment.intensity}
+                  {formatTimeMinutesSeconds(selectedSegment.endSeconds)} · intensity{" "}
+                  {selectedSegment.intensity}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button
@@ -1267,15 +1281,12 @@ export function EmotionalJourneyEditor({
                   <button
                     type="button"
                     onClick={() =>
-                      updateSegment(selectedSegment.id, {
-                        emotionColor: undefined,
-                      })
+                      updateSegment(selectedSegment.id, { emotionColor: undefined })
                     }
-                    className={`h-8 rounded-lg border-2 px-2 transition-all flex items-center justify-center gap-1 text-xs ${
-                      selectedSegment.emotionColor == null
-                        ? "border-foreground ring-2 ring-primary/30 bg-muted"
-                        : "border-transparent hover:border-white/30 bg-muted/80"
-                    }`}
+                    className={`h-8 rounded-lg border-2 px-2 transition-all flex items-center justify-center gap-1 text-xs ${selectedSegment.emotionColor == null
+                      ? "border-foreground ring-2 ring-primary/30 bg-muted"
+                      : "border-transparent hover:border-white/30 bg-muted/80"
+                      }`}
                     title="Default gradient"
                   >
                     Default
@@ -1285,16 +1296,15 @@ export function EmotionalJourneyEditor({
                       key={preset.id}
                       type="button"
                       onClick={() =>
-                        updateSegment(selectedSegment.id, {
-                          emotionColor: preset.id,
-                        })
+                        updateSegment(selectedSegment.id, { emotionColor: preset.id })
                       }
-                      className={`h-8 min-w-[2.5rem] rounded-lg border-2 transition-all flex items-center justify-center gap-1 px-2 ${
-                        selectedSegment.emotionColor === preset.id
-                          ? "border-foreground ring-2 ring-primary/30"
-                          : "border-transparent hover:border-white/30"
-                      }`}
-                      style={{ backgroundColor: preset.color }}
+                      className={`h-8 min-w-[2.5rem] rounded-lg border-2 transition-all flex items-center justify-center gap-1 px-2 ${selectedSegment.emotionColor === preset.id
+                        ? "border-foreground ring-2 ring-primary/30"
+                        : "border-transparent hover:border-white/30"
+                        }`}
+                      style={{
+                        background: `linear-gradient(to bottom, ${preset.color}, ${preset.colorSecondary || preset.color})`,
+                      }}
                       title={preset.label}
                     >
                       <span className="text-sm" title={preset.label}>
@@ -1359,6 +1369,21 @@ export function EmotionalJourneyEditor({
                       }
                       className="text-xs md:text-sm flex-1 min-w-[140px]"
                     />
+                    {selectedSegment.image && (
+                      <div className="w-10 h-10 rounded border border-white/10 overflow-hidden flex-shrink-0 bg-black/20">
+                        <img
+                          src={selectedSegment.image}
+                          alt=""
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() =>
+                            setFullscreenMedia({
+                              type: "image",
+                              url: selectedSegment.image!,
+                            })
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -1414,6 +1439,19 @@ export function EmotionalJourneyEditor({
                       }
                       className="text-xs md:text-sm flex-1 min-w-[140px]"
                     />
+                    {selectedSegment.video && (
+                      <div
+                        className="w-10 h-10 rounded border border-white/10 overflow-hidden flex-shrink-0 bg-black/20 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+                        onClick={() =>
+                          setFullscreenMedia({
+                            type: "video",
+                            url: selectedSegment.video!,
+                          })
+                        }
+                      >
+                        <Video className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="md:col-span-2 col-span-1">
@@ -1468,7 +1506,7 @@ export function EmotionalJourneyEditor({
               </Label>
               <ul className="space-y-2">
                 {normalizedSegments
-                  .filter((s) => s.id === selectedSegmentId)
+                  .filter((s) => s.note || s.image || s.video)
                   .map((s) => (
                     <li
                       key={s.id}
@@ -1484,10 +1522,7 @@ export function EmotionalJourneyEditor({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setFullscreenMedia({
-                                type: "image",
-                                url: s.image!,
-                              });
+                              setFullscreenMedia({ type: "image", url: s.image! });
                             }}
                             className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
                           >
@@ -1503,10 +1538,7 @@ export function EmotionalJourneyEditor({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setFullscreenMedia({
-                                type: "video",
-                                url: s.video!,
-                              });
+                              setFullscreenMedia({ type: "video", url: s.video! });
                             }}
                             className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
                           >
@@ -1581,13 +1613,14 @@ export function EmotionalJourneyEditor({
                 className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg"
               />
             ) : (
-              <video
-                src={fullscreenMedia.url}
-                controls
-                autoPlay
-                className="max-w-full max-h-[90vh] w-auto rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
+              <div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <VideoPlayer
+                  src={fullscreenMedia.url}
+                  autoPlayInView={true}
+                  mutedByDefault={false}
+                  loop={false}
+                />
+              </div>
             )}
           </div>
         </div>

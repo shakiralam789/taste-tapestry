@@ -640,7 +640,7 @@ export default function FavoriteShowPage() {
                               disabled={musicBusy}
                             >
                               <Upload className="w-3 h-3" />
-                              {musicUrl ? "Change music" : "Upload music"}
+                              <span className="hidden sm:block">{musicUrl ? "Change music" : "Upload music"}</span>
                             </Button>
                             <Button
                               type="button"
@@ -654,7 +654,7 @@ export default function FavoriteShowPage() {
                               disabled={musicBusy}
                             >
                               <Link2 className="w-3 h-3" />
-                              {musicUrl ? "Replace link" : "Paste link"}
+                              <span className="hidden sm:block">{musicUrl ? "Replace link" : "Paste link"}</span>
                             </Button>
                           </div>
                         )}
@@ -1039,10 +1039,6 @@ export default function FavoriteShowPage() {
           {/* Emotional journey */}
           {showJourney && (
             <section className="rounded-xl border border-white/5 bg-card/40 p-4 2xl:mb-6 mb-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                Emotional journey
-              </h2>
               <EmotionalJourneyView
                 categoryId={favorite.categoryId}
                 totalDurationSeconds={fields.totalDurationSeconds}
