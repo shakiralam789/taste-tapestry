@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/features/auth/AuthContext";
 import { updateProfile, uploadAvatar, uploadBanner } from "@/features/profile/api";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
+import { FollowDialog } from "@/components/users/FollowDialog";
 import {
   MapPin,
   Calendar,
@@ -26,7 +27,7 @@ import {
   Users,
   Heart,
   Palette,
-  ChevronRight, 
+  ChevronRight,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -68,6 +69,14 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
   const [bannerVersion, setBannerVersion] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const [followDialog, setFollowDialog] = useState<{
+    isOpen: boolean;
+    activeTab: "followers" | "following";
+  }>({
+    isOpen: false,
+    activeTab: "followers",
+  });
 
   const {
     profile,
@@ -347,11 +356,15 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                     label: "Followers",
                     value: (profile?.followersCount ?? 0).toLocaleString(),
                     icon: Users,
+                    onClick: () => setFollowDialog({ isOpen: true, activeTab: "followers" }),
+                    clickable: true,
                   },
                   {
                     label: "Following",
                     value: (profile?.followingCount ?? 0).toLocaleString(),
                     icon: Users,
+                    onClick: () => setFollowDialog({ isOpen: true, activeTab: "following" }),
+                    clickable: true,
                   },
                   {
                     label: "Member since",
@@ -366,7 +379,11 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                 ].map((stat, i) => (
                   <div
                     key={i}
-                    className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default"
+                    className={cn(
+                      "p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm transition-colors group",
+                      stat.clickable ? "cursor-pointer hover:bg-white/5" : "cursor-default"
+                    )}
+                    onClick={stat.onClick}
                   >
                     <div className="flex items-center gap-2 mb-2 text-muted-foreground">
                       <stat.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
@@ -462,6 +479,15 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
           </form>
         </DialogContent>
       </Dialog>
+
+      {profile && (
+        <FollowDialog
+          userId={profile.id}
+          isOpen={followDialog.isOpen}
+          initialTab={followDialog.activeTab}
+          onClose={() => setFollowDialog((prev) => ({ ...prev, isOpen: false }))}
+        />
+      )}
     </>
   );
 }

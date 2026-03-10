@@ -102,3 +102,33 @@ export async function followUser(userId: string): Promise<void> {
 export async function unfollowUser(userId: string): Promise<void> {
   await apiClient.delete(`/users/${userId}/follow`);
 }
+
+export interface PaginatedUserResponse {
+  items: UserSearchHit[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
+export async function getFollowers(
+  userId: string,
+  offset = 0,
+  limit = 20,
+): Promise<PaginatedUserResponse> {
+  const { data } = await apiClient.get<PaginatedUserResponse>(
+    `/users/${userId}/followers`,
+    { params: { offset, limit } }
+  );
+  return data;
+}
+
+export async function getFollowing(
+  userId: string,
+  offset = 0,
+  limit = 20,
+): Promise<PaginatedUserResponse> {
+  const { data } = await apiClient.get<PaginatedUserResponse>(
+    `/users/${userId}/following`,
+    { params: { offset, limit } }
+  );
+  return data;
+}

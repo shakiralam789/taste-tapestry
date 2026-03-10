@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -24,6 +26,7 @@ import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
 import { ClientOnly } from "@/components/common/ClientOnly";
 import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
+import { FollowDialog } from "@/components/users/FollowDialog";
 import { PROFILE_TABS } from "@/features/albums/constants";
 const USER_PROFILE_TABS = PROFILE_TABS;
 
@@ -34,6 +37,14 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
   const isOwnProfile = authUser?.id === id;
+
+  const [followDialog, setFollowDialog] = React.useState<{
+    isOpen: boolean;
+    activeTab: "followers" | "following";
+  }>({
+    isOpen: false,
+    activeTab: "followers",
+  });
   const {
     profile,
     loading: profileLoading,
@@ -218,7 +229,10 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                 transition={{ delay: 0.1 }}
                 className="grid grid-cols-2 sm:grid-cols-4 gap-4"
               >
-                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                <div
+                  className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-pointer"
+                  onClick={() => setFollowDialog({ isOpen: true, activeTab: "followers" })}
+                >
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
                     <Users className="w-4 h-4 group-hover:text-primary transition-colors" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
@@ -229,7 +243,10 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                     {profile.followersCount ?? 0}
                   </p>
                 </div>
-                <div className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-default">
+                <div
+                  className="p-4 rounded-2xl bg-card/30 border border-white/5 backdrop-blur-sm hover:bg-white/5 transition-colors group cursor-pointer"
+                  onClick={() => setFollowDialog({ isOpen: true, activeTab: "following" })}
+                >
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
                     <Users className="w-4 h-4 group-hover:text-primary transition-colors" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
@@ -281,6 +298,12 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+      <FollowDialog
+        userId={id as string}
+        isOpen={followDialog.isOpen}
+        initialTab={followDialog.activeTab}
+        onClose={() => setFollowDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
     </>
   );
 }
