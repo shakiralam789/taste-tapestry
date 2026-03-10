@@ -53,7 +53,8 @@ export function Navbar() {
     queryKey: ["messages", "unread-count"],
     queryFn: getTotalUnreadCount,
     enabled: !!user,
-    refetchInterval: 30_000,
+    staleTime: Infinity,
+    // Real-time updates handled via Socket.io
   });
 
   const handleNotificationClick = (n: any) => {

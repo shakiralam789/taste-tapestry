@@ -67,7 +67,7 @@ export function MessageThread({
                 containerRef.current!.scrollTop = containerRef.current!.scrollHeight;
                 isFirstLoad.current = false;
             } else {
-                bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+                bottomRef.current?.scrollIntoView({ behavior: "auto" });
             }
         };
 

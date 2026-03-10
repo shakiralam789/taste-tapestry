@@ -115,15 +115,15 @@ function ConversationItem({
   const muteMutation = useMutation({
     mutationFn: () => muteConversation(convo.id),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["conversations"] });
+      void qc.invalidateQueries({ queryKey: ["conversations"], exact: true });
     },
   });
 
   const clearMutation = useMutation({
     mutationFn: () => clearConversation(convo.id),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["conversations"] });
-      void qc.invalidateQueries({ queryKey: ["messages", "unread-count"] });
+      void qc.invalidateQueries({ queryKey: ["conversations"], exact: true });
+      void qc.invalidateQueries({ queryKey: ["messages", "unread-count"], exact: true });
       if (isActive) {
         onClick(); // Deselect if clearing active
       }
@@ -265,8 +265,7 @@ function MessagesPageInner() {
   const { data: conversations = [], isLoading: convosLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: getConversations,
-    staleTime: 10_000,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
     enabled: !!user,
   });
 
@@ -316,7 +315,6 @@ function MessagesPageInner() {
     },
     onUpdate: (msg) => {
       setMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
-      void qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onUserOnline: (e) =>
       setOnlineUsers((prev) => new Set([...prev, e.userId])),
@@ -467,7 +465,7 @@ function MessagesPageInner() {
           convoId = newConvo.id;
           setActiveConvoId(convoId);
           setPendingPartner(null);
-          void qc.invalidateQueries({ queryKey: ["conversations"] });
+          void qc.invalidateQueries({ queryKey: ["conversations"], exact: true });
         } catch (err) {
           console.error("Failed to create conversation:", err);
           toast.error("Failed to start conversation");

@@ -52,22 +52,25 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
             s.on("connect", () => setConnected(true));
             s.on("disconnect", () => setConnected(false));
 
+            const invalidateDebounceRef = { current: null as NodeJS.Timeout | null };
+            const triggerInvalidate = () => {
+                if (invalidateDebounceRef.current) clearTimeout(invalidateDebounceRef.current);
+                invalidateDebounceRef.current = setTimeout(() => {
+                    void queryClient.invalidateQueries({ queryKey: ["conversations"], exact: true });
+                    invalidateDebounceRef.current = null;
+                }, 300);
+            };
+
             // Real-time unread count update
             s.on("messages:unread_count", (data: { count: number }) => {
                 // Update the React Query cache instantly
                 queryClient.setQueryData(["messages", "unread-count"], data.count);
             });
 
-            // Also invalidate on new messages just in case
-            s.on("messages:new", () => {
-                void queryClient.invalidateQueries({ queryKey: ["messages", "unread-count"] });
-                void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-            });
-
-            s.on("messages:read", () => {
-                void queryClient.invalidateQueries({ queryKey: ["messages", "unread-count"] });
-                void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-            });
+            // Unified reactive invalidation
+            s.on("messages:new", triggerInvalidate);
+            s.on("messages:read", triggerInvalidate);
+            s.on("messages:updated", triggerInvalidate);
 
             socketRef.current = s;
         } else {

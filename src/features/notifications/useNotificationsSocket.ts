@@ -11,17 +11,17 @@ export function useNotificationsSocket() {
 
   const getSocket = useCallback(() => {
     if (socket) return socket;
-    
+
     // Clean URL: remove /api suffix if present to connect to the socket server root
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
     const socketUrl = baseUrl.replace(/\/api$/, "");
-    
+
     socket = io(socketUrl, {
       withCredentials: true,
       auth: { userId: user?.id },
       autoConnect: false, // We'll connect manually
     });
-    
+
     return socket;
   }, [user?.id]);
 
