@@ -101,12 +101,23 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
             toast.error("You must be logged in to react");
             return;
         }
-        const comment = comments.find(c => c.id === commentId) ||
-            comments.flatMap(c => c.replies || []).find(r => r.id === commentId);
+
+        const findCommentRecursive = (nodes: any[], id: string): any | undefined => {
+            for (const node of nodes) {
+                if (node.id === id) return node;
+                if (node.replies && node.replies.length > 0) {
+                    const found = findCommentRecursive(node.replies, id);
+                    if (found) return found;
+                }
+            }
+            return undefined;
+        };
+
+        const comment = findCommentRecursive(comments, commentId);
 
         if (!comment) return;
 
-        const hasAlreadyReacted = comment.reactions?.some(r => r.userId === user.id && r.type === type);
+        const hasAlreadyReacted = comment.reactions?.some((r: any) => r.userId === user.id && r.type === type);
         reactMutation.mutate({ id: commentId, type, isRemove: !!hasAlreadyReacted });
     };
 
