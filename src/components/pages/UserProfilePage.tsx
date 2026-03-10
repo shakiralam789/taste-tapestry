@@ -89,6 +89,31 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
     onError: () => toast.error("Could not unfollow"),
   });
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = `Check out ${displayName}'s profile on Taste Tapestry`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          url,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          toast.error("Could not share profile");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Profile link copied to clipboard!");
+      } catch {
+        toast.error("Could not copy link");
+      }
+    }
+  };
+
   const isFollowing = followStatus?.isFollowing ?? false;
 
   if (profileLoading && !profile) {
@@ -204,6 +229,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                     className="w-full rounded-xl"
                     variant="outline"
                     size="sm"
+                    onClick={handleShare}
                   >
                     <Share2 className="w-4 h-4 mr-2" /> Share
                   </Button>

@@ -169,7 +169,7 @@ export default function CapsuleShowPage() {
           <p className="text-lg text-muted-foreground">
             Capsule not found or no longer available.
           </p>
-          <Button variant="outline" onClick={() => router.push("/capsules")}>
+          <Button variant="outline" onClick={() => router.push("/")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to capsules
           </Button>

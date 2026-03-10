@@ -27,6 +27,7 @@ import {
   Users,
   Heart,
   Palette,
+  Share2,
   ChevronRight,
   Loader2,
 } from "lucide-react";
@@ -102,6 +103,31 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     1,
     new Date().getFullYear() - displaySinceYear + 1,
   );
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/users/${authUser?.id}`;
+    const title = `Check out my profile on Taste Tapestry`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          url,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          toast.error("Could not share profile");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Profile link copied to clipboard!");
+      } catch {
+        toast.error("Could not copy link");
+      }
+    }
+  };
 
   useEffect(() => {
     if (editOpen && profile) {
@@ -244,18 +270,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               className="lg:sticky top-20 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
-              <div className="w-fit absolute top-4 right-4">
-                <Button
-                  type="button"
-                  className="w-fit rounded-xl"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Edit
-                </Button>
-              </div>
+
               <div className="relative md:mb-6 mb-4 group">
                 <input
                   ref={avatarInputRef}
@@ -308,6 +323,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                 {displayBio}
               </p>
 
+
               <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
                   <MapPin className="w-3.5 h-3.5" />
@@ -319,8 +335,29 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
+             
               {/* Quick discovery links */}
-              <div className="md:mt-6 mt-4 w-full space-y-2">
+              <div className="w-full space-y-2">
+                 <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit
+                </Button>
+              </div>
                 <Link href="/matches" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">
