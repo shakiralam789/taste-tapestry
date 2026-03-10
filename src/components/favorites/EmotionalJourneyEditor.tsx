@@ -1121,8 +1121,8 @@ export function EmotionalJourneyEditor({
                             ? (EMOTION_COLOR_PRESETS.find(p => p.id === seg.emotionColor)?.colorSecondary || "hsl(var(--primary))")
                             : "#1a202c")
                         }
-                        strokeWidth={isSelected ? 5.0 : 3.0}
-                        strokeOpacity={1}
+                        strokeWidth={isSelected ? 3.0 : 3.0}
+                        strokeOpacity={0.5}
                       />
                       {(seg.note || seg.image) && (
                         <g
@@ -1292,25 +1292,29 @@ export function EmotionalJourneyEditor({
                     Default
                   </button>
                   {EMOTION_COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() =>
-                        updateSegment(selectedSegment.id, { emotionColor: preset.id })
-                      }
-                      className={`h-8 min-w-[2.5rem] rounded-lg border-2 transition-all flex items-center justify-center gap-1 px-2 ${selectedSegment.emotionColor === preset.id
-                        ? "border-foreground ring-2 ring-primary/30"
-                        : "border-transparent hover:border-white/30"
-                        }`}
-                      style={{
-                        background: `linear-gradient(to bottom, ${preset.color}, ${preset.colorSecondary || preset.color})`,
-                      }}
-                      title={preset.label}
-                    >
-                      <span className="text-sm" title={preset.label}>
-                        {preset.emoji}
-                      </span>
-                    </button>
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() =>
+                          updateSegment(selectedSegment.id, { emotionColor: preset.id })
+                        }
+                        className={`h-8 min-w-[2.5rem] rounded-lg border-2 transition-all flex items-center justify-center gap-1 px-2 ${selectedSegment.emotionColor === preset.id
+                          ? "border-white/30 ring-2 ring-primary/30"
+                          : "border-transparent hover:border-white/30"
+                          }`}
+                        style={{
+                          background: `radial-gradient(circle, ${preset.color}, ${preset.colorSecondary || preset.color})`,
+                        }}
+                        title={preset.label}
+                      >
+                        <span className="text-sm" title={preset.label}>
+                          {preset.emoji}
+                        </span>
+                      </button>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">{preset.label}</p>
+                    </div>
+
                   ))}
                 </div>
               </div>

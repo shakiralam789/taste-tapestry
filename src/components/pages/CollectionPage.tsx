@@ -405,7 +405,7 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                         {allItems.map((favorite) => (
                                             <div key={favorite.id} className="relative group">
                                                 <ProfilePostCard

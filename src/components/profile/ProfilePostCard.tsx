@@ -176,7 +176,7 @@ export function ProfilePostCard({
           <PrivateBadge className="absolute top-3 left-3" />
         )}
         <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-          <div className="px-3 md:px-5">
+          <div className="px-3 md:px-4">
             <div className="flex items-center gap-2 mb-1 text-primary text-xs font-semibold tracking-wider uppercase opacity-90 group-hover:opacity-100 transition-opacity delay-100">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               {favorite.categoryId}
@@ -192,7 +192,7 @@ export function ProfilePostCard({
                 </p>
               ) : null;
             })()}
-            <p className="truncate font-display md:text-xl text-base sm:text-lg font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
+            <p className="truncate font-display md:text-lg text-base font-bold text-white mb-2 leading-tight drop-shadow-md underline-offset-2 hover:underline">
               {favorite.title}
             </p>
           </div>

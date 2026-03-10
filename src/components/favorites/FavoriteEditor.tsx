@@ -1651,7 +1651,7 @@ export function FavoriteEditor({
                                   style={{
                                     width: `${widthPct}%`,
                                     height: `${(s.intensity / 10) * 100}%`,
-                                    backgroundColor: fill,
+                                    background: `linear-gradient(to bottom, ${fill}, ${fill})`,
                                     opacity: 0.8,
                                   }}
                                 />
