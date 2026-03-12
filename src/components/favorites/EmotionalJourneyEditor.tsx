@@ -451,7 +451,7 @@ export function EmotionalJourneyEditor({
         ...normalizedSegments.slice(idx + 1),
       ];
       onSegmentsChange(next);
-      setSelectedSegmentId(right.id);
+      setSelectedSegmentId(left.id);
       setSplitAtSeconds("");
     },
     [normalizedSegments, onSegmentsChange],
@@ -1292,9 +1292,8 @@ export function EmotionalJourneyEditor({
                     Default
                   </button>
                   {EMOTION_COLOR_PRESETS.map((preset) => (
-                    <div className="flex flex-col items-center gap-1">
+                    <div key={preset.id} className="flex flex-col items-center gap-1">
                       <button
-                        key={preset.id}
                         type="button"
                         onClick={() =>
                           updateSegment(selectedSegment.id, { emotionColor: preset.id })
@@ -1314,7 +1313,6 @@ export function EmotionalJourneyEditor({
                       </button>
                       <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">{preset.label}</p>
                     </div>
-
                   ))}
                 </div>
               </div>

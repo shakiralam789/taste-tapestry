@@ -29,6 +29,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmotionalJourneyEditor } from "@/components/favorites/EmotionalJourneyEditor";
 import type { Favorite, Mood, EmotionalSegment } from "@/types/wishbook";
 import { getEmotionFill } from "@/data/emotionColors";
@@ -316,7 +317,7 @@ export function FavoriteEditor({
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!formData.title?.trim() || !formData.whyILike?.trim()) {
+    if (!formData.title?.trim()) {
       setSubmitAttempted(true);
       return;
     }
@@ -327,14 +328,14 @@ export function FavoriteEditor({
     const currentFields: Record<string, unknown> = isCategoryWithExtra
       ? {}
       : {
-          genre: formData.genre
-            .split(",")
-            .map((g) => g.trim())
-            .filter(Boolean),
-          releaseYear:
-            parseInt(formData.releaseYear, 10) || new Date().getFullYear(),
-          plotSummary: formData.plotSummary,
-        };
+        genre: formData.genre
+          .split(",")
+          .map((g) => g.trim())
+          .filter(Boolean),
+        releaseYear:
+          parseInt(formData.releaseYear, 10) || new Date().getFullYear(),
+        plotSummary: formData.plotSummary,
+      };
 
     if (isCategoryWithExtra && extraDefs) {
       for (const d of extraDefs) {
@@ -498,7 +499,7 @@ export function FavoriteEditor({
         episodeRuntimeMinutes =
           Array.isArray(runTimes) && runTimes.length > 0
             ? runTimes.reduce((a: number, b: number) => a + b, 0) /
-              runTimes.length
+            runTimes.length
             : null;
         if (
           (episodeRuntimeMinutes == null || episodeRuntimeMinutes <= 0) &&
@@ -766,7 +767,7 @@ export function FavoriteEditor({
                           selectedCategory === "movies"
                             ? "e.g., Eternal Sunshine of the Spotless Mind"
                             : selectedCategory === "series" ||
-                                selectedCategory === "anime"
+                              selectedCategory === "anime"
                               ? "e.g., Breaking Bad"
                               : selectedCategory === "songs"
                                 ? "e.g., Blinding Lights"
@@ -975,7 +976,7 @@ export function FavoriteEditor({
                           />
                         </div>
                         {seasonEpisodeCounts.length === 0 ||
-                        seasonEpisodeCounts.length === 1 ? (
+                          seasonEpisodeCounts.length === 1 ? (
                           <div>
                             <Label htmlFor="episodes">
                               Number of episodes *
@@ -1101,7 +1102,7 @@ export function FavoriteEditor({
                         Your thoughts about{" "}
                         {CATEGORY_SINGULAR[selectedCategory]
                           ? `this ${CATEGORY_SINGULAR[selectedCategory]}`
-                          : "it"} <span className="text-red-500">*</span>
+                          : "it"}
                       </Label>
                       <Textarea
                         id="why"
@@ -1192,71 +1193,104 @@ export function FavoriteEditor({
                             build the emotional journey for that episode like
                             you would for a movie.
                           </p>
-                          <div className="space-y-3 mb-4">
+                          <div className="space-y-4 mb-6">
                             {seasonEpisodeCounts.length <= 1 ? (
                               <div className="flex flex-wrap gap-2">
                                 {Array.from(
                                   { length: totalEpisodesDerived },
                                   (_, i) => (
-                                    <Button
+                                    <button
                                       key={i}
                                       type="button"
-                                      variant={
-                                        selectedEpisodeIndex === i
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                      size="sm"
                                       onClick={() => setSelectedEpisodeIndex(i)}
+                                      className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 border ${selectedEpisodeIndex === i
+                                        ? "bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                        : "bg-[#1a1c26] border-white/5 text-gray-500 hover:text-gray-300"
+                                        }`}
                                     >
                                       Ep {i + 1}
-                                    </Button>
+                                    </button>
                                   ),
                                 )}
                               </div>
                             ) : (
-                              <div>
-                                {(() => {
-                                  let flatIndex = 0;
-                                  return seasonEpisodeCounts.map((count, s) => {
-                                    const start = flatIndex;
-                                    flatIndex += count;
+                              <Tabs
+                                value={(() => {
+                                  let currentSeason = 0;
+                                  let episodesSum = 0;
+                                  for (let i = 0; i < seasonEpisodeCounts.length; i++) {
+                                    episodesSum += seasonEpisodeCounts[i];
+                                    if (selectedEpisodeIndex < episodesSum) {
+                                      currentSeason = i;
+                                      break;
+                                    }
+                                  }
+                                  return currentSeason.toString();
+                                })()}
+                                className="w-full"
+                                onValueChange={(val) => {
+                                  const seasonIdx = parseInt(val, 10);
+                                  let startIdx = 0;
+                                  for (let i = 0; i < seasonIdx; i++) {
+                                    startIdx += seasonEpisodeCounts[i];
+                                  }
+                                  setSelectedEpisodeIndex(startIdx);
+                                }}
+                              >
+                                <TabsList className="bg-[#12141c]/60 border border-white/5 p-1 h-auto flex-wrap justify-start gap-1 mb-4">
+                                  {seasonEpisodeCounts.map((count, s) => {
                                     if (count <= 0) return null;
                                     return (
-                                      <div key={s}>
-                                        <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                                          Season {s + 1}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                          {Array.from(
-                                            { length: count },
-                                            (_, e) => {
-                                              const i = start + e;
-                                              return (
-                                                <Button
-                                                  key={i}
-                                                  type="button"
-                                                  variant={
-                                                    selectedEpisodeIndex === i
-                                                      ? "default"
-                                                      : "outline"
-                                                  }
-                                                  size="sm"
-                                                  onClick={() =>
-                                                    setSelectedEpisodeIndex(i)
-                                                  }
-                                                >
-                                                  E{e + 1}
-                                                </Button>
-                                              );
-                                            },
-                                          )}
-                                        </div>
-                                      </div>
+                                      <TabsTrigger
+                                        key={s}
+                                        value={s.toString()}
+                                        className="px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/50 border border-transparent"
+                                      >
+                                        Season {s + 1}
+                                      </TabsTrigger>
                                     );
-                                  });
-                                })()}
-                              </div>
+                                  })}
+                                </TabsList>
+
+                                {seasonEpisodeCounts.map((count, s) => {
+                                  let startIdx = 0;
+                                  for (let i = 0; i < s; i++) startIdx += seasonEpisodeCounts[i];
+
+                                  const isSelectedSeason = (() => {
+                                    let episodesSum = 0;
+                                    for (let i = 0; i < seasonEpisodeCounts.length; i++) {
+                                      episodesSum += seasonEpisodeCounts[i];
+                                      if (selectedEpisodeIndex < episodesSum) return i === s;
+                                    }
+                                    return false;
+                                  })();
+
+                                  if (!isSelectedSeason) return null;
+
+                                  return (
+                                    <div key={s} className="space-y-4">
+                                      <div className="flex flex-wrap gap-2">
+                                        {Array.from({ length: count }, (_, e) => {
+                                          const i = startIdx + e;
+                                          return (
+                                            <button
+                                              key={i}
+                                              type="button"
+                                              onClick={() => setSelectedEpisodeIndex(i)}
+                                              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 border ${selectedEpisodeIndex === i
+                                                ? "bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                                : "bg-[#1a1c26] border-white/5 text-gray-500 hover:text-gray-300"
+                                                }`}
+                                            >
+                                              Ep {e + 1}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </Tabs>
                             )}
                           </div>
                         </EmotionalJourneyEditor>
@@ -1391,52 +1425,37 @@ export function FavoriteEditor({
                   </div>
                   {step === (hasEmotionalJourney ? 4 : 3) && (
                     <div className="mt-6 space-y-4">
-                      {submitAttempted &&
-                        (!formData.title?.trim() ||
-                          !formData.whyILike?.trim()) && (
-                          <div
-                            role="status"
-                            className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
-                          >
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                              <AlertCircle className="h-4 w-4" aria-hidden />
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground">
-                                Almost there — complete these to add to
-                                favorites
-                              </p>
-                              <ul className="mt-1.5 flex flex-wrap gap-2 text-muted-foreground">
-                                {!formData.title?.trim() && (
-                                  <li>
-                                    <button
-                                      type="button"
-                                      onClick={() => setStep(1)}
-                                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
-                                    >
-                                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                                      Step 1: Title
-                                      <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
-                                    </button>
-                                  </li>
-                                )}
-                                {!formData.whyILike?.trim() && (
-                                  <li>
-                                    <button
-                                      type="button"
-                                      onClick={() => setStep(2)}
-                                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
-                                    >
-                                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                                      Step 2: Your thoughts
-                                      <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
-                                    </button>
-                                  </li>
-                                )}
-                              </ul>
-                            </div>
+                      {submitAttempted && !formData.title?.trim() && (
+                        <div
+                          role="status"
+                          className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-4 w-4" aria-hidden />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground">
+                              Almost there — complete these to add to
+                              favorites
+                            </p>
+                            <ul className="mt-1.5 flex flex-wrap gap-2 text-muted-foreground">
+                              {!formData.title?.trim() && (
+                                <li>
+                                  <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-amber-500/20 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-amber-500/10"
+                                  >
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                    Step 1: Title
+                                    <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
+                                  </button>
+                                </li>
+                              )}
+                            </ul>
                           </div>
-                        )}
+                        </div>
+                      )}
                       <div className="flex flex-col sm:flex-row gap-3 justify-between">
                         <Button variant="outline" onClick={goBack}>
                           Back
@@ -1473,13 +1492,12 @@ export function FavoriteEditor({
                           key={i}
                           type="button"
                           onClick={() => setStep(i + 1)}
-                          className={`h-4 rounded-full transition-all duration-300 ${
-                            i + 1 === step
-                              ? "w-8 bg-primary"
-                              : i + 1 < step
-                                ? "w-4 bg-primary/60"
-                                : "w-4 bg-gray-500"
-                          }`}
+                          className={`h-4 rounded-full transition-all duration-300 ${i + 1 === step
+                            ? "w-8 bg-primary"
+                            : i + 1 < step
+                              ? "w-4 bg-primary/60"
+                              : "w-4 bg-gray-500"
+                            }`}
                           aria-label={`Go to step ${i + 1}`}
                         />
                       ))}
@@ -1587,12 +1605,12 @@ export function FavoriteEditor({
                         : emotionalSegments;
                       const totalSec = isSeriesOrAnime
                         ? (episodeDurations[selectedEpisodeIndex] ?? 0) ||
-                          Math.max(1, ...(segs.map((s) => s.endSeconds) || [0]))
+                        Math.max(1, ...(segs.map((s) => s.endSeconds) || [0]))
                         : totalDurationSeconds ||
-                          Math.max(
-                            1,
-                            ...emotionalSegments.map((s) => s.endSeconds),
-                          );
+                        Math.max(
+                          1,
+                          ...emotionalSegments.map((s) => s.endSeconds),
+                        );
                       if (segs.length < 1) return null;
                       const sorted = [...segs].sort(
                         (a, b) => a.startSeconds - b.startSeconds,
@@ -1601,23 +1619,22 @@ export function FavoriteEditor({
                         isSeriesOrAnime && totalEpisodesDerived > 0
                           ? seasonEpisodeCounts.length > 1
                             ? (() => {
-                                let idx = 0;
-                                for (
-                                  let s = 0;
-                                  s < seasonEpisodeCounts.length;
-                                  s++
-                                ) {
-                                  if (
-                                    selectedEpisodeIndex <
-                                    idx + seasonEpisodeCounts[s]
-                                  )
-                                    return `S${s + 1} E${
-                                      selectedEpisodeIndex - idx + 1
+                              let idx = 0;
+                              for (
+                                let s = 0;
+                                s < seasonEpisodeCounts.length;
+                                s++
+                              ) {
+                                if (
+                                  selectedEpisodeIndex <
+                                  idx + seasonEpisodeCounts[s]
+                                )
+                                  return `S${s + 1} E${selectedEpisodeIndex - idx + 1
                                     }`;
-                                  idx += seasonEpisodeCounts[s];
-                                }
-                                return `Ep ${selectedEpisodeIndex + 1}`;
-                              })()
+                                idx += seasonEpisodeCounts[s];
+                              }
+                              return `Ep ${selectedEpisodeIndex + 1}`;
+                            })()
                             : `Ep ${selectedEpisodeIndex + 1}`
                           : null;
                       return (
@@ -1638,8 +1655,8 @@ export function FavoriteEditor({
                               const widthPct =
                                 totalSec > 0
                                   ? ((s.endSeconds - s.startSeconds) /
-                                      totalSec) *
-                                    100
+                                    totalSec) *
+                                  100
                                   : 0;
                               const fill =
                                 getEmotionFill(s.emotionColor) ||
