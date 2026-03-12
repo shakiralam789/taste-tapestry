@@ -11,6 +11,8 @@ import { Plus, Rocket } from "lucide-react";
 import { getProfile, PROFILE_QUERY_STALE_MS } from "@/features/profile/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useState } from "react";
 
 export default function Capsules() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function Capsules() {
     displayAvatar,
   } = useProfileInfo();
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: capsules = [], isLoading } = useQuery({
     queryKey: ["capsules"],
@@ -50,9 +53,11 @@ export default function Capsules() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["capsules"] });
       toast.success("Capsule deleted");
+      setDeleteId(null);
     },
     onError: () => {
       toast.error("Could not delete capsule");
+      setDeleteId(null);
     },
   });
   return (
@@ -107,7 +112,7 @@ export default function Capsules() {
                 onClick={() => router.push(`/capsules/${capsule.id}`)}
                 showActions
                 authorName={displayName || "You"}
-                authorSubtitle="Your time capsule"
+                authorSubtitle="Time capsule"
                 authorAvatar={displayAvatar || null}
                 onEdit={() => router.push(`/update-captule/${capsule.id}`)}
                 onToggleVisibility={(visibility) =>
@@ -116,12 +121,23 @@ export default function Capsules() {
                     visibility,
                   })
                 }
-                onDelete={() => deleteCapsuleMutation.mutate(capsule.id)}
+                onDelete={() => setDeleteId(capsule.id)}
               />
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Delete Time Capsule?"
+        description="Are you sure you want to delete this capsule? This will permanently remove your memories and associated comments from the platform."
+        confirmText="Delete Capsule"
+        variant="destructive"
+        isLoading={deleteCapsuleMutation.isPending}
+        onConfirm={() => deleteId && deleteCapsuleMutation.mutate(deleteId)}
+      />
     </>
   );
 }

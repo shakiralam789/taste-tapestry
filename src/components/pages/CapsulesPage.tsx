@@ -10,9 +10,12 @@ import { deleteCapsule, getMyCapsules, updateCapsule } from "@/features/capsules
 import { getProfile } from "@/features/profile/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useState } from "react";
 
 export default function CapsulesPage() {
   const router = useRouter();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -45,9 +48,11 @@ export default function CapsulesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["capsules"] });
       toast.success("Capsule deleted");
+      setDeleteId(null);
     },
     onError: () => {
       toast.error("Could not delete capsule");
+      setDeleteId(null);
     },
   });
 
@@ -103,15 +108,15 @@ export default function CapsulesPage() {
             className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"
           >
             {[
-              { 
-                icon: Archive, 
-                title: 'Capture Moments', 
-                desc: 'Bundle your favorites from specific time periods' 
+              {
+                icon: Archive,
+                title: 'Capture Moments',
+                desc: 'Bundle your favorites from specific time periods'
               },
-              { 
-                icon: Sparkles, 
-                title: 'Tell Your Story', 
-                desc: 'Add personal notes and emotions to each capsule' 
+              {
+                icon: Sparkles,
+                title: 'Tell Your Story',
+                desc: 'Add personal notes and emotions to each capsule'
               },
             ].map((item, index) => (
               <motion.div
@@ -153,7 +158,7 @@ export default function CapsulesPage() {
                       profile?.username?.trim() ||
                       "You"
                     }
-                    authorSubtitle="Your time capsule"
+                    authorSubtitle="Time capsule"
                     authorAvatar={profile?.avatar ?? null}
                     onEdit={() => router.push(`/update-captule/${capsule.id}`)}
                     onToggleVisibility={(visibility) =>
@@ -162,7 +167,7 @@ export default function CapsulesPage() {
                         visibility,
                       })
                     }
-                    onDelete={() => deleteMutation.mutate(capsule.id)}
+                    onDelete={() => setDeleteId(capsule.id)}
                   />
                 </motion.div>
               ))}
@@ -209,6 +214,17 @@ export default function CapsulesPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Delete Time Capsule?"
+        description="Are you sure you want to delete this capsule? This will permanently remove your memories and associated comments from the platform."
+        confirmText="Delete Capsule"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+      />
     </Layout>
   );
 }

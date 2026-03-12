@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Clock, Sparkles, Plus, X } from "lucide-react";
+import { ArrowLeft, Upload, Clock, Sparkles, Plus, X, ChevronRight, ChevronLeft, Zap } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { AnimatePresence } from "framer-motion";
 import { CapsuleMediaUploader } from "@/components/capsules/CapsuleMediaUploader";
 import { createCapsule, getCapsule, updateCapsule } from "@/features/capsules/api";
 import { toast } from "sonner";
@@ -38,6 +40,9 @@ export default function CreateCapsulePage() {
     images: [],
     videos: [],
   });
+  const [step, setStep] = useState(1);
+  const [isQuickPost, setIsQuickPost] = useState(false);
+  const totalSteps = 3;
 
   const { data: existingCapsule } = useQuery({
     queryKey: ["capsule", editId],
@@ -60,7 +65,7 @@ export default function CreateCapsulePage() {
         : undefined;
     const safeBanner =
       existingCapsule.bannerImage &&
-      !existingCapsule.bannerImage.startsWith("blob:")
+        !existingCapsule.bannerImage.startsWith("blob:")
         ? existingCapsule.bannerImage
         : undefined;
 
@@ -127,6 +132,11 @@ export default function CreateCapsulePage() {
   };
 
   const handleSubmit = () => {
+    if (step < totalSteps && !isQuickPost) {
+      setStep(step + 1);
+      return;
+    }
+
     const filteredImages = media.images.filter((src) => !src.startsWith("blob:"));
     const filteredVideos = media.videos.filter((src) => !src.startsWith("blob:"));
 
@@ -149,10 +159,13 @@ export default function CreateCapsulePage() {
       images: filteredImages.length ? filteredImages : undefined,
       videos: filteredVideos.length ? filteredVideos : undefined,
       favorites: [],
-      emotions,
-      story: formData.story || undefined,
+      emotions: isQuickPost ? [] : emotions,
+      story: isQuickPost ? undefined : (formData.story || undefined),
     });
   };
+
+  const goBack = () => setStep(Math.max(1, step - 1));
+  const goNext = () => setStep(Math.min(totalSteps, step + 1));
 
   const posterPreview =
     coverImage || media.images[0] || media.videos[0] || null;
@@ -184,23 +197,24 @@ export default function CreateCapsulePage() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-8 flex items-center gap-4"
           >
             <Button
-              variant="ghost"
+              variant="outline"
+              size="icon"
               onClick={() => router.back()}
-              className="mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
             </Button>
-            <h1 className="font-display text-3xl font-bold">
-              {editId ? "Edit" : "Create"}{" "}
-              <span className="gradient-text">Time Capsule</span>
-            </h1>
-            <p className="text-muted-foreground">
-              Preserve a chapter of your life through the things you loved
-            </p>
+            <div>
+              <h1 className="font-display text-3xl font-bold">
+                {editId ? "Edit" : "Create"}{" "}
+                <span className="gradient-text">Time Capsule</span>
+              </h1>
+              <p className="text-muted-foreground">
+                Preserve a chapter of your life through the things you loved
+              </p>
+            </div>
           </motion.div>
 
           <div className="grid gap-10 md:grid-cols-12 items-start">
@@ -209,186 +223,305 @@ export default function CreateCapsulePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="col-span-7 shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-500 ease-out hover:shadow-elevated hover:scale-[1.02] active:scale-[0.98]"
+              className="col-span-7 space-y-6"
             >
-              <div className="space-y-6">
-                {/* Basic Info */}
-                <div className="elevated-card space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="title"
-                      className="mb-1 flex items-center gap-2"
-                    >
-                      <Clock className="w-4 h-4 text-primary" />
-                      Capsule Title *
-                    </Label>
-                    <Input
-                      id="title"
-                      placeholder="e.g., College Days, Summer of 2023"
-                      value={formData.title}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          title: e.target.value,
-                        }))
-                      }
-                    />
+              {/* Premium Header/Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-primary/5 border border-white/5 backdrop-blur-md mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                    <Zap className="w-5 h-5 text-primary" />
                   </div>
-
                   <div>
-                    <Label htmlFor="period">Time Period</Label>
-                    <Input
-                      id="period"
-                      placeholder="e.g., 2018-2022, Summer 2023"
-                      value={formData.period}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          period: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">
-                      One line that describes this era
-                    </Label>
-                    <Textarea
-                      id="description"
-                      placeholder="e.g., The years I learned to let go."
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          description: e.target.value,
-                        }))
-                      }
-                      rows={2}
-                    />
+                    <p className="text-xs font-black uppercase tracking-widest text-primary/70">Mode</p>
+                    <p className="text-sm font-bold">{isQuickPost ? "Quick Post" : "Full Story"}</p>
                   </div>
                 </div>
-
-                {/* Extra media */}
-                <CapsuleMediaUploader
-                  images={media.images}
-                  videos={media.videos}
-                  coverUrl={coverImage}
-                  bannerUrl={bannerImage}
-                  onChange={setMedia}
-                  onCoverChange={setCoverImage}
-                  onBannerChange={setBannerImage}
-                />
-
-                {/* Emotions */}
-                <div className="elevated-card">
-                  <Label className="text-base font-medium mb-4 block">
-                    How this phase felt
-                  </Label>
-
-                  {/* Suggestions */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {emotionSuggestions.map((emotion) => (
-                      <Button
-                        key={emotion}
-                        variant={
-                          emotions.includes(emotion) ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() =>
-                          emotions.includes(emotion)
-                            ? removeEmotion(emotion)
-                            : addEmotion(emotion)
-                        }
-                      >
-                        {emotion}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {/* Custom Input */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add custom emotion..."
-                      value={newEmotion}
-                      onChange={(e) => setNewEmotion(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        (e.preventDefault(), addEmotion(newEmotion))
-                      }
-                    />
-                    <Button
-                      onClick={() => addEmotion(newEmotion)}
-                      variant="outline"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {/* Selected Emotions */}
-                  {emotions.filter((e) => !emotionSuggestions.includes(e))
-                    .length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {emotions
-                        .filter((e) => !emotionSuggestions.includes(e))
-                        .map((emotion) => (
-                          <span
-                            key={emotion}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent text-sm"
-                          >
-                            {emotion}
-                            <button onClick={() => removeEmotion(emotion)}>
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Story */}
-                <div className="elevated-card">
-                  <Label
-                    htmlFor="story"
-                    className="text-base font-medium flex items-center gap-2 mb-3"
-                  >
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    Your story of this chapter
-                  </Label>
-                  <Textarea
-                    id="story"
-                    placeholder="Write about what happened during this time. What defined these days? What do you want to remember?"
-                    value={formData.story}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        story: e.target.value,
-                      }))
-                    }
-                    rows={6}
+                <div className="flex items-center gap-3 bg-black/20 p-2 rounded-xl border border-white/5">
+                  <span className={`text-xs font-bold transition-colors ${!isQuickPost ? "text-white" : "text-gray-500"}`}>Full Story</span>
+                  <Switch
+                    checked={isQuickPost}
+                    onCheckedChange={(val) => {
+                      setIsQuickPost(val);
+                      if (val) setStep(1);
+                    }}
                   />
+                  <span className={`text-xs font-bold transition-colors ${isQuickPost ? "text-white" : "text-gray-500"}`}>Quick Post</span>
                 </div>
               </div>
-              {/* Capsule preview (design-only, mirrors favorite preview shell) */}
 
-              {/* Submit */}
-              <div className="flex gap-4 pt-6 mt-4 border-t border-white/10">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.back()}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="gradient"
-                  className="flex-1"
-                  onClick={handleSubmit}
-                  disabled={!formData.title || mutation.isPending}
-                >
-                  <Clock className="w-5 h-5" />
-                  {mutation.isPending ? "Creating..." : "Create Capsule"}
-                </Button>
+              {/* Progress Bar (Only in Full Story mode) */}
+              {!isQuickPost && (
+                <div className="px-1 mb-2">
+                  <div className="flex justify-between mb-2">
+                    {["Identity", "Media", "Journey"].map((label, i) => (
+                      <span
+                        key={label}
+                        className={`text-[10px] uppercase font-black tracking-widest transition-colors ${step >= i + 1 ? "text-primary" : "text-gray-600"
+                          }`}
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex gap-1">
+                    {Array.from({ length: totalSteps }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-full flex-1 rounded-full transition-all duration-500 ${step > i
+                          ? "bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+                          : step === i + 1
+                            ? "bg-primary/40 animate-pulse"
+                            : "bg-white/5"
+                          }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-300 ease-out hover:shadow-elevated">
+                <AnimatePresence mode="wait">
+                  {step === 1 && (
+                    <motion.section
+                      key="step1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Basic Info */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label
+                            htmlFor="title"
+                            className="mb-1 flex items-center gap-2"
+                          >
+                            <Clock className="w-4 h-4 text-primary" />
+                            Capsule Title *
+                          </Label>
+                          <Input
+                            id="title"
+                            autoComplete="off"
+                            placeholder="Name your capsule"
+                            value={formData.title}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+
+                        {!isQuickPost && (
+                          <>
+                            <div>
+                              <Label htmlFor="period">Time Period</Label>
+                              <Input
+                                id="period"
+                                autoComplete="off"
+                                placeholder="When did this era take place?"
+                                value={formData.period}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    period: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="description">
+                                One line that describes this era
+                              </Label>
+                              <Textarea
+                                id="description"
+                                placeholder="Describe this era in a few words"
+                                value={formData.description}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                  }))
+                                }
+                                rows={2}
+                              />
+                            </div>
+
+                            {/* Emotions Moved to Step 1 for better grouping */}
+                            <div>
+                              <Label className="text-base font-medium mb-4 block">
+                                How this phase felt
+                              </Label>
+
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                {emotionSuggestions.map((emotion) => (
+                                  <Button
+                                    key={emotion}
+                                    variant={
+                                      emotions.includes(emotion) ? "default" : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={() =>
+                                      emotions.includes(emotion)
+                                        ? removeEmotion(emotion)
+                                        : addEmotion(emotion)
+                                    }
+                                    className="rounded-full !text-[10px] uppercase font-black tracking-widest"
+                                  >
+                                    {emotion}
+                                  </Button>
+                                ))}
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Add custom..."
+                                  value={newEmotion}
+                                  onChange={(e) => setNewEmotion(e.target.value)}
+                                  onKeyDown={(e) =>
+                                    e.key === "Enter" &&
+                                    (e.preventDefault(), addEmotion(newEmotion))
+                                  }
+                                  className="h-9"
+                                />
+                                <Button
+                                  onClick={() => addEmotion(newEmotion)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              </div>
+
+                              {emotions.filter((e) => !emotionSuggestions.includes(e)).length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {emotions
+                                    .filter((e) => !emotionSuggestions.includes(e))
+                                    .map((emotion) => (
+                                      <span
+                                        key={emotion}
+                                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary"
+                                      >
+                                        {emotion}
+                                        <button onClick={() => removeEmotion(emotion)}>
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </span>
+                                    ))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </motion.section>
+                  )}
+
+                  {(step === 2 || isQuickPost) && (
+                    <motion.section
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Extra media */}
+                      <div className="space-y-4 mt-4">
+                        <Label className="text-base font-medium flex items-center gap-2">
+                          <Plus className="w-5 h-5 text-primary" />
+                          {isQuickPost ? "Primary Media *" : "Era Media & Clips"}
+                        </Label>
+                        <CapsuleMediaUploader
+                          images={media.images}
+                          videos={media.videos}
+                          coverUrl={coverImage}
+                          bannerUrl={bannerImage}
+                          onChange={setMedia}
+                          onCoverChange={setCoverImage}
+                          onBannerChange={setBannerImage}
+                        />
+                      </div>
+                    </motion.section>
+                  )}
+
+                  {step === 3 && !isQuickPost && (
+                    <motion.section
+                      key="step3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Story */}
+                      <div className="">
+                        <Label
+                          htmlFor="story"
+                          className="text-base font-medium flex items-center gap-2 mb-3"
+                        >
+                          <Sparkles className="w-5 h-5 text-primary" />
+                          Your story of this chapter
+                        </Label>
+                        <Textarea
+                          id="story"
+                          placeholder="Write about what happened during this time. What defined these days? What do you want to remember?"
+                          value={formData.story}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              story: e.target.value,
+                            }))
+                          }
+                          rows={10}
+                          className="resize-none"
+                        />
+                      </div>
+                    </motion.section>
+                  )}
+                </AnimatePresence>
+
+                {/* Navigation Controls */}
+                <div className="flex gap-3 pt-6 mt-6 border-t border-white/5">
+                  {!isQuickPost && step > 1 && (
+                    <Button
+                      variant="outline"
+                      onClick={goBack}
+                      className="px-4"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Back
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="gradient"
+                    className="flex-1 font-bold tracking-tight h-11"
+                    onClick={handleSubmit}
+                    disabled={
+                      !formData.title ||
+                      (isQuickPost && media.images.length === 0 && media.videos.length === 0) ||
+                      mutation.isPending
+                    }
+                  >
+                    {isQuickPost ? (
+                      <>
+                        <Zap className="w-5 h-5 mr-2" />
+                        {mutation.isPending ? "Sharing..." : "Post Instantly"}
+                      </>
+                    ) : step === totalSteps ? (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        {mutation.isPending ? "Creating..." : editId ? "Update Capsule" : "Preserve Memories"}
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </motion.div>
             <div className="col-span-5 md:sticky md:top-20">
