@@ -5,6 +5,7 @@ import { getUserCapsules } from "@/features/capsules/api";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
+import { TimeCapsuleCardSkeleton } from "../capsules/TimeCapsuleCardSkeleton";
 
 export default function Capsules() {
   const { id } = useParams<{ id: string | undefined }>();
@@ -36,7 +37,11 @@ export default function Capsules() {
         </p>
       </div>
       {capsulesLoading || profileLoading ? (
-        <p className="text-sm text-muted-foreground">Loading capsules...</p>
+        <div className="flex flex-col gap-4 mx-auto">
+          {[...Array(3)].map((_, i) => (
+            <TimeCapsuleCardSkeleton key={i} />
+          ))}
+        </div>
       ) : capsules.length === 0 ? (
         <div className="p-12 rounded-3xl bg-card/20 border-2 border-dashed border-white/10 text-center text-muted-foreground">
           <Rocket className="w-14 h-14 mx-auto mb-4 opacity-50" />
