@@ -1133,7 +1133,7 @@ export default function FavoriteShowPage() {
                       Other {favorite.categoryId} collections
                     </h2>
                     {/* see all */}
-                    <Link href={`/favorites/${favorite.userId}`} className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <Link href={`${isOwner ? `/profile/collection?category=${favorite.categoryId}` : `/users/${favorite.userId}/collection?category=${favorite.categoryId}`}`} className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
                       <span>See all</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
