@@ -591,7 +591,7 @@ export function EmotionalJourneyView({
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-black text-blue-400">
-                              {formatAxisTime(s.startSeconds)}
+                              {formatAxisTime(s.startSeconds)} - {formatAxisTime(s.endSeconds)}
                             </div>
                           </div>
                         )}
@@ -604,7 +604,7 @@ export function EmotionalJourneyView({
                               <Video className="w-8 h-8 text-blue-400/60" />
                             </div>
                             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-black text-blue-400">
-                              {formatAxisTime(s.startSeconds)}
+                              {formatAxisTime(s.startSeconds)} - {formatAxisTime(s.endSeconds)}
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center group-hover:bg-blue-600/10 transition-colors">
                               <div className="w-10 h-10 rounded-full bg-blue-600/80 flex items-center justify-center text-white shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
@@ -617,7 +617,7 @@ export function EmotionalJourneyView({
                           <div className="relative w-24 h-24 md:w-32 md:h-24 rounded-xl overflow-hidden bg-black/40 border border-white/5 flex flex-shrink-0 items-center justify-center">
                             <TrendingUp className="w-8 h-8 text-gray-800" />
                             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-black text-blue-400">
-                              {formatAxisTime(s.startSeconds)}
+                              {formatAxisTime(s.startSeconds)} - {formatAxisTime(s.endSeconds)}
                             </div>
                           </div>
                         )}
