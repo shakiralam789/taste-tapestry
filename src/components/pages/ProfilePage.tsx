@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 
 import { useAuth } from "@/features/auth/AuthContext";
@@ -281,16 +282,32 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                   aria-label="Upload avatar"
                 />
                 <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-full opacity-75 blur transition duration-500 group-hover:opacity-100" />
-                <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
-                  <AvatarImage
-                    src={displayAvatarUrl || displayAvatar}
-                    alt={displayName}
-                    className="object-cover w-full h-full"
-                  />
-                  <AvatarFallback className="text-4xl bg-background text-foreground">
-                    {displayName[0] || "?"}
-                  </AvatarFallback>
-                </Avatar>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="cursor-pointer relative outline-none rounded-full ring-offset-background ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary inline-block">
+                      <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
+                        <AvatarImage
+                          src={displayAvatarUrl || displayAvatar}
+                          alt={displayName}
+                          className="object-cover w-full h-full"
+                        />
+                        <AvatarFallback className="text-4xl bg-background text-foreground">
+                          {displayName[0] || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 overflow-hidden flex justify-center items-center">
+                    <DialogTitle className="sr-only">Profile Image Preview</DialogTitle>
+                    {displayAvatar && (
+                      <img
+                        src={(displayAvatarUrl || displayAvatar).includes('/upload/') ? (displayAvatarUrl || displayAvatar).replace('/upload/w_2048,c_limit,f_auto,q_auto/', '/upload/') : (displayAvatarUrl || displayAvatar)}
+                        alt={displayName}
+                        className="w-full max-h-[85vh] object-contain rounded-lg"
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
                 <div className="absolute bottom-2 right-2 flex gap-2">
                   <Button
                     type="button"

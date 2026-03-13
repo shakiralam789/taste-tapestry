@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { getFollowStatus, followUser, unfollowUser } from "@/features/users/api";
@@ -163,16 +164,34 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               className="lg:sticky top-20 w-full lg:w-1/3 flex flex-col items-center text-center p-4 pt-8 md:p-8 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/10 shadow-xl"
             >
-              <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative mb-4 md:mb-6">
-                <AvatarImage
-                  src={profile.avatar ?? undefined}
-                  alt={displayName}
-                  className="object-cover"
-                />
-                <AvatarFallback className="text-4xl bg-background text-foreground">
-                  {displayName[0] || "?"}
-                </AvatarFallback>
-              </Avatar>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="relative group cursor-pointer mb-4 md:mb-6 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary ring-offset-background ring-offset-2">
+                    <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
+                      <AvatarImage
+                        src={profile.avatar ?? undefined}
+                        alt={displayName}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-4xl bg-background text-foreground">
+                        {displayName[0] || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute inset-0 rounded-full bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    </div>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 overflow-hidden flex justify-center items-center">
+                  <DialogTitle className="sr-only">Profile Image Preview</DialogTitle>
+                  {profile.avatar && (
+                    <img
+                      src={profile.avatar.includes('/upload/') ? profile.avatar.replace('/upload/w_2048,c_limit,f_auto,q_auto/', '/upload/') : profile.avatar}
+                      alt={displayName}
+                      className="w-full max-h-[85vh] object-contain rounded-lg"
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
 
               <h1 className="font-display md:text-4xl text-2xl font-bold mb-2 flex items-center gap-2">
                 {displayName}
