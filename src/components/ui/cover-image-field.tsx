@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { uploadToCloudinary } from "@/lib/upload";
+import { getOptimizedUrl } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface CoverImageFieldProps {
@@ -32,8 +33,8 @@ export function CoverImageField({
       e.target.value = "";
       setUploading(true);
       try {
-        const url = await uploadToCloudinary(file, "image");
-        onImageChange(url);
+        const media = await uploadToCloudinary(file, "image");
+        onImageChange(media.original_url);
       } catch {
         toast.error("Failed to upload image. Please try again.");
       } finally {
@@ -102,7 +103,7 @@ export function CoverImageField({
         <div className="w-fit relative flex-shrink-0">
           <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex items-center justify-center">
             <img
-              src={image}
+              src={getOptimizedUrl(image, 400)}
               alt="Cover preview"
               className="w-full h-full object-cover"
               onError={(e) => {

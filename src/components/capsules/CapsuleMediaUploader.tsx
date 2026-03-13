@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadCapsuleMedia } from "@/features/capsules/api";
+import { getOptimizedUrl } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface CapsuleMediaUploaderProps {
@@ -190,7 +191,7 @@ export function CapsuleMediaUploader({
                       className="block w-full h-full"
                     >
                       <img
-                        src={src}
+                        src={getOptimizedUrl(src, 400)}
                         alt=""
                         className="w-full h-20 object-cover group-hover:opacity-90"
                       />

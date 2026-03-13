@@ -19,6 +19,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { updateProfile, uploadAvatar, uploadBanner } from "@/features/profile/api";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import { FollowDialog } from "@/components/users/FollowDialog";
+import { getOptimizedUrl } from "@/lib/utils";
 import {
   MapPin,
   Calendar,
@@ -227,7 +228,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
             style={{
               backgroundImage:
                 !profileLoading && bannerUrlWithVersion
-                  ? `url(${bannerUrlWithVersion})`
+                  ? `url(${getOptimizedUrl(bannerUrlWithVersion, 2048)})`
                   : undefined,
             }}
           />
@@ -287,7 +288,7 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                     <button className="cursor-pointer relative outline-none rounded-full ring-offset-background ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary inline-block">
                       <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
                         <AvatarImage
-                          src={displayAvatarUrl || displayAvatar}
+                          src={getOptimizedUrl(displayAvatarUrl || displayAvatar, 2048)}
                           alt={displayName}
                           className="object-cover w-full h-full"
                         />
@@ -301,9 +302,9 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                     <DialogTitle className="sr-only">Profile Image Preview</DialogTitle>
                     {displayAvatar && (
                       <img
-                        src={(displayAvatarUrl || displayAvatar).includes('/upload/') ? (displayAvatarUrl || displayAvatar).replace('/upload/w_2048,c_limit,f_auto,q_auto/', '/upload/') : (displayAvatarUrl || displayAvatar)}
+                        src={displayAvatarUrl || displayAvatar}
                         alt={displayName}
-                        className="w-full max-h-[85vh] object-contain rounded-lg"
+                        className="w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
                       />
                     )}
                   </DialogContent>

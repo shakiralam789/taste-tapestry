@@ -1338,8 +1338,8 @@ export function EmotionalJourneyEditor({
                         e.target.value = "";
                         setSegmentImageUploading(true);
                         try {
-                          const url = await uploadToCloudinary(file, "image");
-                          updateSegment(selectedSegment.id, { image: url });
+                          const media = await uploadToCloudinary(file, "image");
+                          updateSegment(selectedSegment.id, { image: media.original_url });
                         } catch {
                           toast.error("Failed to upload image. Please try again.");
                         } finally {
@@ -1408,8 +1408,8 @@ export function EmotionalJourneyEditor({
                         e.target.value = "";
                         setSegmentVideoUploading(true);
                         try {
-                          const url = await uploadToCloudinary(file, "video");
-                          updateSegment(selectedSegment.id, { video: url });
+                          const media = await uploadToCloudinary(file, "video");
+                          updateSegment(selectedSegment.id, { video: media.original_url });
                         } catch {
                           toast.error("Failed to upload video. Please try again.");
                         } finally {

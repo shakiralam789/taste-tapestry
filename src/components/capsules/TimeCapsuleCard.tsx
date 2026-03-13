@@ -18,11 +18,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn, getOptimizedUrl } from "@/lib/utils";
+import { useNotifications } from "@/features/notifications/NotificationsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
-import { cn } from "@/lib/utils";
-import { useNotifications } from "@/features/notifications/NotificationsContext";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -219,7 +219,7 @@ export function TimeCapsuleCard({
               />
             ) : (
               <img
-                src={coverUrl}
+                src={getOptimizedUrl(coverUrl, 800)}
                 alt={capsule.title}
                 className="max-h-[420px] w-full object-contain"
               />

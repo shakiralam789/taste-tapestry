@@ -114,7 +114,8 @@ export async function uploadFavoriteMusic(
   file: File,
 ): Promise<Favorite> {
   // Upload directly browser → Cloudinary (resource_type "video" accepts audio files too)
-  const musicUrl = await uploadToCloudinary(file, "video", "taste-tapestry/music");
+  const media = await uploadToCloudinary(file, "video", "taste-tapestry/music");
+  const musicUrl = media.original_url;
 
   // Persist only the resulting URL to the backend
   const { data } = await apiClient.patch<Favorite>(`/favorites/${id}`, {

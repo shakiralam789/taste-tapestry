@@ -44,7 +44,7 @@ export async function updateProfile(
  */
 export async function uploadAvatar(file: File): Promise<Profile | null> {
   const media = await uploadToCloudinary(file, "image", "taste-tapestry/avatars");
-  const { data } = await apiClient.post<Profile | null>("/users/me/avatar", { url: media.optimized_url });
+  const { data } = await apiClient.post<Profile | null>("/users/me/avatar", { url: media.original_url });
   return data;
 }
 
@@ -54,6 +54,6 @@ export async function uploadAvatar(file: File): Promise<Profile | null> {
  */
 export async function uploadBanner(file: File): Promise<Profile | null> {
   const media = await uploadToCloudinary(file, "image", "taste-tapestry/banners");
-  const { data } = await apiClient.post<Profile | null>("/users/me/banner", { url: media.optimized_url });
+  const { data } = await apiClient.post<Profile | null>("/users/me/banner", { url: media.original_url });
   return data;
 }

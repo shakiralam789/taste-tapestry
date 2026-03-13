@@ -6,7 +6,7 @@ interface CloudinarySignature {
   api_key: string;
   cloud_name: string;
   folder: string;
-  transformation?: string;
+  eager?: string;
 }
 
 export interface MediaMetadata {
@@ -64,8 +64,8 @@ export async function uploadToCloudinary(
   form.append("file", file);
   form.append("api_key", sig.api_key);
   form.append("timestamp", String(sig.timestamp));
-  if (sig.transformation) {
-    form.append("transformation", sig.transformation);
+  if (sig.eager) {
+    form.append("eager", sig.eager);
   }
   form.append("signature", sig.signature);
   form.append("folder", sig.folder);

@@ -9,6 +9,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { getOptimizedUrl } from "@/lib/utils";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import { getFollowStatus, followUser, unfollowUser } from "@/features/users/api";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -148,7 +149,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
             style={{
               backgroundImage:
                 !profileLoading && profile.bannerUrl
-                  ? `url(${profile.bannerUrl})`
+                  ? `url(${getOptimizedUrl(profile.bannerUrl, 2048)})`
                   : 'https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2676&auto=format&fit=crop',
             }}
           />
@@ -169,7 +170,7 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                   <button className="relative group cursor-pointer mb-4 md:mb-6 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary ring-offset-background ring-offset-2">
                     <Avatar className="sm:w-40 sm:h-40 w-32 h-32 ring-4 ring-background relative">
                       <AvatarImage
-                        src={profile.avatar ?? undefined}
+                        src={getOptimizedUrl(profile.avatar, 2048)}
                         alt={displayName}
                         className="object-cover"
                       />
@@ -185,9 +186,9 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                   <DialogTitle className="sr-only">Profile Image Preview</DialogTitle>
                   {profile.avatar && (
                     <img
-                      src={profile.avatar.includes('/upload/') ? profile.avatar.replace('/upload/w_2048,c_limit,f_auto,q_auto/', '/upload/') : profile.avatar}
+                      src={profile.avatar}
                       alt={displayName}
-                      className="w-full max-h-[85vh] object-contain rounded-lg"
+                      className="w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
                     />
                   )}
                 </DialogContent>

@@ -117,10 +117,11 @@ export function MessageInput({
                 fileName = selectedFile.name;
                 fileSize = selectedFile.size;
 
-                mediaUrl = await uploadToCloudinary(
+                const media = await uploadToCloudinary(
                     selectedFile,
                     type === "video" ? "video" : "image"
                 );
+                mediaUrl = media.original_url;
             } catch (err) {
                 console.error("Upload failed:", err);
                 toast.error("Failed to upload media");

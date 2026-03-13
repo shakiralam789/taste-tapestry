@@ -5,6 +5,9 @@ import { format, isToday, isYesterday } from "date-fns";
 import { Loader2, CheckCheck, FileIcon, Download, MoreHorizontal, Reply, Edit2, Trash2 } from "lucide-react";
 import { TypingIndicator } from "./TypingIndicator";
 import { getMessages } from "@/features/messages/api";
+import { VideoPlayer } from "@/components/common/VideoPlayer";
+import { useInView } from "react-intersection-observer";
+import { getOptimizedUrl } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Message } from "@/types/messages";
 import { cn } from "@/lib/utils";
@@ -207,7 +210,7 @@ export function MessageThread({
                                                 <div className="rounded-xl overflow-hidden mb-1">
                                                     <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
                                                         <img
-                                                            src={msg.mediaUrl}
+                                                            src={getOptimizedUrl(msg.mediaUrl, 2048) || ''}
                                                             alt="Image attachment"
                                                             className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
                                                         />

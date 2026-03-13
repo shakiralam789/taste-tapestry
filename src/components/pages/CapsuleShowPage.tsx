@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { VideoThumbnail } from "@/components/common/VideoThumbnail";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { getOptimizedUrl } from "@/lib/utils";
 
 function getFavoritesForCapsule(
   capsule: TimeCapsule,
@@ -229,7 +230,7 @@ export default function CapsuleShowPage() {
             />
           ) : (
             <img
-              src={heroUrl}
+              src={getOptimizedUrl(heroUrl, 2048)}
               alt={capsule.title}
               className="w-full h-full object-cover brightness-[0.5]"
               onClick={() =>
@@ -343,7 +344,7 @@ export default function CapsuleShowPage() {
                     }
                   >
                     <img
-                      src={src}
+                      src={getOptimizedUrl(src, 800)}
                       alt=""
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
@@ -471,7 +472,7 @@ export default function CapsuleShowPage() {
                       <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                         {fav.image ? (
                           <img
-                            src={fav.image}
+                            src={getOptimizedUrl(fav.image, 400)}
                             alt={fav.title}
                             className="w-full h-full object-cover"
                           />
