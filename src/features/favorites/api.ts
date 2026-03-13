@@ -34,7 +34,7 @@ export async function createFavorite(
 }
 
 const PROFILE_PREVIEW_LIMIT = 6;
-const COLLECTION_PAGE_SIZE = 12;
+const COLLECTION_PAGE_SIZE = 15;
 
 export async function getFavorites(
   categoryId?: string,

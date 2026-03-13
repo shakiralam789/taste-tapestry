@@ -9,7 +9,6 @@ import {
     useQuery,
     useMutation,
     useQueryClient,
-    keepPreviousData,
 } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +46,7 @@ import { getAlbums, updateAlbum } from "@/features/albums/api";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
+import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
 import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
 import { toast } from "sonner";
 import type { Favorite } from "@/types/wishbook";
@@ -151,7 +151,6 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
             lastPage.hasMore ? lastPage.nextOffset : undefined,
         initialPageParam: 0,
         enabled: isOwnProfile,
-        placeholderData: keepPreviousData,
     });
 
     // ── Other user's infinite query ────────────────────────────────────────────
@@ -169,7 +168,6 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
             lastPage.hasMore ? lastPage.nextOffset : undefined,
         initialPageParam: 0,
         enabled: !isOwnProfile && !!userId,
-        placeholderData: keepPreviousData,
     });
 
     const activeQuery = isOwnProfile ? ownQuery : userQuery;
@@ -259,14 +257,6 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
             ? `No ${label} in your collection.`
             : `No ${label} in their collection.`;
     };
-
-    if (isLoading && allItems.length === 0) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <FullScreenLoader />
-            </div>
-        );
-    }
 
     return (
         <>
@@ -399,7 +389,13 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                         </TabsList>
 
                         <TabsContent value={activeTab} className="mt-6">
-                            {allItems.length === 0 ? (
+                            {isLoading && allItems.length === 0 ? (
+                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                    {Array.from({ length: 10 }).map((_, idx) => (
+                                        <ProfilePostCardSkeleton key={idx} variant="grid" />
+                                    ))}
+                                </div>
+                            ) : allItems.length === 0 ? (
                                 <div className="rounded-2xl border border-dashed border-white/10 bg-card/20 p-12 text-center text-muted-foreground text-sm">
                                     {emptyText(debouncedSearch)}
                                 </div>
