@@ -36,8 +36,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Mic2, Star, Brain, Sparkles, Users, Plus, Zap, X, Check, Pencil, Trash2 } from "lucide-react";
+import { Palette, Mic2, Star, Brain, Sparkles, Users, Plus, Zap, X, Check, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const categoryConfig: Record<InterestCategory, { label: string; icon: any; color: string; bg: string }> = {
   creative: { label: "Creative pursuits", icon: Palette, color: "text-pink-400", bg: "bg-pink-500/10" },
@@ -238,62 +244,91 @@ export default function Interests() {
                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="group/badge relative"
+                                className="relative"
                               >
-                                <Badge
-                                  variant="secondary"
-                                  className={cn(
-                                    "bg-white/5 text-foreground/80 border-white/5 transition-all select-none px-3 py-1 font-medium flex items-center gap-1",
-                                    "hover:bg-primary/20 hover:text-primary hover:border-primary/30",
-                                    "group-hover/badge:pr-2"
-                                  )}
-                                >
-                                  <span>{i.name}</span>
-                                  <motion.div
-                                    initial={{ width: 0, opacity: 0 }}
-                                    animate={{ width: "auto", opacity: 1 }}
-                                    className="overflow-hidden flex items-center"
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Badge
+                                      variant="secondary"
+                                      className={cn(
+                                        "bg-white/5 text-foreground/80 border-white/5 transition-all select-none px-3 py-1 font-medium flex items-center gap-1",
+                                        "hover:bg-primary/20 hover:text-primary hover:border-primary/30 cursor-pointer",
+                                      )}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <span>{i.name}</span>
+                                    </Badge>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40 text-xs"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    <Popover
-                                      open={editingInterest?.id === i.id}
-                                      onOpenChange={(open) => {
-                                        if (open) {
-                                          setEditingInterest(i);
-                                          setEditDescriptionValue(i.description || "");
-                                        } else {
-                                          setEditingInterest(null);
-                                        }
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 cursor-pointer"
+                                      onSelect={() => {
+                                        setEditingInterest(i);
+                                        setEditDescriptionValue(i.description || "");
                                       }}
                                     >
-                                      <PopoverTrigger asChild>
-                                        <div className="w-0 h-3 opacity-0 group-hover/badge:w-3 group-hover/badge:opacity-100 group-hover/badge:ml-1 transition-all hover:text-white cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                          <Pencil className="w-3 h-3" />
-                                        </div>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-64 p-3 bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl" side="top" sideOffset={10}>
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-2 py-0.5 text-[10px] uppercase">
-                                              Edit
-                                            </Badge>
-                                            <span className="text-xs font-semibold">{i.name}</span>
-                                          </div>
-                                          <Textarea
-                                            value={editDescriptionValue}
-                                            onChange={(e) => setEditDescriptionValue(e.target.value)}
-                                            placeholder="Why do you love this?"
-                                            className="min-h-[60px] bg-black/40 border-white/10 text-xs resize-none"
-                                          />
-                                          <Button size="sm" variant="gradient" className="w-full h-7 text-xs" onClick={handleUpdateDescription}>Save</Button>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-
-                                    <div className="w-0 h-3 opacity-0 group-hover/badge:w-3 group-hover/badge:opacity-100 group-hover/badge:ml-1.5 transition-all hover:text-red-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleRemoveInterest(i.id); }}>
+                                      <Pencil className="w-3 h-3" />
+                                      Edit note
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                      onSelect={() => {
+                                        handleRemoveInterest(i.id);
+                                      }}
+                                    >
                                       <Trash2 className="w-3 h-3" />
+                                      Remove
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <Popover open={editingInterest?.id === i.id}>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="sr-only"
+                                      aria-hidden="true"
+                                    />
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-64 p-3 bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl"
+                                    side="bottom"
+                                    align="start"
+                                    sideOffset={8}
+                                    onPointerDownOutside={() => {
+                                      if (editingInterest?.id === i.id) {
+                                        setEditingInterest(null);
+                                      }
+                                    }}
+                                  >
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-2 py-0.5 text-[10px] uppercase">
+                                          Edit
+                                        </Badge>
+                                        <span className="text-xs font-semibold">{i.name}</span>
+                                      </div>
+                                      <Textarea
+                                        value={editDescriptionValue}
+                                        onChange={(e) => setEditDescriptionValue(e.target.value)}
+                                        placeholder="Why do you love this?"
+                                        className="min-h-[60px] bg-black/40 border-white/10 text-xs resize-none"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="gradient"
+                                        className="w-full h-7 text-xs"
+                                        onClick={handleUpdateDescription}
+                                      >
+                                        Save
+                                      </Button>
                                     </div>
-                                  </motion.div>
-                                </Badge>
+                                  </PopoverContent>
+                                </Popover>
                               </motion.div>
                             </TooltipTrigger>
                             {i.description && editingInterest?.id !== i.id && (
@@ -416,7 +451,11 @@ export default function Interests() {
                                 : "bg-card border-white/10 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-foreground cursor-pointer"
                             )}
                             onClick={() => {
-                              if (!isAdded) handleAddInterest(i);
+                              if (!isAdded) {
+                                handleAddInterest(i);
+                              } else {
+                                handleRemoveInterest(i.id);
+                              }
                             }}
                           >
                             <AnimatePresence mode="popLayout">
@@ -426,58 +465,9 @@ export default function Interests() {
                                   initial={{ scale: 0, width: 0, opacity: 0 }}
                                   animate={{ scale: 1, width: "auto", opacity: 1 }}
                                   exit={{ scale: 0, width: 0, opacity: 0 }}
-                                  className="flex items-center group-hover/badge:hidden"
+                                  className="flex items-center"
                                 >
                                   <Check className="w-3 h-3" />
-                                </motion.div>
-                              )}
-                              {isAdded && (
-                                <motion.div
-                                  key="controls"
-                                  initial={{ scale: 0, width: 0, opacity: 0 }}
-                                  animate={{ scale: 1, width: "auto", opacity: 1 }}
-                                  exit={{ scale: 0, width: 0, opacity: 0 }}
-                                  className="hidden group-hover/badge:flex items-center"
-                                >
-                                    <Popover
-                                      open={editingInterest?.id === i.id}
-                                      onOpenChange={(open) => {
-                                        if (open) {
-                                          const existingInt = profileInterests.find((userInt: Interest) => userInt.id === i.id);
-                                          setEditingInterest(existingInt || i);
-                                          setEditDescriptionValue(existingInt?.description || "");
-                                        } else {
-                                          setEditingInterest(null);
-                                        }
-                                      }}
-                                    >
-                                      <PopoverTrigger asChild>
-                                        <div className="w-3 h-3 hover:text-white cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                          <Pencil className="w-3 h-3" />
-                                        </div>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-64 p-3 bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl" side="top" sideOffset={10}>
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-2 py-0.5 text-[10px] uppercase">
-                                              Edit
-                                            </Badge>
-                                            <span className="text-xs font-semibold">{i.name}</span>
-                                          </div>
-                                          <Textarea
-                                            value={editDescriptionValue}
-                                            onChange={(e) => setEditDescriptionValue(e.target.value)}
-                                            placeholder="Why do you love this?"
-                                            className="min-h-[60px] bg-black/40 border-white/10 text-xs resize-none"
-                                          />
-                                          <Button size="sm" variant="gradient" className="w-full h-7 text-xs" onClick={handleUpdateDescription}>Save</Button>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-
-                                    <div className="w-3 h-3 ml-1.5 hover:text-red-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleRemoveInterest(i.id); }}>
-                                      <Trash2 className="w-3 h-3" />
-                                    </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -524,9 +514,6 @@ export default function Interests() {
 
         </DialogContent>
       </Dialog>
-
-
-
     </div>
   );
 }
