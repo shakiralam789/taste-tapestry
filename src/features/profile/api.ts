@@ -13,6 +13,7 @@ export interface Profile {
   bio: string | null;
   location: string | null;
   bannerUrl?: string | null;
+  interests?: any[];
   createdAt: string;
   followersCount?: number;
   followingCount?: number;
@@ -21,7 +22,7 @@ export interface Profile {
 export type UpdateProfilePayload = Partial<
   Pick<
     Profile,
-    "displayName" | "username" | "avatar" | "bio" | "location" | "bannerUrl"
+    "displayName" | "username" | "avatar" | "bio" | "location" | "bannerUrl" | "interests"
   >
 >;
 

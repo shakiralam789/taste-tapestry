@@ -22,6 +22,7 @@ export interface Interest {
   name: string;
   category: InterestCategory;
   icon?: string;
+  description?: string;
 }
 
 export type InterestCategory = 
@@ -30,7 +31,8 @@ export type InterestCategory =
   | 'skill'
   | 'intellectual'
   | 'unique'
-  | 'collaborative';
+  | 'collaborative'
+  | (string & {});
 
 export interface Talent {
   id: string;
