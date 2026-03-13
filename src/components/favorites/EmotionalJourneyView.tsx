@@ -12,9 +12,16 @@ const Y_MAX = 10;
 const Y_MIN = 0;
 
 function formatTime(seconds: number, useSeconds: boolean): string {
-  if (useSeconds) return `${Math.round(seconds)}s`;
-  const m = Math.floor(seconds / 60);
-  return `${m} min`;
+  const totalSec = Math.max(0, Math.round(seconds));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (!useSeconds) {
+    return `${m} min`;
+  }
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m}min`;
+  const finalResult = `${m}min${s}s`;
+  return finalResult;
 }
 
 function buildPathNew(
@@ -70,7 +77,7 @@ export function EmotionalJourneyView({
   emotionalSegments = [],
   momentPins = [],
   className = "",
-  xAxisInSeconds = false,
+  xAxisInSeconds = true,
 }: EmotionalJourneyViewProps) {
   const [graphWidth, setGraphWidth] = useState(400);
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState(0);
