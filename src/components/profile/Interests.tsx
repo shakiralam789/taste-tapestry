@@ -23,6 +23,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,7 +36,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Mic2, Star, Brain, Sparkles, Users, Plus, Zap, X, Check } from "lucide-react";
+import { Palette, Mic2, Star, Brain, Sparkles, Users, Plus, Zap, X, Check, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const categoryConfig: Record<InterestCategory, { label: string; icon: any; color: string; bg: string }> = {
@@ -233,17 +238,13 @@ export default function Interests() {
                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => {
-                                  setEditDescriptionValue(i.description || "");
-                                  setEditingInterest(i);
-                                }}
-                                className="cursor-pointer group/badge"
+                                className="group/badge relative"
                               >
                                 <Badge
                                   variant="secondary"
                                   className={cn(
                                     "bg-white/5 text-foreground/80 border-white/5 transition-all select-none px-3 py-1 font-medium flex items-center gap-1",
-                                    "hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30",
+                                    "hover:bg-primary/20 hover:text-primary hover:border-primary/30",
                                     "group-hover/badge:pr-2"
                                   )}
                                 >
@@ -253,12 +254,49 @@ export default function Interests() {
                                     animate={{ width: "auto", opacity: 1 }}
                                     className="overflow-hidden flex items-center"
                                   >
-                                    <X className="w-0 h-3 opacity-0 group-hover/badge:w-3 group-hover/badge:opacity-100 group-hover/badge:ml-1 transition-all" />
+                                    <Popover
+                                      open={editingInterest?.id === i.id}
+                                      onOpenChange={(open) => {
+                                        if (open) {
+                                          setEditingInterest(i);
+                                          setEditDescriptionValue(i.description || "");
+                                        } else {
+                                          setEditingInterest(null);
+                                        }
+                                      }}
+                                    >
+                                      <PopoverTrigger asChild>
+                                        <div className="w-0 h-3 opacity-0 group-hover/badge:w-3 group-hover/badge:opacity-100 group-hover/badge:ml-1 transition-all hover:text-white cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                          <Pencil className="w-3 h-3" />
+                                        </div>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-64 p-3 bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl" side="top" sideOffset={10}>
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-2 py-0.5 text-[10px] uppercase">
+                                              Edit
+                                            </Badge>
+                                            <span className="text-xs font-semibold">{i.name}</span>
+                                          </div>
+                                          <Textarea
+                                            value={editDescriptionValue}
+                                            onChange={(e) => setEditDescriptionValue(e.target.value)}
+                                            placeholder="Why do you love this?"
+                                            className="min-h-[60px] bg-black/40 border-white/10 text-xs resize-none"
+                                          />
+                                          <Button size="sm" variant="gradient" className="w-full h-7 text-xs" onClick={handleUpdateDescription}>Save</Button>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+
+                                    <div className="w-0 h-3 opacity-0 group-hover/badge:w-3 group-hover/badge:opacity-100 group-hover/badge:ml-1.5 transition-all hover:text-red-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleRemoveInterest(i.id); }}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </div>
                                   </motion.div>
                                 </Badge>
                               </motion.div>
                             </TooltipTrigger>
-                            {i.description && (
+                            {i.description && editingInterest?.id !== i.id && (
                               <TooltipContent 
                                 side="top" 
                                 className="bg-card/80 backdrop-blur-xl border-white/10 max-w-xs shadow-2xl p-4"
@@ -362,32 +400,24 @@ export default function Interests() {
                       const isAdded = profileInterests.some((userInt: Interest) => userInt.id === i.id);
 
                       return (
-                        <motion.button
+                        <motion.div
                           key={i.id}
                           layout
                           whileHover={{ scale: 1.05, y: -2 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            if (isAdded) {
-                              const existingInt = profileInterests.find((userInt: Interest) => userInt.id === i.id);
-                              if (existingInt) {
-                                setEditDescriptionValue(existingInt.description || "");
-                                setEditingInterest(existingInt);
-                              }
-                            } else {
-                              handleAddInterest(i);
-                            }
-                          }}
-                          className="focus:outline-none"
+                          whileTap={isAdded ? {} : { scale: 0.95 }}
+                          className="group/badge"
                         >
                           <Badge
                             variant="outline"
                             className={cn(
-                              "transition-all duration-300 rounded-lg px-3 py-1 font-medium group/badge flex items-center gap-1.5",
+                              "transition-all duration-300 rounded-lg px-3 py-1 font-medium flex items-center gap-1.5",
                               isAdded
-                                ? "bg-primary/20 border-primary/40 text-primary hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30"
-                                : "bg-card border-white/10 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+                                ? "bg-primary/20 border-primary/40 text-primary hover:bg-primary/30"
+                                : "bg-card border-white/10 hover:border-primary/40 hover:bg-primary/10 text-muted-foreground hover:text-foreground cursor-pointer"
                             )}
+                            onClick={() => {
+                              if (!isAdded) handleAddInterest(i);
+                            }}
                           >
                             <AnimatePresence mode="popLayout">
                               {isAdded && (
@@ -403,20 +433,58 @@ export default function Interests() {
                               )}
                               {isAdded && (
                                 <motion.div
-                                  key="cross"
+                                  key="controls"
                                   initial={{ scale: 0, width: 0, opacity: 0 }}
                                   animate={{ scale: 1, width: "auto", opacity: 1 }}
                                   exit={{ scale: 0, width: 0, opacity: 0 }}
                                   className="hidden group-hover/badge:flex items-center"
                                 >
-                                  <X className="w-3 h-3" />
+                                    <Popover
+                                      open={editingInterest?.id === i.id}
+                                      onOpenChange={(open) => {
+                                        if (open) {
+                                          const existingInt = profileInterests.find((userInt: Interest) => userInt.id === i.id);
+                                          setEditingInterest(existingInt || i);
+                                          setEditDescriptionValue(existingInt?.description || "");
+                                        } else {
+                                          setEditingInterest(null);
+                                        }
+                                      }}
+                                    >
+                                      <PopoverTrigger asChild>
+                                        <div className="w-3 h-3 hover:text-white cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                          <Pencil className="w-3 h-3" />
+                                        </div>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-64 p-3 bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl" side="top" sideOffset={10}>
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-2 py-0.5 text-[10px] uppercase">
+                                              Edit
+                                            </Badge>
+                                            <span className="text-xs font-semibold">{i.name}</span>
+                                          </div>
+                                          <Textarea
+                                            value={editDescriptionValue}
+                                            onChange={(e) => setEditDescriptionValue(e.target.value)}
+                                            placeholder="Why do you love this?"
+                                            className="min-h-[60px] bg-black/40 border-white/10 text-xs resize-none"
+                                          />
+                                          <Button size="sm" variant="gradient" className="w-full h-7 text-xs" onClick={handleUpdateDescription}>Save</Button>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+
+                                    <div className="w-3 h-3 ml-1.5 hover:text-red-400 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleRemoveInterest(i.id); }}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>
 
                             <span>{i.name}</span>
                           </Badge>
-                        </motion.button>
+                        </motion.div>
                       );
                     })}
                   </div>
@@ -458,56 +526,6 @@ export default function Interests() {
       </Dialog>
 
 
-
-    <Dialog 
-      open={!!editingInterest} 
-      onOpenChange={(open) => {
-        if (!open) setEditingInterest(null);
-      }}
-    >
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <div className="flex items-center justify-between mb-2">
-            <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 px-3 py-1">
-              {editingInterest?.name}
-            </Badge>
-          </div>
-          <DialogTitle className="text-xl font-display">Edit Passion Details</DialogTitle>
-          <DialogDescription>
-            Express why this unique skill resonates with you, or remove it entirely from your tapestry.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4 mt-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Why do you love this?</label>
-            <Textarea
-              value={editDescriptionValue}
-              onChange={(e) => setEditDescriptionValue(e.target.value)}
-              placeholder="e.g. It clears my mind and relaxes me after a long day..."
-              className="bg-black/20 border-white/10 h-24 rounded-xl p-4 text-sm text-foreground focus-visible:ring-primary/50 text-left align-top"
-            />
-          </div>
-
-          <div className="flex gap-3 justify-end mt-4">
-            <Button
-              variant="destructive"
-              className="rounded-xl flex-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"
-              onClick={() => editingInterest && handleRemoveInterest(editingInterest.id)}
-            >
-              Remove Skill
-            </Button>
-            <Button 
-              variant="gradient"
-              className="rounded-xl flex-1"
-              onClick={handleUpdateDescription}
-            >
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
 
     </div>
   );
