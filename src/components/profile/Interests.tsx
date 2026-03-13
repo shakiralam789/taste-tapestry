@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { interestCategories } from "@/data/mockData";
 import { InterestCategory, Interest } from "@/types/wishbook";
-import { useWishbook } from "@/contexts/WishbookContext";
 import { updateProfile, getProfile } from "@/features/profile/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -9,13 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
