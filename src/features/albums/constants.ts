@@ -14,7 +14,7 @@ export type CategoryTabValue = (typeof CATEGORY_TABS)[number]["value"];
 export const PROFILE_TABS = [
   { value: "", label: "My collection", icon: Album },
   { value: "interests", label: "Interests & pursuits", icon: Heart },
-  { value: "talents", label: "Hidden talents", icon: Sparkles },
+  { value: "talents", label: "Quirks & party tricks", icon: Sparkles },
   { value: "capsules", label: "Time capsules", icon: Clock },
 ] as const;
 

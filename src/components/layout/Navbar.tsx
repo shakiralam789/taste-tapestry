@@ -37,7 +37,7 @@ import { getTotalUnreadCount } from "@/features/messages/api";
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/discover", icon: Compass, label: "Collections" },
-  { path: "/mood", icon: Sparkles, label: "Hidden talents" },
+  { path: "/mood", icon: Sparkles, label: "Mood" },
   { path: "/capsules", icon: Clock, label: "Capsules" },
 ];
 

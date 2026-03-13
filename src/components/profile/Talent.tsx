@@ -1,75 +1,107 @@
-import { useWishbook } from "@/contexts/WishbookContext";
-import React, { useMemo } from "react";
-import { Mic2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
+import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/AuthContext";
+import { getQuirks } from "@/features/quirks/api";
+import type { Quirk } from "@/types/wishbook";
+import { QuirkCard } from "@/components/profile/QuirkCard";
+import { QuirkEditor } from "@/components/profile/QuirkEditor";
+import { Sparkles, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
-const talentOptions = [
-  "Singing",
-  "Dancing",
-  "Writing",
-  "Art",
-  "Acting",
-  "Stunts",
-];
-export default function Talent() {
-  const { user: wishbookUser } = useWishbook();
-  const revealedTalents = useMemo(
-    () => wishbookUser.talents.filter((t) => t.isPublic),
-    [wishbookUser.talents],
-  );
+
+export default function Quirks() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: quirks = [], isLoading } = useQuery<Quirk[]>({
+    queryKey: ["quirks", "me"],
+    queryFn: () => getQuirks(),
+    enabled: !!user,
+  });
+
+  const handleCreated = () => {
+    void queryClient.invalidateQueries({ queryKey: ["quirks", "me"] });
+  };
+
+  const hasQuirks = quirks.length > 0;
+
   return (
     <>
-      <div className="mb-6">
-        <h3 className="text-2xl font-display font-bold">Hidden talents</h3>
-        <p className="text-muted-foreground text-sm">
-          Reveal your secret skills — singing, dancing, writing, art, acting,
-          stunts.
-        </p>
-      </div>
-      {revealedTalents.length > 0 ? (
-        <div className="flex flex-wrap gap-3 mb-6">
-          {revealedTalents.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-secondary/10 border border-secondary/20"
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Quirks & party tricks
+          </div>
+          <div>
+            <h3 className="text-2xl font-display font-bold">
+              Quirks & party tricks
+            </h3>
+            <p className="text-muted-foreground text-sm max-w-xl">
+              A soft, playful corner for the weird little things you do at
+              gatherings, late at night, or when you think nobody’s watching.
+              No talent show energy, just cozy storytelling.
+            </p>
+          </div>
+        </div>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-full gap-2 w-full sm:w-auto"
             >
-              <Mic2 className="w-5 h-5 text-secondary" />
-              <span className="font-medium">{t.name}</span>
-              <Badge variant="secondary" className="text-xs">
-                Revealed
-              </Badge>
-            </div>
+              <Plus className="h-4 w-4" />
+              Unveil a quirk
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-xl sm:max-w-2xl rounded-3xl">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl sm:text-2xl flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Unveil a quirk
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                Share one small, funny, or quietly impressive thing you do.
+                Think cozy-story-around-the-table, not a performance.
+              </DialogDescription>
+            </DialogHeader>
+            <QuirkEditor onCreated={handleCreated} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
+          Loading your quirks…
+        </div>
+      ) : hasQuirks ? (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          {quirks.map((quirk) => (
+            <QuirkCard key={quirk.id} quirk={quirk} />
           ))}
         </div>
       ) : (
-        <div className="py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-muted-foreground text-sm mb-6">
-          No talents revealed yet.
+        <div className="py-8 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center text-sm mb-6 space-y-2">
+          <p className="text-muted-foreground">
+            No quirks shared yet — which is completely okay.
+          </p>
+          <p className="text-muted-foreground/80 text-xs max-w-md mx-auto">
+            When you’re ready, you can gently drop in a tiny story or party
+            trick. This space is built to feel like a kind, curious family
+            table, not a spotlight.
+          </p>
         </div>
       )}
-      <div className="p-8 rounded-3xl bg-secondary/5 border border-secondary/20 border-dashed">
-        <Sparkles className="w-12 h-12 text-secondary mx-auto mb-4" />
-        <h4 className="text-xl font-bold mb-2 text-center">Unveil a talent</h4>
-        <p className="text-muted-foreground text-center mb-6 text-sm">
-          Share a hidden skill with your taste twin community.
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {talentOptions.map((name) => (
-            <Button
-              key={name}
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-            >
-              {name}
-            </Button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground text-center mt-4 flex items-center justify-center gap-1">
-          <Lock className="w-3 h-3" /> Private until you reveal
-        </p>
-      </div>
     </>
   );
 }
+

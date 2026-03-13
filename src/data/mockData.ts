@@ -24,11 +24,7 @@ export const currentUser: User = {
     { id: '3', name: 'Yoga', category: 'skill' },
     { id: '4', name: 'Chess', category: 'intellectual' },
   ],
-  talents: [
-    { id: '1', name: 'Singing', isPublic: true },
-    { id: '2', name: 'Writing', isPublic: true },
-    { id: '3', name: 'Dancing', isPublic: false },
-  ],
+  quirks: [],
   createdAt: new Date('2023-01-15'),
 };
 
@@ -46,7 +42,7 @@ export const sampleUsers: User[] = [
       { id: '1', name: 'Anime', category: 'creative' },
       { id: '2', name: 'Calligraphy', category: 'creative' },
     ],
-    talents: [],
+    quirks: [],
     createdAt: new Date('2023-03-20'),
   },
   {
@@ -62,7 +58,7 @@ export const sampleUsers: User[] = [
       { id: '1', name: 'Music Production', category: 'creative' },
       { id: '2', name: 'DJing', category: 'performance' },
     ],
-    talents: [{ id: '1', name: 'Beatboxing', isPublic: true }],
+    quirks: [],
     createdAt: new Date('2022-11-08'),
   },
   {
@@ -78,7 +74,7 @@ export const sampleUsers: User[] = [
       { id: '1', name: 'Writing Stories', category: 'intellectual' },
       { id: '2', name: 'Filmmaking', category: 'creative' },
     ],
-    talents: [],
+    quirks: [],
     createdAt: new Date('2023-05-12'),
   },
 ];

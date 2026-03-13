@@ -13,7 +13,7 @@ export interface User {
   followers: number;
   following: number;
   interests: Interest[];
-  talents: Talent[];
+  quirks?: Quirk[];
   createdAt: Date;
 }
 
@@ -34,10 +34,21 @@ export type InterestCategory =
   | 'collaborative'
   | (string & {});
 
-export interface Talent {
+export interface QuirkMedia {
+  images?: string[];
+  videos?: string[];
+}
+
+export interface Quirk {
   id: string;
-  name: string;
+  userId: string;
+  title: string;
+  emoji: string;
+  story?: string;
+  media?: QuirkMedia | null;
+  bloopers?: QuirkMedia | null;
   isPublic: boolean;
+  createdAt: Date;
 }
 
 // Category Types
