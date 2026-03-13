@@ -54,8 +54,9 @@ export function TimeCapsuleCard({
       : "Future";
 
   const rawCover = capsule.image || capsule.images?.[0] || capsule.videos?.[0];
+  const coverUrlStr = typeof rawCover === 'string' ? rawCover : (rawCover as any)?.original_url;
   const coverUrl =
-    rawCover && rawCover.startsWith("blob:") ? undefined : rawCover;
+    coverUrlStr && coverUrlStr.startsWith("blob:") ? undefined : coverUrlStr;
   const isVideoCover = !!coverUrl && (capsule.videos ?? []).includes(coverUrl);
 
   const queryClient = useQueryClient();

@@ -56,16 +56,25 @@ export default function CreateCapsulePage() {
 
     // Drop any blob: URLs that can't be reused after reload
     const safeImages =
-      (existingCapsule.images ?? []).filter((src) => !src.startsWith("blob:"));
+      (existingCapsule.images ?? []).filter((src) => {
+        const s = typeof src === 'string' ? src : (src as any).original_url;
+        return typeof s === 'string' && !s.startsWith("blob:");
+      });
     const safeVideos =
-      (existingCapsule.videos ?? []).filter((src) => !src.startsWith("blob:"));
+      (existingCapsule.videos ?? []).filter((src) => {
+        const s = typeof src === 'string' ? src : (src as any).original_url;
+        return typeof s === 'string' && !s.startsWith("blob:");
+      });
+    const capImageStr = typeof existingCapsule.image === 'string' ? existingCapsule.image : (existingCapsule.image as any)?.original_url;
     const safeImage =
-      existingCapsule.image && !existingCapsule.image.startsWith("blob:")
+      capImageStr && !capImageStr.startsWith("blob:")
         ? existingCapsule.image
         : undefined;
+
+    const capBannerStr = typeof existingCapsule.bannerImage === 'string' ? existingCapsule.bannerImage : (existingCapsule.bannerImage as any)?.original_url;
     const safeBanner =
-      existingCapsule.bannerImage &&
-        !existingCapsule.bannerImage.startsWith("blob:")
+      capBannerStr &&
+        !capBannerStr.startsWith("blob:")
         ? existingCapsule.bannerImage
         : undefined;
 
@@ -137,16 +146,24 @@ export default function CreateCapsulePage() {
       return;
     }
 
-    const filteredImages = media.images.filter((src) => !src.startsWith("blob:"));
-    const filteredVideos = media.videos.filter((src) => !src.startsWith("blob:"));
+    const filteredImages = media.images.filter((src) => {
+      const s = typeof src === 'string' ? src : (src as any).original_url;
+      return typeof s === 'string' && !s.startsWith("blob:");
+    });
+    const filteredVideos = media.videos.filter((src) => {
+      const s = typeof src === 'string' ? src : (src as any).original_url;
+      return typeof s === 'string' && !s.startsWith("blob:");
+    });
 
+    const coverImageStr = typeof coverImage === 'string' ? coverImage : (coverImage as any)?.original_url;
     const cleanPoster =
-      coverImage && !coverImage.startsWith("blob:")
+      coverImageStr && !coverImageStr.startsWith("blob:")
         ? coverImage
         : filteredImages[0] || filteredVideos[0] || "";
 
+    const bannerImageStr = typeof bannerImage === 'string' ? bannerImage : (bannerImage as any)?.original_url;
     const cleanBanner =
-      bannerImage && !bannerImage.startsWith("blob:")
+      bannerImageStr && !bannerImageStr.startsWith("blob:")
         ? bannerImage
         : cleanPoster;
 

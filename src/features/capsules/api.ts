@@ -75,7 +75,8 @@ export async function deleteCapsule(id: string): Promise<void> {
 export async function uploadCapsuleMedia(file: File): Promise<string> {
   const { uploadToCloudinary } = await import("@/lib/upload");
   const resourceType = file.type.startsWith("video/") ? "video" : "image";
-  return uploadToCloudinary(file, resourceType);
+  const result = await uploadToCloudinary(file, resourceType);
+  return result.original_url;
 }
 
 export async function getCapsuleLove(
