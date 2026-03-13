@@ -23,6 +23,8 @@ const staggerDelay = 0.08;
 export default function Collections() {
   const { id } = useParams<{ id: string | undefined }>();
   const router = useRouter();
+  const [selectedCategoryFilter, setSelectedCategoryFilter] =
+    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const {
     data: profile,
     isLoading: profileLoading,
@@ -33,18 +35,17 @@ export default function Collections() {
     enabled: !!id,
   });
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
-    queryKey: ["user-favorites", id],
-    queryFn: () => getPublicFavorites(id as string),
+    queryKey: ["user-favorites", id, selectedCategoryFilter],
+    queryFn: () => {
+      const categoryId =
+        selectedCategoryFilter === "all" ? undefined : selectedCategoryFilter;
+      return getPublicFavorites(id as string, categoryId);
+    },
     enabled: !!id && !!profile,
   });
-  const [selectedCategoryFilter, setSelectedCategoryFilter] =
-    useState<(typeof CATEGORY_TABS)[number]["value"]>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const filteredFavorites = useMemo(() => {
-    if (selectedCategoryFilter === "all") return favorites;
-    return favorites.filter((f) => f.categoryId === selectedCategoryFilter);
-  }, [favorites, selectedCategoryFilter]);
+  const filteredFavorites = favorites;
 
   if (profileError || !profile) {
     return (

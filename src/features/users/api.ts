@@ -44,8 +44,14 @@ export async function getPublicProfile(id: string): Promise<PublicProfile | null
   return data ?? null;
 }
 
-export async function getPublicFavorites(userId: string): Promise<Favorite[]> {
-  const { data } = await apiClient.get<Favorite[]>(`/users/${userId}/favorites`);
+export async function getPublicFavorites(
+  userId: string,
+  categoryId?: string,
+): Promise<Favorite[]> {
+  const params = categoryId ? { categoryId } : undefined;
+  const { data } = await apiClient.get<Favorite[]>(`/users/${userId}/favorites`, {
+    params,
+  });
   return (data ?? []).map((fav) => ({
     ...fav,
     createdAt: new Date(fav.createdAt),
