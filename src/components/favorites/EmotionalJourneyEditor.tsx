@@ -208,6 +208,10 @@ export function EmotionalJourneyEditor({
     [segments, totalSec, minSegment],
   );
 
+  /** Ref always holding latest segments so async uploads merge into current state (avoid race where image+video overwrite each other). */
+  const normalizedSegmentsRef = useRef(normalizedSegments);
+  normalizedSegmentsRef.current = normalizedSegments;
+
   useEffect(() => {
     if (!canEdit || segments.length > 0) return;
     onSegmentsChange([
@@ -423,12 +427,13 @@ export function EmotionalJourneyEditor({
 
   const updateSegment = useCallback(
     (id: string, patch: Partial<EmotionalSegment>) => {
-      const next = normalizedSegments.map((s) =>
+      const current = normalizedSegmentsRef.current;
+      const next = current.map((s) =>
         s.id === id ? { ...s, ...patch } : s,
       );
       onSegmentsChange(next);
     },
-    [normalizedSegments, onSegmentsChange],
+    [onSegmentsChange],
   );
 
   const splitSegment = useCallback(
@@ -1512,7 +1517,7 @@ export function EmotionalJourneyEditor({
                   .map((s) => (
                     <li
                       key={s.id}
-                      className="md:flex items-center gap-3 p-2 rounded-lg bg-card/30 border border-white/5 text-sm"
+                      className={`${selectedSegmentId === s.id ? "active": ""} [&.active]:bg-primary/5 [&.active]:border-primary/50 md:flex items-center gap-3 p-2 rounded-lg bg-card/30 border border-white/5 text-sm`}
                     >
                       <span className="mb-1 block text-xs md:text-sm text-primary font-medium flex-shrink-0">
                         {formatTimeMinutesSeconds(s.startSeconds)} –{" "}

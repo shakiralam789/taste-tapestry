@@ -153,7 +153,7 @@ export function Navbar() {
                 onChange={(e) => setMobileSearchQuery(e.target.value)}
                 onFocus={() => mobileSearchResults.length > 0 && setMobileSearchDropdownOpen(true)}
                 placeholder="Search users..."
-                className="pl-10 h-10 bg-muted/50 border-border rounded-full w-full"
+                className="pl-10 h-8 bg-muted/50 border-border rounded-full w-full"
                 autoFocus
               />
               {mobileSearchDropdownOpen && (mobileSearchQuery.trim() || mobileSearchResults.length > 0) && (
