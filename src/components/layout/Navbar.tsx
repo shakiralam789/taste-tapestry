@@ -1,23 +1,21 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Compass,
-  Heart,
   User,
   MessageCircle,
   Bell,
-  Menu,
-  X,
   Sparkles,
   Clock,
+  Search,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useWishbook } from "@/contexts/WishbookContext";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -33,6 +31,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import { useQuery } from "@tanstack/react-query";
 import { getTotalUnreadCount } from "@/features/messages/api";
+import { searchUsers, type UserSearchHit } from "@/features/users/api";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -45,9 +44,59 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState("");
+  const [mobileSearchResults, setMobileSearchResults] = useState<UserSearchHit[]>([]);
+  const [mobileSearching, setMobileSearching] = useState(false);
+  const [mobileSearchDropdownOpen, setMobileSearchDropdownOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+
   const { notifications, unreadCount: notificationsUnreadCount, markAllRead, markAsRead } = useNotifications();
   const { displayName, displayAvatar } = useProfileInfo();
   const { user } = useAuth();
+
+  const runMobileSearch = useCallback(
+    async (q: string) => {
+      if (!q.trim()) {
+        setMobileSearchResults([]);
+        return;
+      }
+      setMobileSearching(true);
+      try {
+        const list = await searchUsers(q, { excludeUserId: user?.id });
+        setMobileSearchResults(list);
+        setMobileSearchDropdownOpen(true);
+      } catch {
+        setMobileSearchResults([]);
+      } finally {
+        setMobileSearching(false);
+      }
+    },
+    [user?.id]
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => runMobileSearch(mobileSearchQuery), 300);
+    return () => clearTimeout(t);
+  }, [mobileSearchQuery, runMobileSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)) {
+        setMobileSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleMobileSelectUser = (id: string) => {
+    setMobileSearchDropdownOpen(false);
+    setMobileSearchQuery("");
+    setMobileSearchResults([]);
+    setIsMobileSearchOpen(false);
+    router.push(`/users/${id}`);
+  };
 
   const { data: messagesUnreadCount = 0 } = useQuery({
     queryKey: ["messages", "unread-count"],
@@ -78,6 +127,69 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 sm:px-6">
+        {/* Mobile: search-only bar when search is open */}
+        {isMobileSearchOpen ? (
+          <div className="flex items-center gap-2 h-12 sm:h-16 md:hidden" ref={mobileSearchRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full"
+              onClick={() => {
+                setIsMobileSearchOpen(false);
+                setMobileSearchQuery("");
+                setMobileSearchResults([]);
+                setMobileSearchDropdownOpen(false);
+              }}
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="relative flex-1 min-w-0">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <Input
+                value={mobileSearchQuery}
+                onChange={(e) => setMobileSearchQuery(e.target.value)}
+                onFocus={() => mobileSearchResults.length > 0 && setMobileSearchDropdownOpen(true)}
+                placeholder="Search users..."
+                className="pl-10 h-10 bg-muted/50 border-border rounded-full w-full"
+                autoFocus
+              />
+              {mobileSearchDropdownOpen && (mobileSearchQuery.trim() || mobileSearchResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-[70vh] overflow-y-auto">
+                  {mobileSearching ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">Searching...</p>
+                  ) : mobileSearchResults.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      {mobileSearchQuery.trim() ? "No users found" : "Type to search users"}
+                    </p>
+                  ) : (
+                    mobileSearchResults.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleMobileSelectUser(u.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={u.avatar ?? undefined} />
+                          <AvatarFallback className="text-xs">
+                            {(u.displayName || u.username || "?")[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{u.displayName || u.username || "User"}</p>
+                          <p className="text-xs text-muted-foreground truncate">@{u.username || u.id}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-12 items-center justify-between h-12 sm:h-16">
           <div className="col-span-6 md:col-span-2">
             {/* Logo */}
@@ -118,6 +230,16 @@ export function Navbar() {
 
           {/* Right Section */}
           <div className="col-span-6 md:col-span-2 flex items-center justify-end gap-2">
+            {/* Mobile: search icon — opens search bar in navbar */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden rounded-full"
+              onClick={() => setIsMobileSearchOpen(true)}
+              aria-label="Search users"
+            >
+              <Search className="w-5 h-5" />
+            </Button>
             {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -258,6 +380,7 @@ export function Navbar() {
 
           </div>
         </div>
+        )}
       </div>
     </nav>
   );
