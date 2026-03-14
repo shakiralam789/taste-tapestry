@@ -122,7 +122,8 @@ const EmotionalJourneyGraphWithScroll = React.memo(function EmotionalJourneyGrap
     : totalSec;
   const scaleX = chartW / (useSegments ? windowSpan : (isNewFormat ? totalSec : 100));
   const scaleY = chartH / (Y_MAX - Y_MIN);
-  const fullTimelineWidth = useSegments ? chartW * totalSec / windowSpan : width;
+  // Include left padding so rightmost point (PADDING.left + totalSec * scaleX) is inside the SVG
+  const fullTimelineWidth = useSegments ? PADDING.left + chartW * totalSec / windowSpan : width;
 
   const pathD = useMemo(() => {
     const svgXSeg = (x: number) => PADDING.left + x * scaleX;
@@ -423,6 +424,10 @@ export function EmotionalJourneyView({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | "all">(
     "all",
   );
+  // List filter: "all" = show all moments; segment id = show only that segment. Clicking a moment only updates graph highlight, not this.
+  const [listSegmentFilter, setListSegmentFilter] = useState<string | "all">(
+    "all",
+  );
   const [fullscreenMedia, setFullscreenMedia] = useState<{
     type: "image" | "video";
     url: string;
@@ -482,10 +487,11 @@ export function EmotionalJourneyView({
     [segmentsSingle],
   );
 
-  // On load / when segments change: default to first segment if available
+  // On load / when segments change: default to first segment if available; keep list showing all
   useEffect(() => {
     if (!useSegments || sortedSegments.length === 0) {
       setSelectedSegmentId("all");
+      setListSegmentFilter("all");
       return;
     }
     setSelectedSegmentId((current) =>
@@ -493,6 +499,7 @@ export function EmotionalJourneyView({
         ? current
         : sortedSegments[0]?.id ?? "all",
     );
+    setListSegmentFilter("all");
   }, [useSegments, sortedSegments]);
 
   const pointsWithNotes = sortedPoints.filter((p) => p.note || p.image);
@@ -620,7 +627,10 @@ export function EmotionalJourneyView({
         useSegments={useSegments}
         graphWidth={graphWidth}
         selectedSegmentId={selectedSegmentId}
-        setSelectedSegmentId={setSelectedSegmentId}
+        setSelectedSegmentId={(id) => {
+          setSelectedSegmentId(id);
+          if (id !== "all") setListSegmentFilter(id);
+        }}
         sortedPoints={sortedPoints}
         isNewFormat={isNewFormat}
         momentPins={momentPins}
@@ -662,8 +672,11 @@ export function EmotionalJourneyView({
               {useSegments && segmentsWithNotes.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => setSelectedSegmentId("all")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${selectedSegmentId === "all"
+                  onClick={() => {
+                    setSelectedSegmentId("all");
+                    setListSegmentFilter("all");
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${listSegmentFilter === "all"
                     ? "bg-secondary/20 border-secondary/50 text-secondary"
                     : "bg-[#1a1c26] border-white/5 text-gray-500 hover:text-gray-300"
                     }`}
@@ -673,14 +686,14 @@ export function EmotionalJourneyView({
               )}
             </div>
 
-            <ul className="">
+            <ul className="space-y-2">
               {useSegments
                 ? (() => {
                   const visibleSegments =
-                    selectedSegmentId === "all"
+                    listSegmentFilter === "all"
                       ? segmentsWithNotes
                       : segmentsWithNotes.filter(
-                        (s) => s.id === selectedSegmentId,
+                        (s) => s.id === listSegmentFilter,
                       );
 
                   if (visibleSegments.length === 0) {
@@ -696,12 +709,22 @@ export function EmotionalJourneyView({
                   return visibleSegments.map((s) => (
                     <li
                       key={s.id}
-                      className="group flex flex-col md:flex-row items-center gap-4 p-3 rounded-2xl bg-[#0d0e14] border border-white/5 hover:border-blue-500/30 transition-all duration-300 shadow-lg"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedSegmentId(s.id)}
+                      onKeyDown={(e) => e.key === "Enter" && setSelectedSegmentId(s.id)}
+                      className={`group border border-transparent flex flex-col md:flex-row items-center gap-4 p-3 rounded-2xl shadow-lg cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50 ${selectedSegmentId === s.id
+                        ? "bg-[#0d0e14] border-blue-500/50 hover:border-blue-500/70"
+                        : "bg-[#0d0e14] border-white/5 hover:border-blue-500/30"
+                        }`}
                     >
                       <div className="flex flex-wrap gap-2 flex-shrink-0">
                         {s.image && (
                           <div
-                            onClick={() => setFullscreenMedia({ type: "image", url: s.image! })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFullscreenMedia({ type: "image", url: s.image! });
+                            }}
                             className="relative w-24 h-24 md:w-32 md:h-24 rounded-xl overflow-hidden bg-black/40 border border-white/5 group-hover:scale-[1.02] transition-transform cursor-pointer"
                           >
                             <img
@@ -716,7 +739,10 @@ export function EmotionalJourneyView({
                         )}
                         {s.video && (
                           <div
-                            onClick={() => setFullscreenMedia({ type: "video", url: s.video! })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFullscreenMedia({ type: "video", url: s.video! });
+                            }}
                             className="relative w-24 h-24 md:w-32 md:h-24 rounded-xl overflow-hidden bg-black/40 border border-white/5 group-hover:scale-[1.02] transition-transform cursor-pointer"
                           >
                             <div className="w-full h-full flex items-center justify-center bg-blue-500/10">

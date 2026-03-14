@@ -510,7 +510,7 @@ export default function FavoriteShowPage() {
           )}
         </header>
 
-        <main className="container mx-auto flex flex-wrap md:flex-nowrap px-6 gap-4 py-4 md:py-6 pb-16">
+        <main className="container mx-auto flex flex-wrap md:flex-nowrap sm:px-6 px-4 gap-4 py-4 md:py-6 pb-16">
           <div className="md:w-8/12 w-full">
             {/* Cover + title block */}
             <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
