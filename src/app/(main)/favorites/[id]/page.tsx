@@ -19,6 +19,7 @@ import { getPublicFavoritesPage } from "@/features/users/api";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
 import { CATEGORY_EXTRA_FIELDS } from "@/features/favorites/category-fields";
 import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Pencil,
@@ -197,7 +198,7 @@ export default function FavoriteShowPage() {
     enabled: typeof id === "string",
   });
 
-  const { data: ownerFavorites = [] } = useQuery<Favorite[]>({
+  const { data: ownerFavorites = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
     queryKey: [
       "favorite-owner-favorites",
       favorite?.userId,
@@ -510,7 +511,7 @@ export default function FavoriteShowPage() {
           )}
         </header>
 
-        <main className="container mx-auto flex flex-wrap md:flex-nowrap sm:px-6 px-4 gap-4 py-4 md:py-6 pb-16">
+        <main className="container mx-auto flex flex-wrap md:flex-nowrap sm:px-6 gap-4 py-4 md:py-6 pb-16">
           <div className="md:w-8/12 w-full">
             {/* Cover + title block */}
             <section className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 2xl:mb-8">
@@ -1124,66 +1125,92 @@ export default function FavoriteShowPage() {
             </section>
           </div>
           <div className="w-full md:w-4/12 ">
-            {showRelatedSidebar && (
-              <aside className="md:sticky md:top-20 space-y-3 lg:pl-2">
-                <div className="rounded-xl border border-white/5 bg-card/40 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <Music2 className="w-3.5 h-3.5" />
-                      Other {favorite.categoryId} collections
-                    </h2>
-                    {/* see all */}
-                    <Link href={`${isOwner ? `/profile/collection?category=${favorite.categoryId}` : `/users/${favorite.userId}/collection?category=${favorite.categoryId}`}`} className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
-                      <span>See all</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                  <div className="space-y-2">
-                    {relatedFavorites.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => router.push(`/favorites/${item.id}`)}
-                        className="w-full flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 hover:bg-background/70 transition-colors p-2 text-left"
-                      >
-                        <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                          <img
-                            src={getFavoriteCoverImage(
-                              item.image,
-                              item.categoryId,
-                            )}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = getFavoriteCoverImage(
-                                "",
-                                item.categoryId,
-                              );
-                            }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium truncate">
-                            {item.title}
-                          </p>
-                          {Array.isArray(item.mood) && item.mood.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {item.mood.join(" · ")}
-                            </p>
-                          )}
-                        </div>
-                        {typeof item.rating === "number" && (
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                            {item.rating.toFixed(1)}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+            <aside className="md:sticky md:top-20 space-y-3 lg:pl-2">
+              <div className="rounded-xl border border-white/5 bg-card/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Music2 className="w-3.5 h-3.5" />
+                    Other {favorite.categoryId} collections
+                  </h2>
+                  {/* see all */}
+                  <Link
+                    href={`${isOwner ? `/profile/collection?category=${favorite.categoryId}` : `/users/${favorite.userId}/collection?category=${favorite.categoryId}`}`}
+                    className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                  >
+                    <span>See all</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
-              </aside>
-            )}
+                <div className="space-y-2">
+                  {isRelatedLoading ? (
+                    <>
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-full flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 p-2"
+                        >
+                          <Skeleton className="h-12 w-12 rounded-md flex-shrink-0" />
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <Skeleton className="h-3 w-3/4 rounded" />
+                            <Skeleton className="h-2.5 w-1/2 rounded" />
+                          </div>
+                          <Skeleton className="h-3 w-8 rounded flex-shrink-0" />
+                        </div>
+                      ))}
+                    </>
+                  ) : showRelatedSidebar ? (
+                    <>
+                      {relatedFavorites.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => router.push(`/favorites/${item.id}`)}
+                          className="w-full flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 hover:bg-background/70 transition-colors p-2 text-left"
+                        >
+                          <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={getFavoriteCoverImage(
+                                item.image,
+                                item.categoryId,
+                              )}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = getFavoriteCoverImage(
+                                  "",
+                                  item.categoryId,
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">
+                              {item.title}
+                            </p>
+                            {Array.isArray(item.mood) &&
+                              item.mood.length > 0 && (
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {item.mood.join(" · ")}
+                                </p>
+                              )}
+                          </div>
+                          {typeof item.rating === "number" && (
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                              {item.rating.toFixed(1)}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="py-12 text-xs text-muted-foreground text-center">
+                      No related collections found
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </main>
       </div>
