@@ -453,10 +453,12 @@ function MessagesPageInner() {
       mediaUrl = "",
       fileName = "",
       fileSize = 0,
-      replyToId = ""
+      replyToId = "",
+      media?: { url: string; type: string; fileName?: string; fileSize?: number }[]
     ) => {
       const trimmedContent = content.trim();
-      if (!trimmedContent && !mediaUrl) return;
+      const hasMedia = (media && media.length > 0) || mediaUrl;
+      if (!trimmedContent && !hasMedia) return;
 
       let convoId = activeConvoId;
       if (!convoId && pendingPartner) {
@@ -480,9 +482,10 @@ function MessagesPageInner() {
         senderId: user?.id || "",
         content: trimmedContent,
         type,
-        mediaUrl,
-        fileName,
-        fileSize,
+        mediaUrl: media?.[0]?.url ?? mediaUrl,
+        fileName: media?.[0]?.fileName ?? fileName,
+        fileSize: media?.[0]?.fileSize ?? fileSize,
+        media,
         readBy: [user?.id || ""],
         isEdited: false,
         isDeleted: false,
@@ -491,7 +494,7 @@ function MessagesPageInner() {
       };
 
       setMessages((prev) => [...prev, tempMsg]);
-      socketSendMessage(convoId, trimmedContent, type, mediaUrl, fileName, fileSize, replyToId);
+      socketSendMessage(convoId, trimmedContent, type, mediaUrl, fileName, fileSize, replyToId, media);
     },
     [activeConvoId, pendingPartner, user, socketSendMessage, qc],
   );

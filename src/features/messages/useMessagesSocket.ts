@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import type { Message, TypingEvent, ReadEvent, OnlineEvent } from "@/types/messages";
+import type { Message, MessageMediaItem, TypingEvent, ReadEvent, OnlineEvent } from "@/types/messages";
 import { useMessages } from "./MessagesContext";
 
 interface UseMessagesSocketOptions {
@@ -52,6 +52,7 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
       fileName?: string,
       fileSize?: number,
       replyToId?: string,
+      media?: MessageMediaItem[],
     ) => {
       socket?.emit("messages:send", {
         conversationId,
@@ -61,6 +62,7 @@ export function useMessagesSocket(options: UseMessagesSocketOptions = {}) {
         fileName,
         fileSize,
         replyToId,
+        media,
       });
     },
     [socket],

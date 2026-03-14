@@ -206,49 +206,54 @@ export function MessageThread({
 
                                     {!msg.isDeleted ? (
                                         <>
-                                            {msg.type === "image" && (
-                                                <div className="rounded-xl overflow-hidden mb-1">
-                                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
-                                                        <img
-                                                            src={getOptimizedUrl(msg.mediaUrl, 2048) || ''}
-                                                            alt="Image attachment"
-                                                            className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
-                                                        />
-                                                    </a>
-                                                </div>
-                                            )}
-
-                                            {msg.type === "video" && (
-                                                <div className="rounded-xl overflow-hidden mb-1 bg-black/20 aspect-video flex items-center justify-center relative group">
-                                                    <video
-                                                        src={msg.mediaUrl}
-                                                        className="max-h-60 w-full"
-                                                        controls
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {msg.type === "file" && (
-                                                <a
-                                                    href={msg.mediaUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mb-1 min-w-[200px]"
-                                                >
-                                                    <div className="p-2 rounded-lg bg-primary/20">
-                                                        <FileIcon className="w-5 h-5 text-primary" />
+                                            {/* Multiple or single media */}
+                                            {(() => {
+                                                const items = msg.media?.length
+                                                    ? msg.media
+                                                    : msg.mediaUrl
+                                                      ? [{ url: msg.mediaUrl, type: msg.type, fileName: msg.fileName, fileSize: msg.fileSize }]
+                                                      : [];
+                                                if (items.length === 0) return null;
+                                                return (
+                                                    <div className={cn(
+                                                        "mb-1",
+                                                        items.length > 1 && "grid grid-cols-2 gap-1.5 max-w-[320px]"
+                                                    )}>
+                                                        {items.map((item, idx) => (
+                                                            <div key={idx}>
+                                                                {item.type === "image" && (
+                                                                    <div className="rounded-xl overflow-hidden">
+                                                                        <a href={item.url} target="_blank" rel="noopener noreferrer">
+                                                                            <img
+                                                                                src={getOptimizedUrl(item.url, 2048) || ""}
+                                                                                alt=""
+                                                                                className="max-h-60 w-full object-cover hover:opacity-90 transition-opacity"
+                                                                            />
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                                {item.type === "video" && (
+                                                                    <div className="rounded-xl overflow-hidden bg-black/20 aspect-video flex items-center justify-center">
+                                                                        <video src={item.url} className="max-h-60 w-full" controls />
+                                                                    </div>
+                                                                )}
+                                                                {item.type === "file" && (
+                                                                    <a
+                                                                        href={item.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center gap-2 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors min-w-0"
+                                                                    >
+                                                                        <FileIcon className="w-4 h-4 shrink-0 text-primary" />
+                                                                        <span className="text-xs font-medium truncate">{item.fileName || "Attachment"}</span>
+                                                                        <Download className="w-3 h-3 shrink-0 opacity-40" />
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-medium truncate">{msg.fileName || "Attachment"}</p>
-                                                        {msg.fileSize && (
-                                                            <p className="text-[10px] opacity-60">
-                                                                {(msg.fileSize / 1024 / 1024).toFixed(2)} MB
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <Download className="w-4 h-4 opacity-40" />
-                                                </a>
-                                            )}
+                                                );
+                                            })()}
 
                                             {msg.content && (
                                                 <p className={cn(

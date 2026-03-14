@@ -7,7 +7,9 @@ import { SendHorizonal, Paperclip, X, FileIcon, Loader2, Reply, Edit2 } from "lu
 import { uploadToCloudinary } from "@/lib/upload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Message } from "@/types/messages";
+import { Message, type MessageMediaItem } from "@/types/messages";
+
+const MAX_ATTACHMENTS = 10;
 
 interface MessageInputProps {
     onSend: (
@@ -16,7 +18,8 @@ interface MessageInputProps {
         mediaUrl?: string,
         fileName?: string,
         fileSize?: number,
-        replyToId?: string
+        replyToId?: string,
+        media?: MessageMediaItem[]
     ) => void;
     onEdit?: (id: string, content: string) => void;
     onTypingChange: (typing: boolean) => void;
@@ -36,8 +39,8 @@ export function MessageInput({
     onCancelAction,
 }: MessageInputProps) {
     const [value, setValue] = useState("");
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [uploadPreviews, setUploadPreviews] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
 
     const typingRef = useRef(false);
@@ -45,22 +48,43 @@ export function MessageInput({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = Array.from(e.target.files ?? []);
+        if (files.length === 0) return;
 
-        setSelectedFile(file);
-        if (file.type.startsWith("image/")) {
-            const reader = new FileReader();
-            reader.onload = (prev) => setUploadPreview(prev.target?.result as string);
-            reader.readAsDataURL(file);
-        } else {
-            setUploadPreview(null);
+        const allowed = files.slice(0, MAX_ATTACHMENTS);
+        if (files.length > MAX_ATTACHMENTS) {
+            toast.info(`Only the first ${MAX_ATTACHMENTS} files will be sent.`);
         }
+        setSelectedFiles(allowed);
+
+        const urls: string[] = new Array(allowed.length).fill("");
+        const imageCount = allowed.filter((f) => f.type.startsWith("image/")).length;
+        let loaded = 0;
+        const maybeDone = () => {
+            loaded++;
+            if (loaded === imageCount || imageCount === 0) setUploadPreviews([...urls]);
+        };
+        allowed.forEach((file, i) => {
+            if (file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    urls[i] = (ev.target?.result as string) ?? "";
+                    maybeDone();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        if (imageCount === 0) setUploadPreviews(urls);
     };
 
-    const handleRemoveFile = () => {
-        setSelectedFile(null);
-        setUploadPreview(null);
+    const handleRemoveFile = (index?: number) => {
+        if (index !== undefined) {
+            setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+            setUploadPreviews((prev) => prev.filter((_, i) => i !== index));
+        } else {
+            setSelectedFiles([]);
+            setUploadPreviews([]);
+        }
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
@@ -93,7 +117,8 @@ export function MessageInput({
 
     const handleSubmit = useCallback(async () => {
         const trimmed = value.trim();
-        if ((!trimmed && !selectedFile) || disabled || isUploading) return;
+        const hasFiles = selectedFiles.length > 0;
+        if ((!trimmed && !hasFiles) || disabled || isUploading) return;
 
         if (editingMessage) {
             onEdit?.(editingMessage.id, trimmed);
@@ -106,22 +131,35 @@ export function MessageInput({
         let mediaUrl = "";
         let fileName = "";
         let fileSize = 0;
+        let media: MessageMediaItem[] | undefined;
 
-        if (selectedFile) {
+        if (hasFiles) {
             setIsUploading(true);
             try {
-                if (selectedFile.type.startsWith("image/")) type = "image";
-                else if (selectedFile.type.startsWith("video/")) type = "video";
-                else type = "file";
-
-                fileName = selectedFile.name;
-                fileSize = selectedFile.size;
-
-                const media = await uploadToCloudinary(
-                    selectedFile,
-                    type === "video" ? "video" : "image"
-                );
-                mediaUrl = media.original_url;
+                const uploaded: MessageMediaItem[] = [];
+                for (const file of selectedFiles) {
+                    const itemType = file.type.startsWith("image/")
+                        ? "image"
+                        : file.type.startsWith("video/")
+                          ? "video"
+                          : "file";
+                    const res = await uploadToCloudinary(
+                        file,
+                        itemType === "video" ? "video" : "image"
+                    );
+                    uploaded.push({
+                        url: res.original_url,
+                        type: itemType,
+                        fileName: file.name,
+                        fileSize: file.size,
+                    });
+                }
+                media = uploaded;
+                const first = uploaded[0]!;
+                type = first.type as "image" | "video" | "file";
+                mediaUrl = first.url;
+                fileName = first.fileName ?? "";
+                fileSize = first.fileSize ?? 0;
             } catch (err) {
                 console.error("Upload failed:", err);
                 toast.error("Failed to upload media");
@@ -138,7 +176,8 @@ export function MessageInput({
             mediaUrl,
             fileName,
             fileSize,
-            replyingToMessage?.id
+            replyingToMessage?.id,
+            media
         );
 
         setValue("");
@@ -148,7 +187,7 @@ export function MessageInput({
         clearTimeout(stopTypingTimeout.current);
         typingRef.current = false;
         onTypingChange(false);
-    }, [value, selectedFile, disabled, isUploading, onSend, onEdit, onTypingChange, editingMessage, replyingToMessage, onCancelAction]);
+    }, [value, selectedFiles, disabled, isUploading, onSend, onEdit, onTypingChange, editingMessage, replyingToMessage, onCancelAction]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -159,36 +198,48 @@ export function MessageInput({
 
     return (
         <div className="flex flex-col border-t border-white/10 bg-background/80 backdrop-blur-sm">
-            {/* Media Preview */}
-            {(uploadPreview || selectedFile) && (
-                <div className="px-4 py-2 flex items-center gap-3 border-b border-white/5 bg-white/5 animate-in slide-in-from-bottom-2 duration-200">
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-black/20 flex items-center justify-center shrink-0 border border-white/10">
-                        {uploadPreview ? (
-                            <img src={uploadPreview} className="w-full h-full object-cover" />
-                        ) : (
-                            <FileIcon className="w-6 h-6 text-primary/60" />
-                        )}
-                        {isUploading && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                <Loader2 className="w-5 h-5 animate-spin text-white" />
+            {/* Media Preview — multiple */}
+            {selectedFiles.length > 0 && (
+                <div className="px-4 py-2 border-b border-white/5 bg-white/5 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {selectedFiles.map((file, i) => (
+                            <div
+                                key={`${file.name}-${i}`}
+                                className="flex items-center gap-2 rounded-lg bg-black/20 border border-white/10 p-1.5"
+                            >
+                                <div className="relative w-12 h-12 rounded-md overflow-hidden bg-black/20 flex items-center justify-center shrink-0">
+                                    {uploadPreviews[i] ? (
+                                        <img src={uploadPreviews[i]} className="w-full h-full object-cover" alt="" />
+                                    ) : (
+                                        <FileIcon className="w-6 h-6 text-primary/60" />
+                                    )}
+                                    {isUploading && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="min-w-0 max-w-[120px]">
+                                    <p className="text-xs font-medium truncate">{file.name}</p>
+                                    <p className="text-[10px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 rounded-full hover:bg-white/10 shrink-0"
+                                    onClick={() => handleRemoveFile(i)}
+                                    disabled={isUploading}
+                                    aria-label="Remove"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </Button>
                             </div>
-                        )}
+                        ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{selectedFile?.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                            {selectedFile ? (selectedFile.size / 1024).toFixed(0) : 0} KB
-                        </p>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-white/10"
-                        onClick={handleRemoveFile}
-                        disabled={isUploading}
-                    >
-                        <X className="w-4 h-4" />
-                    </Button>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""} • send with message
+                    </p>
                 </div>
             )}
 
@@ -222,6 +273,8 @@ export function MessageInput({
                     type="file"
                     ref={fileInputRef}
                     className="hidden"
+                    accept="image/*,video/*"
+                    multiple
                     onChange={handleFileSelect}
                 />
                 <Button
@@ -251,7 +304,7 @@ export function MessageInput({
                 <Button
                     size="icon"
                     onClick={handleSubmit}
-                    disabled={(!value.trim() && !selectedFile) || disabled || isUploading}
+                    disabled={(!value.trim() && selectedFiles.length === 0) || disabled || isUploading}
                     className="rounded-full shrink-0 w-10 h-10 shadow-lg shadow-primary/20"
                     aria-label="Send message"
                 >

@@ -10,6 +10,13 @@ export interface Conversation {
   clearedAt: Record<string, string>;
 }
 
+export interface MessageMediaItem {
+  url: string;
+  type: string;
+  fileName?: string;
+  fileSize?: number;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -19,6 +26,8 @@ export interface Message {
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
+  /** Multiple attachments (images/videos/files) per message */
+  media?: MessageMediaItem[];
   readBy: string[];
   isEdited: boolean;
   isDeleted: boolean;
