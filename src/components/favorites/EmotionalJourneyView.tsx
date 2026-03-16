@@ -274,7 +274,7 @@ const EmotionalJourneyGraphWithScroll = React.memo(function EmotionalJourneyGrap
   return (
     <>
       {useSegments && totalSec > 15 && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-muted-foreground">Zoom:</span>
           <Button type="button" variant="ghost" size="sm" className="h-7 gap-1" onClick={zoomIn} title="Zoom in">
             <ZoomIn className="w-3.5 h-3.5" /> In

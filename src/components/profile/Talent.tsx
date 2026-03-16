@@ -46,8 +46,7 @@ export default function Quirks() {
             </h3>
             <p className="text-muted-foreground text-sm max-w-xl">
               A soft, playful corner for the weird little things you do at
-              gatherings, late at night, or when you think nobody’s watching.
-              No talent show energy, just cozy storytelling.
+              gatherings and on late nights.
             </p>
           </div>
         </div>

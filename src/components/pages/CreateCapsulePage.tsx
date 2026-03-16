@@ -42,7 +42,7 @@ export default function CreateCapsulePage() {
   });
   const [step, setStep] = useState(1);
   const [isQuickPost, setIsQuickPost] = useState(false);
-  const totalSteps = 3;
+  const totalSteps = 2;
 
   const { data: existingCapsule } = useQuery({
     queryKey: ["capsule", editId],
@@ -140,6 +140,15 @@ export default function CreateCapsulePage() {
     setEmotions((prev) => prev.filter((e) => e !== emotion));
   };
 
+  const getDefaultPeriod = () => {
+    const now = new Date();
+    return now.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   const handleSubmit = () => {
     if (step < totalSteps && !isQuickPost) {
       setStep(step + 1);
@@ -167,10 +176,15 @@ export default function CreateCapsulePage() {
         ? bannerImage
         : cleanPoster;
 
+    const effectivePeriod =
+      formData.period && formData.period.trim().length > 0
+        ? formData.period
+        : getDefaultPeriod();
+
     mutation.mutate({
       title: formData.title,
       description: formData.description || undefined,
-      period: formData.period || undefined,
+      period: effectivePeriod,
       image: cleanPoster || undefined,
       bannerImage: cleanBanner || undefined,
       images: filteredImages.length ? filteredImages : undefined,
@@ -192,7 +206,10 @@ export default function CreateCapsulePage() {
     userId: existingCapsule?.userId ?? "preview-user",
     title: formData.title || "Untitled capsule",
     description: formData.description || "",
-    period: formData.period || "",
+    period:
+      formData.period && formData.period.trim().length > 0
+        ? formData.period
+        : getDefaultPeriod(),
     image: posterPreview || undefined,
     images: media.images,
     videos: media.videos,
@@ -270,7 +287,7 @@ export default function CreateCapsulePage() {
               {!isQuickPost && (
                 <div className="px-1 mb-2">
                   <div className="flex justify-between mb-2">
-                    {["Identity", "Media", "Journey"].map((label, i) => (
+                    {["Identity", "Media"].map((label, i) => (
                       <span
                         key={label}
                         className={`text-[10px] uppercase font-black tracking-widest transition-colors ${step >= i + 1 ? "text-primary" : "text-gray-600"
@@ -309,13 +326,7 @@ export default function CreateCapsulePage() {
                       {/* Basic Info */}
                       <div className="space-y-4">
                         <div>
-                          <Label
-                            htmlFor="title"
-                            className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"
-                          >
-                            <Clock className="w-4 h-4 text-primary/70" />
-                            Capsule Title *
-                          </Label>
+                         
                           <Input
                             id="title"
                             autoComplete="off"
@@ -334,12 +345,7 @@ export default function CreateCapsulePage() {
                         {!isQuickPost && (
                           <>
                             <div>
-                              <Label
-                                htmlFor="period"
-                                className="mb-1 text-xs font-semibold text-muted-foreground"
-                              >
-                                Time Period
-                              </Label>
+                            
                               <Input
                                 id="period"
                                 autoComplete="off"
@@ -358,13 +364,13 @@ export default function CreateCapsulePage() {
                             <div>
                               <Label
                                 htmlFor="description"
-                                className="mb-1 text-xs font-semibold text-muted-foreground"
+                                className="mb-1"
                               >
-                                One line that describes this era
+                                Describe this era
                               </Label>
                               <Textarea
                                 id="description"
-                                placeholder="Describe this era in a few words"
+                                placeholder=""
                                 value={formData.description}
                                 onChange={(e) =>
                                   setFormData((prev) => ({
@@ -373,7 +379,7 @@ export default function CreateCapsulePage() {
                                   }))
                                 }
                                 rows={2}
-                                className="mt-1 bg-card/30 border border-white/5 rounded-xl px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:border-primary/40 placeholder:text-muted-foreground/70 resize-none"
+                                className="mt-1"
                               />
                             </div>
 
@@ -469,40 +475,6 @@ export default function CreateCapsulePage() {
                           onChange={setMedia}
                           onCoverChange={setCoverImage}
                           onBannerChange={setBannerImage}
-                        />
-                      </div>
-                    </motion.section>
-                  )}
-
-                  {step === 3 && !isQuickPost && (
-                    <motion.section
-                      key="step3"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      {/* Story */}
-                      <div className="">
-                        <Label
-                          htmlFor="story"
-                          className="text-base font-medium flex items-center gap-2 mb-3"
-                        >
-                          <Sparkles className="w-5 h-5 text-primary" />
-                          Your story of this chapter
-                        </Label>
-                        <Textarea
-                          id="story"
-                          placeholder="Write about what happened during this time. What defined these days? What do you want to remember?"
-                          value={formData.story}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              story: e.target.value,
-                            }))
-                          }
-                          rows={10}
-                          className="bg-transparent border-0 border-b border-white/15 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary/70 placeholder:text-muted-foreground/60 resize-none"
                         />
                       </div>
                     </motion.section>
