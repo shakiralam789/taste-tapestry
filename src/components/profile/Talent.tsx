@@ -83,7 +83,7 @@ export default function Quirks() {
           Loading your quirks…
         </div>
       ) : hasQuirks ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <div className="mb-6 grid gap-4 grid-cols-1">
           {quirks.map((quirk) => (
             <QuirkCard key={quirk.id} quirk={quirk} />
           ))}

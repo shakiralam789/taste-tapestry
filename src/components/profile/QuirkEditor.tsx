@@ -1,30 +1,54 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, SmilePlus, UploadCloud, Lock, Globe2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Sparkles, SmilePlus, Lock, Globe2, Play, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { toast } from "sonner";
 import type { Quirk, QuirkMedia } from "@/types/wishbook";
-import { createQuirk, uploadQuirkMedia } from "@/features/quirks/api";
+import { createQuirk, updateQuirk, uploadQuirkMedia } from "@/features/quirks/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+type PreviewMedia = { type: "image"; url: string } | { type: "video"; url: string };
+
 interface QuirkEditorProps {
+  /** When set, editor runs in edit mode and submits via updateQuirk */
+  quirk?: Quirk | null;
   onCreated?: (quirk: Quirk) => void;
+  onUpdated?: (quirk: Quirk) => void;
+  /** In edit mode, called when user cancels without saving */
+  onCancel?: () => void;
 }
 
-export function QuirkEditor({ onCreated }: QuirkEditorProps) {
-  const [emoji, setEmoji] = useState("🎉");
-  const [title, setTitle] = useState("");
-  const [story, setStory] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [media, setMedia] = useState<QuirkMedia>({});
-  const [bloopers, setBloopers] = useState<QuirkMedia>({});
+export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEditorProps) {
+  const isEdit = !!quirk?.id;
+  const [emoji, setEmoji] = useState(quirk?.emoji ?? "🎉");
+  const [title, setTitle] = useState(quirk?.title ?? "");
+  const [story, setStory] = useState(quirk?.story ?? "");
+  const [isPublic, setIsPublic] = useState(quirk?.isPublic ?? true);
+  const [media, setMedia] = useState<QuirkMedia>(quirk?.media ?? {});
   const [uploadingMain, setUploadingMain] = useState(false);
-  const [uploadingBloopers, setUploadingBloopers] = useState(false);
+  const [preview, setPreview] = useState<PreviewMedia | null>(null);
+  const mainInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (quirk) {
+      setEmoji(quirk.emoji ?? "🎉");
+      setTitle(quirk.title ?? "");
+      setStory(quirk.story ?? "");
+      setIsPublic(quirk.isPublic ?? true);
+      setMedia(quirk.media ?? {});
+    }
+  }, [quirk?.id, quirk?.emoji, quirk?.title, quirk?.story, quirk?.isPublic, quirk?.media]);
 
   const queryClient = useQueryClient();
 
@@ -36,7 +60,6 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
       setTitle("");
       setStory("");
       setMedia({});
-      setBloopers({});
       setIsPublic(true);
       toast.success("Quirk added to your tapestry", {
         description: "Thanks for sharing a tiny piece of your weird, lovely self.",
@@ -47,29 +70,50 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateQuirk>[1] }) =>
+      updateQuirk(id, payload),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["quirks", "me"] });
+      onUpdated?.(result);
+      toast.success("Quirk updated");
+    },
+    onError: () => {
+      toast.error("Could not update quirk. Please try again.");
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       toast.error("Give your quirk a tiny title");
       return;
     }
-    createMutation.mutate({
-      title: title.trim(),
-      emoji: emoji.trim() || "✨",
-      story: story.trim() || undefined,
-      media: Object.keys(media).length ? media : undefined,
-      bloopers: Object.keys(bloopers).length ? bloopers : undefined,
-      isPublic,
-    });
+    if (isEdit && quirk) {
+      updateMutation.mutate({
+        id: quirk.id,
+        payload: {
+          title: title.trim(),
+          emoji: emoji.trim() || "✨",
+          story: story.trim() || undefined,
+          media: Object.keys(media).length ? media : undefined,
+          isPublic,
+        },
+      });
+    } else {
+      createMutation.mutate({
+        title: title.trim(),
+        emoji: emoji.trim() || "✨",
+        story: story.trim() || undefined,
+        media: Object.keys(media).length ? media : undefined,
+        isPublic,
+      });
+    }
   };
 
-  const handleUpload = async (
-    files: FileList | null,
-    target: "media" | "bloopers",
-  ) => {
+  const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const isBloopers = target === "bloopers";
-    isBloopers ? setUploadingBloopers(true) : setUploadingMain(true);
+    setUploadingMain(true);
     try {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
@@ -83,9 +127,8 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
       if (!urls.length) return;
 
       const next: QuirkMedia = { images: [], videos: [] };
-      const current = isBloopers ? bloopers : media;
-      next.images = [...(current.images ?? [])];
-      next.videos = [...(current.videos ?? [])];
+      next.images = [...(media.images ?? [])];
+      next.videos = [...(media.videos ?? [])];
 
       for (let i = 0; i < urls.length; i++) {
         const url = urls[i];
@@ -97,14 +140,24 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
         }
       }
 
-      if (isBloopers) {
-        setBloopers(next);
-      } else {
-        setMedia(next);
-      }
+      setMedia(next);
     } finally {
-      isBloopers ? setUploadingBloopers(false) : setUploadingMain(false);
+      setUploadingMain(false);
     }
+  };
+
+  const removeImage = (url: string) => {
+    setMedia((prev) => ({
+      ...prev,
+      images: (prev.images ?? []).filter((u) => u !== url),
+    }));
+  };
+
+  const removeVideo = (url: string) => {
+    setMedia((prev) => ({
+      ...prev,
+      videos: (prev.videos ?? []).filter((u) => u !== url),
+    }));
   };
 
   return (
@@ -165,89 +218,121 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-xs font-medium">
-            <UploadCloud className="h-4 w-4 text-primary" />
-            A little visual (optional)
+      <div className="space-y-3">
+        {/* Photos & clips — modern upload zone */}
+        <div className="space-y-3">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Photos & clips
           </Label>
-          <p className="text-[11px] text-muted-foreground">
-            Add a photo or tiny clip that matches the vibe.
-          </p>
-          <Input
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={(e) => handleUpload(e.target.files, "media")}
-          />
-          {uploadingMain && (
-            <p className="text-[10px] text-muted-foreground">Uploading…</p>
-          )}
-          {(media.images?.length || media.videos?.length) && (
-            <div className="flex flex-wrap gap-2 pt-1">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => mainInputRef.current?.click()}
+            onKeyDown={(e) => e.key === "Enter" && mainInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-primary/40", "bg-white/[0.06]"); }}
+            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-primary/40", "bg-white/[0.06]"); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("border-primary/40", "bg-white/[0.06]");
+              handleUpload(e.dataTransfer.files);
+            }}
+            className="relative flex min-h-[120px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] px-4 py-6 transition-colors hover:border-primary/30 hover:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <input
+              ref={mainInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="sr-only"
+              onChange={(e) => handleUpload(e.target.files)}
+            />
+            {uploadingMain ? (
+              <p className="text-sm text-muted-foreground">Uploading…</p>
+            ) : (
+              <>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2">
+                  <ImagePlus className="h-5 w-5" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Drop or click to add</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Photos or short clips</p>
+              </>
+            )}
+          </div>
+          {(media.images?.length || media.videos?.length) ? (
+            <div className="flex flex-wrap gap-2">
               {(media.images ?? []).map((url) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt=""
-                  className="h-14 w-20 rounded-xl object-cover border border-white/10 bg-black/30"
-                />
+                <div key={url} className="relative group/thumb h-16 w-20 rounded-xl overflow-hidden border border-white/10 bg-black/30 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPreview({ type: "image", url })}
+                    className="h-full w-full block focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-xl"
+                  >
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeImage(url); }}
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-200 hover:bg-destructive focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
               {(media.videos ?? []).map((url) => (
-                <video
-                  key={url}
-                  src={url}
-                  className="h-14 w-20 rounded-xl object-cover border border-white/10 bg-black/30"
-                  muted
-                  loop
-                  playsInline
-                />
+                <div key={url} className="relative group/thumb h-16 w-20 rounded-xl overflow-hidden border border-white/10 bg-black/30 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPreview({ type: "video", url })}
+                    className="h-full w-full block focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-xl"
+                  >
+                    <video src={url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
+                      <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeVideo(url); }}
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-200 hover:bg-destructive focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label="Remove video"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-xs font-medium">
-            <UploadCloud className="h-4 w-4 text-primary" />
-            The mess-up (optional blooper)
-          </Label>
-          <p className="text-[11px] text-muted-foreground">
-            If you have a funny fail clip or photo, this is its cozy corner.
-          </p>
-          <Input
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={(e) => handleUpload(e.target.files, "bloopers")}
-          />
-          {uploadingBloopers && (
-            <p className="text-[10px] text-muted-foreground">Uploading…</p>
-          )}
-          {(bloopers.images?.length || bloopers.videos?.length) && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {(bloopers.images ?? []).map((url) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt=""
-                  className="h-14 w-20 rounded-xl object-cover border border-white/10 bg-black/30"
-                />
-              ))}
-              {(bloopers.videos ?? []).map((url) => (
-                <video
-                  key={url}
-                  src={url}
-                  className="h-14 w-20 rounded-xl object-cover border border-white/10 bg-black/30"
-                  muted
-                  loop
-                  playsInline
-                />
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
+
+      {/* Preview dialog */}
+      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="max-w-2xl rounded-3xl border border-white/10 bg-background/95 p-0 overflow-hidden">
+          <DialogTitle className="sr-only">
+            {preview?.type === "image" ? "Image preview" : "Video preview"}
+          </DialogTitle>
+          {preview?.type === "image" && (
+            <img
+              src={preview.url}
+              alt=""
+              className="w-full h-auto max-h-[85vh] object-contain rounded-2xl"
+            />
+          )}
+          {preview?.type === "video" && preview.url && (
+            <div className="w-full rounded-2xl overflow-hidden bg-black">
+              <VideoPlayer
+                src={preview.url}
+                containerClassName="w-full aspect-video"
+                videoClassName="w-full h-full object-contain"
+                autoPlayInView={false}
+                loop={false}
+                mutedByDefault={false}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="inline-flex items-center gap-2 rounded-2xl bg-black/30 px-3 py-2 border border-white/10">
@@ -279,14 +364,32 @@ export function QuirkEditor({ onCreated }: QuirkEditorProps) {
           </div>
         </div>
 
-        <Button
-          type="submit"
-          size="sm"
-          className="rounded-full px-5"
-          disabled={createMutation.isPending}
-        >
-          {createMutation.isPending ? "Saving…" : "Add to my quirks"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {isEdit && onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full px-5"
+              onClick={onCancel}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            size="sm"
+            className="rounded-full px-5"
+            disabled={createMutation.isPending || updateMutation.isPending}
+          >
+            {createMutation.isPending || updateMutation.isPending
+              ? "Saving…"
+              : isEdit
+                ? "Update quirk"
+                : "Add to my quirks"}
+          </Button>
+        </div>
       </div>
     </form>
   );
