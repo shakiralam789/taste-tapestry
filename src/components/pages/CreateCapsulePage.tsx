@@ -311,9 +311,9 @@ export default function CreateCapsulePage() {
                         <div>
                           <Label
                             htmlFor="title"
-                            className="mb-1 flex items-center gap-2"
+                            className="mb-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground"
                           >
-                            <Clock className="w-4 h-4 text-primary" />
+                            <Clock className="w-4 h-4 text-primary/70" />
                             Capsule Title *
                           </Label>
                           <Input
@@ -327,13 +327,19 @@ export default function CreateCapsulePage() {
                                 title: e.target.value,
                               }))
                             }
+                            className="mt-1"
                           />
                         </div>
 
                         {!isQuickPost && (
                           <>
                             <div>
-                              <Label htmlFor="period">Time Period</Label>
+                              <Label
+                                htmlFor="period"
+                                className="mb-1 text-xs font-semibold text-muted-foreground"
+                              >
+                                Time Period
+                              </Label>
                               <Input
                                 id="period"
                                 autoComplete="off"
@@ -345,11 +351,15 @@ export default function CreateCapsulePage() {
                                     period: e.target.value,
                                   }))
                                 }
+                                className="mt-1"
                               />
                             </div>
 
                             <div>
-                              <Label htmlFor="description">
+                              <Label
+                                htmlFor="description"
+                                className="mb-1 text-xs font-semibold text-muted-foreground"
+                              >
                                 One line that describes this era
                               </Label>
                               <Textarea
@@ -363,6 +373,7 @@ export default function CreateCapsulePage() {
                                   }))
                                 }
                                 rows={2}
+                                className="mt-1 bg-card/30 border border-white/5 rounded-xl px-3 py-2 text-sm focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:border-primary/40 placeholder:text-muted-foreground/70 resize-none"
                               />
                             </div>
 
@@ -392,7 +403,7 @@ export default function CreateCapsulePage() {
                                 ))}
                               </div>
 
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 items-center">
                                 <Input
                                   placeholder="Add custom..."
                                   value={newEmotion}
@@ -491,7 +502,7 @@ export default function CreateCapsulePage() {
                             }))
                           }
                           rows={10}
-                          className="resize-none"
+                          className="bg-transparent border-0 border-b border-white/15 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary/70 placeholder:text-muted-foreground/60 resize-none"
                         />
                       </div>
                     </motion.section>
