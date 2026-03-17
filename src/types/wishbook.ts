@@ -43,7 +43,6 @@ export interface Quirk {
   id: string;
   userId: string;
   title: string;
-  emoji: string;
   story?: string;
   media?: QuirkMedia | null;
   bloopers?: QuirkMedia | null;

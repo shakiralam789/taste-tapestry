@@ -14,7 +14,6 @@ function mapQuirk(raw: RawQuirk): Quirk {
 
 export type CreateQuirkPayload = {
   title: string;
-  emoji: string;
   story?: string;
   media?: QuirkMedia | null;
   bloopers?: QuirkMedia | null;

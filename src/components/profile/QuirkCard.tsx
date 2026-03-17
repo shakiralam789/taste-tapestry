@@ -69,11 +69,8 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
       <div className="group relative w-full text-left rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-white/0 to-primary/10 px-4 py-4 sm:px-5 sm:py-5 backdrop-blur-xl shadow-lg hover:border-primary/30 transition-all">
         <div className="flex gap-3 w-full">
           <div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/40 border border-white/10 text-2xl shrink-0">
-              <span>{quirk.emoji || "✨"}</span>
-            </div>
             {isOwner && (
-              <div className="shrink-0 mt-2 flex gap-2 flex-col">
+              <div className="shrink-0 mt-0 flex gap-2 flex-col">
                 <button
                   type="button"
                   onClick={(e) => {

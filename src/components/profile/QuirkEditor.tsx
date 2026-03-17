@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, SmilePlus, Lock, Globe2, Play, ImagePlus, X } from "lucide-react";
+import { SmilePlus, Lock, Globe2, Play, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +31,6 @@ interface QuirkEditorProps {
 
 export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEditorProps) {
   const isEdit = !!quirk?.id;
-  const [emoji, setEmoji] = useState(quirk?.emoji ?? "🎉");
   const [title, setTitle] = useState(quirk?.title ?? "");
   const [story, setStory] = useState(quirk?.story ?? "");
   const [isPublic, setIsPublic] = useState(quirk?.isPublic ?? true);
@@ -42,13 +41,12 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
 
   useEffect(() => {
     if (quirk) {
-      setEmoji(quirk.emoji ?? "🎉");
       setTitle(quirk.title ?? "");
       setStory(quirk.story ?? "");
       setIsPublic(quirk.isPublic ?? true);
       setMedia(quirk.media ?? {});
     }
-  }, [quirk?.id, quirk?.emoji, quirk?.title, quirk?.story, quirk?.isPublic, quirk?.media]);
+  }, [quirk?.id, quirk?.title, quirk?.story, quirk?.isPublic, quirk?.media]);
 
   const queryClient = useQueryClient();
 
@@ -94,7 +92,6 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
         id: quirk.id,
         payload: {
           title: title.trim(),
-          emoji: emoji.trim() || "✨",
           story: story.trim() || undefined,
           media: Object.keys(media).length ? media : undefined,
           isPublic,
@@ -103,7 +100,6 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
     } else {
       createMutation.mutate({
         title: title.trim(),
-        emoji: emoji.trim() || "✨",
         story: story.trim() || undefined,
         media: Object.keys(media).length ? media : undefined,
         isPublic,
@@ -165,29 +161,7 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
       onSubmit={handleSubmit}
       className="space-y-5"
     >
-      <div className="grid gap-4 sm:grid-cols-[auto,1fr]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-black/40 border border-white/10">
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-          <Label
-            htmlFor="quirk-emoji"
-            className="text-[11px] uppercase tracking-wide text-muted-foreground"
-          >
-            Emoji
-          </Label>
-          <Input
-            id="quirk-emoji"
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value)}
-            maxLength={4}
-            className="w-16 text-center text-xl rounded-2xl"
-          />
-          <p className="text-[10px] text-muted-foreground text-center">
-            Pick one that feels like this quirk.
-          </p>
-        </div>
-
+      <div className="grid gap-4 sm:grid-cols-1">
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="quirk-title">Title</Label>
