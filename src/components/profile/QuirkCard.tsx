@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { QuirkEditor } from "@/components/profile/QuirkEditor";
 import { deleteQuirk } from "@/features/quirks/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getOptimizedUrl } from "@/lib/utils";
+import { cn, getOptimizedUrl } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Play, Pencil, Trash2 } from "lucide-react";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
@@ -34,6 +35,7 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
   const [preview, setPreview] = useState<PreviewMedia | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [showFullStory, setShowFullStory] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteQuirk(quirk.id),
@@ -52,6 +54,7 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
   };
 
   const storyText = quirk.story ?? "A little story lives here.";
+  const isLongStory = storyText.length > 160;
 
   const hasMedia =
     (quirk.media?.images?.length ?? 0) > 0 ||
@@ -68,20 +71,43 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
               <span>{quirk.emoji || "✨"}</span>
             </div>
             <div className="space-y-1 flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-display text-base sm:text-lg font-semibold">
-                  {quirk.title}
-                </span>
-                <Badge
-                  variant="outline"
-                  className="border-white/20 bg-white/5 text-[10px] uppercase tracking-wide"
-                >
-                  {quirk.isPublic ? "On your tapestry" : "Just for you"}
-                </Badge>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-display text-base sm:text-lg font-semibold">
+                    {quirk.title}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="border-white/20 bg-white/5 text-[10px] uppercase tracking-wide"
+                  >
+                    {quirk.isPublic ? "On your tapestry" : "Just for you"}
+                  </Badge>
+                </div>
+                {quirk.createdAt && (
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(new Date(quirk.createdAt), { addSuffix: true })}
+                  </span>
+                )}
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">
-                {storyText}
-              </p>
+              <div className="space-y-1">
+                <p
+                  className={cn(
+                    "text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap",
+                    isLongStory && !showFullStory && "line-clamp-2"
+                  )}
+                >
+                  {storyText}
+                </p>
+                {isLongStory && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullStory((v) => !v)}
+                    className="text-[11px] font-medium text-primary hover:text-primary/80 focus:outline-none"
+                  >
+                    {showFullStory ? "See less" : "See more"}
+                  </button>
+                )}
+              </div>
             </div>
             {isOwner && (
               <div className="flex items-center gap-2 shrink-0">
@@ -112,7 +138,7 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
           </div>
 
           {hasMedia && (
-            <div className="flex gap-2 overflow-x-auto pt-1">
+            <div className="ml-12 flex gap-2 overflow-x-auto pt-1">
               {quirk.media?.images?.map((url) => (
                 <button
                   key={`thumb-main-img-${url}`}
