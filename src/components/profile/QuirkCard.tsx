@@ -68,35 +68,32 @@ export function QuirkCard({ quirk }: QuirkCardProps) {
     <>
       <div className="group relative w-full text-left rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-white/0 to-primary/10 px-4 py-4 sm:px-5 sm:py-5 backdrop-blur-xl shadow-lg hover:border-primary/30 transition-all">
         <div className="flex gap-3 w-full">
-          <div>
-            {isOwner && (
-              <div className="shrink-0 mt-0 flex gap-2 flex-col">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditOpen(true);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  aria-label="Edit quirk"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteConfirmOpen(true);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/50"
-                  aria-label="Delete quirk"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
+          {isOwner && (
+            <div className="shrink-0 mt-0 flex gap-2 flex-col">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditOpen(true);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                aria-label="Edit quirk"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteConfirmOpen(true);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/50"
+                aria-label="Delete quirk"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="flex-1">
             <div className="flex items-start gap-3">
               <div className="space-y-1 flex-1 min-w-0">
