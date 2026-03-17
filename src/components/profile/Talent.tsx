@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getQuirks } from "@/features/quirks/api";
@@ -26,8 +26,11 @@ export default function Quirks() {
     enabled: !!user,
   });
 
+  const [createOpen, setCreateOpen] = useState(false);
+
   const handleCreated = () => {
     void queryClient.invalidateQueries({ queryKey: ["quirks", "me"] });
+    setCreateOpen(false);
   };
 
   const hasQuirks = quirks.length > 0;
@@ -51,7 +54,7 @@ export default function Quirks() {
           </div>
         </div>
 
-        <Dialog>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button
               type="button"
