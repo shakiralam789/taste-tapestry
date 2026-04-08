@@ -32,27 +32,6 @@ export default function HomePage() {
               </div>
             </Link>
           </div>
-          <div className="container">
-            <iframe
-              id="promotzy-checkout-men-classic-bodybuilding"
-              src="https://www.promotzy.com/embeded/checkout/men-classic-bodybuilding"
-              width="100%"
-              height="900"
-              frameBorder="0"
-              allow="payment"
-              style={{
-                display: "block",
-                width: "100%",
-                maxWidth: "500px",
-                margin: "0 auto",
-                border: "none",
-                borderRadius: "12px",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-              }}
-              loading="lazy"
-              title="Promotzy Checkout Embed"
-            />
-          </div>
           {/* Feed */}
           <div className="space-y-4 px-4 md:px-0">
             {filteredFavorites.length > 0 ? (
