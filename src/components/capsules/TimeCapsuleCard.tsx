@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { TimeCapsule } from "@/types/wishbook";
 import {
   Calendar,
@@ -134,9 +135,11 @@ export function TimeCapsuleCard({
               <span className="font-bold text-foreground">
                 {displayAuthorName}
               </span>
-              <span className="text-muted-foreground text-xs">
-                • {capsule.period || "A moment in time"}
-              </span>
+              {capsule.createdAt && (
+                <span className="text-muted-foreground text-xs font-normal">
+                  • {formatDistanceToNow(new Date(capsule.createdAt))} ago
+                </span>
+              )}
             </div>
             <span className="text-[11px] text-muted-foreground">
               {displayAuthorSubtitle}
