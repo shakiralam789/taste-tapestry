@@ -101,11 +101,13 @@ export default function MyCollections() {
   });
 
   const toggleFavoriteVisibilityMutation = useMutation({
-    mutationFn: async ({ id, isPublic }: { id: string; isPublic: boolean }) =>
-      updateFavorite(id, { isPublic }),
-    onSuccess: (_, { isPublic }) => {
+    mutationFn: async ({ id, status }: { id: string; status: 'published' | 'private' }) =>
+      updateFavorite(id, { status }),
+    onSuccess: (_, { status }) => {
       void queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      toast.success(isPublic ? "Item is now public" : "Item is now private");
+      void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
+      void queryClient.invalidateQueries({ queryKey: ["timeline"] });
+      toast.success(status === 'published' ? "Item is now public" : "Item is now private");
     },
     onError: () => toast.error("Could not update visibility"),
   });
@@ -292,17 +294,19 @@ export default function MyCollections() {
                       className="w-40 text-sm"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 cursor-pointer"
-                        onSelect={(e) => {
-                          e.preventDefault();
-                          setAlbumPickerFavorite(favorite);
-                          setAlbumPickerOpen(true);
-                        }}
-                      >
-                        <Images className="w-4 h-4" />
-                        Add to album
-                      </DropdownMenuItem>
+                      {favorite.status !== 'draft' && (
+                        <DropdownMenuItem
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setAlbumPickerFavorite(favorite);
+                            setAlbumPickerOpen(true);
+                          }}
+                        >
+                          <Images className="w-4 h-4" />
+                          Add to album
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onSelect={(e) => {
                         e.preventDefault();
                         router.push(`/favorites/${favorite.id}/edit`);
@@ -318,14 +322,19 @@ export default function MyCollections() {
                             return;
                           toggleFavoriteVisibilityMutation.mutate({
                             id: favorite.id,
-                            isPublic: !(favorite.isPublic ?? true),
+                            status: favorite.status === 'published' ? 'private' : 'published',
                           });
                         }}
                       >
-                        {(favorite.isPublic ?? true) ? (
+                        {favorite.status === 'published' ? (
                           <>
                             <Lock className="w-4 h-4" />
                             Make private
+                          </>
+                        ) : favorite.status === 'draft' ? (
+                          <>
+                            <Globe className="w-4 h-4" />
+                            Publish draft
                           </>
                         ) : (
                           <>

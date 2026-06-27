@@ -63,6 +63,10 @@ import {
     PenIcon,
     ArrowUpDown,
     Check,
+    Eye,
+    EyeOff,
+    FileEdit,
+    Filter,
 } from "lucide-react";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
@@ -77,6 +81,8 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
     { value: 'rating_desc', label: 'Rating: High → Low' },
     { value: 'rating_asc', label: 'Rating: Low → High' },
 ];
+
+type StatusKey = 'all' | 'published' | 'private' | 'draft';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 // No props  → own profile mode (owner actions enabled)
@@ -96,6 +102,7 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
     const [searchInput, setSearchInput] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("newest");
+    const [statusFilter, setStatusFilter] = useState<StatusKey>("all");
     const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(
         null,
     );
@@ -114,6 +121,16 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
             setActiveTab(categoryFromUrl as (typeof CATEGORY_TABS)[number]["value"]);
         }
     }, [categoryFromUrl]);
+
+    const statusFromUrl = searchParams?.get("status") ?? null;
+    useEffect(() => {
+        if (
+            statusFromUrl &&
+            ["all", "published", "private", "draft"].includes(statusFromUrl)
+        ) {
+            setStatusFilter(statusFromUrl as StatusKey);
+        }
+    }, [statusFromUrl]);
 
     // ── Search debounce ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -139,13 +156,14 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
 
     // ── Own infinite query ─────────────────────────────────────────────────────
     const ownQuery = useInfiniteQuery({
-        queryKey: ['favorites-page', activeTab, debouncedSearch, sortKey],
+        queryKey: ['favorites-page', activeTab, debouncedSearch, sortKey, statusFilter],
         queryFn: ({ pageParam }) =>
             getFavoritesPage(
                 pageParam as number,
                 categoryParam,
                 debouncedSearch || undefined,
                 sortKey,
+                statusFilter === 'all' ? undefined : statusFilter
             ),
         getNextPageParam: (lastPage) =>
             lastPage.hasMore ? lastPage.nextOffset : undefined,
@@ -225,12 +243,12 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
     });
 
     const toggleVisibilityMutation = useMutation({
-        mutationFn: ({ id, isPublic }: { id: string; isPublic: boolean }) =>
-            updateFavorite(id, { isPublic }),
-        onSuccess: (_, { isPublic }) => {
+        mutationFn: ({ id, status }: { id: string; status: 'published' | 'private' }) =>
+            updateFavorite(id, { status }),
+        onSuccess: (_, { status }) => {
             void queryClient.invalidateQueries({ queryKey: ["favorites"] });
             void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
-            toast.success(isPublic ? "Item is now public" : "Item is now private");
+            toast.success(status === 'published' ? "Item is now public" : "Item is now private");
         },
         onError: () => toast.error("Could not update visibility"),
     });
@@ -362,6 +380,46 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        {/* Status dropdown (Owner Only) */}
+                        {isOwnProfile && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-10 rounded-full gap-1.5 shrink-0 border-white/10 bg-muted/50 text-xs capitalize"
+                                        aria-label="Status filter"
+                                    >
+                                        <Filter className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">
+                                            {statusFilter}
+                                        </span>
+                                        <span className="sm:hidden">Filter</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40 text-sm">
+                                    {(['all', 'published', 'private', 'draft'] as StatusKey[]).map((status) => (
+                                        <DropdownMenuItem
+                                            key={status}
+                                            className="flex items-center justify-between gap-2 cursor-pointer capitalize"
+                                            onSelect={() => {
+                                                setStatusFilter(status);
+                                                const url = new URL(window.location.href);
+                                                if (status === "all") url.searchParams.delete("status");
+                                                else url.searchParams.set("status", status);
+                                                window.history.replaceState({}, "", url.pathname + url.search);
+                                            }}
+                                        >
+                                            {status}
+                                            {statusFilter === status && (
+                                                <Check className="w-3.5 h-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
 
                     {/* Tabs ────────────────────────────────────────────────────────── */}
@@ -434,17 +492,19 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                                                                 className="w-40 text-sm"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <DropdownMenuItem
-                                                                    className="flex items-center gap-2 cursor-pointer"
-                                                                    onSelect={(e) => {
-                                                                        e.preventDefault();
-                                                                        setAlbumPickerFavorite(favorite);
-                                                                        setAlbumPickerOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <Images className="w-4 h-4" />
-                                                                    Add to album
-                                                                </DropdownMenuItem>
+                                                                {favorite.status !== 'draft' && (
+                                                                    <DropdownMenuItem
+                                                                        className="flex items-center gap-2 cursor-pointer"
+                                                                        onSelect={(e) => {
+                                                                            e.preventDefault();
+                                                                            setAlbumPickerFavorite(favorite);
+                                                                            setAlbumPickerOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Images className="w-4 h-4" />
+                                                                        Add to album
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                                 <DropdownMenuItem
                                                                     className="flex items-center gap-2 cursor-pointer"
                                                                     onSelect={(e) => {
@@ -465,14 +525,19 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                                                                             return;
                                                                         toggleVisibilityMutation.mutate({
                                                                             id: favorite.id,
-                                                                            isPublic: !(favorite.isPublic ?? true),
+                                                                            status: favorite.status === 'published' ? 'private' : 'published',
                                                                         });
                                                                     }}
                                                                 >
-                                                                    {(favorite.isPublic ?? true) ? (
+                                                                    {favorite.status === 'published' ? (
                                                                         <>
                                                                             <Lock className="w-4 h-4" />
                                                                             Make private
+                                                                        </>
+                                                                    ) : favorite.status === 'draft' ? (
+                                                                        <>
+                                                                            <Globe className="w-4 h-4" />
+                                                                            Publish draft
                                                                         </>
                                                                     ) : (
                                                                         <>

@@ -6,6 +6,7 @@ import { Heart, MessageCircle, Star } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleFavoriteLove } from "@/features/favorites/api";
 import { PrivateBadge } from "@/components/common/PrivateBadge";
+import { DraftBadge } from "@/components/common/DraftBadge";
 import { getCategoryCardSubtitle } from "@/features/favorites/category-fields";
 import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
 
@@ -118,8 +119,11 @@ export function ProfilePostCard({
               {favorite.title}
             </h3>
           </button>
-          {favorite.isPublic === false && (
+          {favorite.status === 'private' && (
             <PrivateBadge className="absolute top-2 left-2 w-fit mt-0.5" />
+          )}
+          {favorite.status === 'draft' && (
+            <DraftBadge className="absolute top-2 left-2 w-fit mt-0.5 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-400 ring-gray-500/20" />
           )}
           <div
             onClick={(e) => {
@@ -172,8 +176,11 @@ export function ProfilePostCard({
 
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-end">
-        {favorite.isPublic === false && (
+        {favorite.status === 'private' && (
           <PrivateBadge className="absolute top-3 left-3" />
+        )}
+        {favorite.status === 'draft' && (
+          <DraftBadge className="absolute top-3 left-3" />
         )}
         <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
           <div className="px-3 md:px-4">

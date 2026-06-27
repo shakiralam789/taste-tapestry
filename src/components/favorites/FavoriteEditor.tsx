@@ -27,6 +27,7 @@ import {
   Palette,
   AlertCircle,
   ChevronRight,
+  File,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -316,7 +317,7 @@ export function FavoriteEditor({
 
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submitStatus: 'draft' | 'published' = 'published') => {
     if (!formData.title?.trim()) {
       setSubmitAttempted(true);
       return;
@@ -391,6 +392,7 @@ export function FavoriteEditor({
       recommendedTime: recommendedTimes,
       tags,
       fields: currentFields,
+      status: submitStatus,
     };
 
     const payload: FavoriteEditorPayload | Partial<FavoriteEditorPayload> =
@@ -1460,19 +1462,30 @@ export function FavoriteEditor({
                         <Button variant="outline" onClick={goBack}>
                           Back
                         </Button>
-                        <Button
-                          variant="gradient"
-                          className="gap-2"
-                          onClick={handleSubmit}
-                          disabled={submitting}
-                        >
-                          <Sparkles className="w-5 h-5" />
-                          {mode === "create"
-                            ? "Add to Favorites"
-                            : submitting
-                              ? "Saving..."
-                              : "Save changes"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            className="border-dashed gap-2"
+                            onClick={() => handleSubmit('draft')}
+                            disabled={submitting}
+                          >
+                            <File className="w-4 h-4" />
+                            Save as Draft
+                          </Button>
+                          <Button
+                            variant="gradient"
+                            className="gap-2"
+                            onClick={() => handleSubmit('published')}
+                            disabled={submitting}
+                          >
+                            <Sparkles className="w-5 h-5" />
+                            {mode === "create"
+                              ? "Add to Favorites"
+                              : submitting
+                                ? "Saving..."
+                                : "Save changes"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1685,6 +1698,32 @@ export function FavoriteEditor({
           </div>
         </div>
       </div>
+
+      {/* Sticky Bottom Bar for Draft/Submit - Only show when required field (title) is filled */}
+      {formData.title?.trim() ? (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-t border-white/10 p-4 pb-safe">
+          <div className="flex items-center justify-end gap-4">
+            <Button
+              variant="outline"
+              className="border-dashed gap-2"
+              onClick={() => handleSubmit('draft')}
+              disabled={submitting}
+            >
+              <File className="w-4 h-4" />
+              Save as Draft
+            </Button>
+            <Button
+              variant="gradient"
+              className="gap-2 px-6"
+              onClick={() => handleSubmit('published')}
+              disabled={submitting}
+            >
+              <Sparkles className="w-5 h-5" />
+              {mode === "create" ? "Add to Favorites" : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </Layout>
   );
 }

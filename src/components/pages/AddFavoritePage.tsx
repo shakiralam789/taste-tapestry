@@ -26,12 +26,13 @@ export function AddFavoritePageInner() {
       await createFavorite(
         payload as Omit<Favorite, "id" | "userId" | "createdAt">,
       );
-      toast.success("Added to your collection", {
-        description: "Your favorite has been saved.",
+      const isDraft = payload.status === 'draft';
+      toast.success(isDraft ? "Saved as draft" : "Added to your collection", {
+        description: isDraft ? "Your draft has been saved." : "Your favorite has been saved.",
       });
       void queryClient.invalidateQueries({ queryKey: ["favorites"] });
       void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
-      router.push("/profile");
+      router.push(isDraft ? "/profile/collection?status=draft" : "/profile");
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       const message =

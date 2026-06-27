@@ -125,6 +125,8 @@ export interface MomentPin {
   positionInEpisodePercent?: number;
 }
 
+export type FavoriteStatus = 'draft' | 'private' | 'published';
+
 export interface Favorite {
   id: string;
   userId: string;
@@ -139,8 +141,8 @@ export interface Favorite {
   tags: string[];
   createdAt: Date;
   fields: Record<string, any>;
-  /** If false, other users cannot see this item on your profile. */
-  isPublic?: boolean;
+  /** The visibility and draft state of this item. */
+  status?: FavoriteStatus;
   /** Social love reaction metadata */
   loveCount?: number;
   lovedByMe?: boolean;

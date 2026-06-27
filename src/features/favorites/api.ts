@@ -24,6 +24,7 @@ export async function createFavorite(
     recommendedTime: payload.recommendedTime,
     tags: payload.tags,
     fields: payload.fields,
+    status: payload.status,
   };
   const { data } = await apiClient.post<Favorite>("/favorites", body);
   // Coerce createdAt back to Date for client type safety
@@ -59,6 +60,7 @@ export async function getFavoritesPage(
   categoryId?: string,
   search?: string,
   sortBy: 'newest' | 'oldest' | 'rating_desc' | 'rating_asc' = 'newest',
+  status?: string,
 ): Promise<FavoritesPageResponse> {
   const params: Record<string, string> = {
     limit: String(COLLECTION_PAGE_SIZE),
@@ -67,6 +69,7 @@ export async function getFavoritesPage(
   };
   if (categoryId) params.categoryId = categoryId;
   if (search?.trim()) params.q = search.trim();
+  if (status && status !== 'all') params.status = status;
   const { data } = await apiClient.get<FavoritesPageResponse>("/favorites", {
     params,
   });
