@@ -139,3 +139,20 @@ export async function getFollowing(
   );
   return data;
 }
+
+export interface SimilarityExplanation {
+  text: string;
+  signal: string;
+}
+
+export interface SimilarityResult {
+  score: number | null;
+  availableSignals: number;
+  explanations: SimilarityExplanation[];
+  message?: string;
+}
+
+export async function getSimilarity(userId: string): Promise<SimilarityResult> {
+  const { data } = await apiClient.get<SimilarityResult>(`/users/${userId}/similarity`);
+  return data;
+}

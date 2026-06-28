@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/
 import { Button } from "@/components/ui/button";
 import { getOptimizedUrl } from "@/lib/utils";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
-import { getFollowStatus, followUser, unfollowUser } from "@/features/users/api";
+import { getFollowStatus, followUser, unfollowUser, getSimilarity } from "@/features/users/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { toast } from "sonner";
 import {
@@ -23,6 +23,7 @@ import {
   Rocket,
   Calendar,
   MessageCircle,
+  Heart,
 } from "lucide-react";
 import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
@@ -62,6 +63,12 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
   const { data: followStatus, isLoading: followStatusLoading } = useQuery({
     queryKey: ["user-follow-status", id],
     queryFn: () => getFollowStatus(id as string),
+    enabled: !!id && !!authUser && !isOwnProfile,
+  });
+
+  const { data: similarityData, isLoading: similarityLoading } = useQuery({
+    queryKey: ["user-similarity", id],
+    queryFn: () => getSimilarity(id as string),
     enabled: !!id && !!authUser && !isOwnProfile,
   });
 
@@ -326,6 +333,66 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                   </p>
                 </div>
               </motion.div>
+
+              {/* Huge Taste Match Section */}
+              {!isOwnProfile && authUser && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="w-full relative rounded-3xl overflow-hidden p-[1px] mt-4 mb-8"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-50 blur-md"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-70"></div>
+                  <div className="relative bg-background/90 backdrop-blur-2xl rounded-[23px] p-4 sm:p-6 flex flex-col md:flex-row items-center gap-8">
+                    {similarityLoading ? (
+                      <div className="w-full animate-pulse flex flex-col md:flex-row items-center gap-8">
+                        <div className="w-32 h-32 rounded-full bg-primary/20 shrink-0"></div>
+                        <div className="flex-1 space-y-4 w-full">
+                          <div className="h-8 bg-primary/20 rounded w-1/3"></div>
+                          <div className="h-4 bg-primary/20 rounded w-full"></div>
+                          <div className="h-4 bg-primary/20 rounded w-5/6"></div>
+                        </div>
+                      </div>
+                    ) : similarityData?.score !== null && similarityData?.score !== undefined ? (
+                      <>
+                        <div className="shrink-0 relative flex items-center justify-center w-32 h-32">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 128 128">
+                            <circle cx="64" cy="64" r="56" className="stroke-white/10" strokeWidth="12" fill="none" />
+                            <circle cx="64" cy="64" r="56" className="stroke-primary transition-all duration-1000 ease-out" strokeWidth="12" fill="none" strokeDasharray="351.86" strokeDashoffset={351.86 - (351.86 * similarityData.score) / 100} strokeLinecap="round" />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-primary to-pink-400">
+                              {similarityData.score}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 w-full">
+                          <h3 className="text-2xl font-display font-bold text-foreground mb-4 flex items-center gap-2">
+                            <Sparkles className="w-6 h-6 text-primary fill-primary/20" /> Taste Match
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                            {similarityData.explanations.map((exp, i) => (
+                              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className="mt-0.5 rounded-full p-1 bg-primary/20 text-primary shrink-0">
+                                  <Heart className="w-3 h-3 fill-primary/50" />
+                                </div>
+                                <span className="text-sm font-medium text-foreground/90">{exp.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full text-center py-8">
+                        <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
+                        <h3 className="text-xl font-display font-bold text-foreground mb-2">Taste Match</h3>
+                        <p className="text-muted-foreground max-w-md mx-auto">{similarityData?.message || "Not enough data to calculate similarity yet."}</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
 
               <div className="w-full">
                 <div className="bg-background/80 backdrop-blur-sm sticky top-16 z-10 w-full flex justify-between sm:justify-start flex-wrap border-b border-white/10 p-0 h-auto rounded-none mb-8 gap-4">
