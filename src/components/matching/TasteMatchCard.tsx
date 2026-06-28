@@ -2,7 +2,12 @@ import { motion } from 'framer-motion';
 import { TopMatchItem } from '@/features/users/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Heart, MessageCircle, Sparkles, CheckCircle2, Users } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getFollowStatus, followUser, unfollowUser } from '@/features/users/api';
+import { useAuth } from '@/features/auth/AuthContext';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface TasteMatchCardProps {
   match: TopMatchItem;
@@ -12,8 +17,57 @@ interface TasteMatchCardProps {
 export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
   const scorePercent = match.score;
   const user = match.user;
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
-  
+  const { data: followStatus, isLoading: followStatusLoading } = useQuery({
+    queryKey: ['user-follow-status', match.matchedUserId],
+    queryFn: () => getFollowStatus(match.matchedUserId),
+    enabled: !!auth.user && auth.user.id !== match.matchedUserId,
+  });
+
+  const isFollowing = followStatus?.isFollowing ?? false;
+
+  const followMutation = useMutation({
+    mutationFn: () => followUser(match.matchedUserId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['user-follow-status', match.matchedUserId] });
+      toast.success('Following');
+    },
+    onError: () => toast.error('Could not follow'),
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: () => unfollowUser(match.matchedUserId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['user-follow-status', match.matchedUserId] });
+      toast.success('Unfollowed');
+    },
+    onError: () => toast.error('Could not unfollow'),
+  });
+
+  const handleFollowClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!auth.user) {
+      toast.error('Please log in to follow users');
+      return;
+    }
+    if (isFollowing) {
+      unfollowMutation.mutate();
+    } else {
+      followMutation.mutate();
+    }
+  };
+
+  const handleMessageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!auth.user) {
+      toast.error('Please log in to send messages');
+      return;
+    }
+    router.push(`/messages?userId=${match.matchedUserId}`);
+  };
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -67,11 +121,21 @@ export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button size="sm" variant="gradient" className="flex-1">
-              <Heart className="w-4 h-4" />
-              Follow
+            <Button
+              size="sm"
+              variant={isFollowing ? "outline" : "gradient"}
+              className="flex-1"
+              onClick={handleFollowClick}
+              disabled={followStatusLoading || followMutation.isPending || unfollowMutation.isPending}
+            >
+              {isFollowing ? <Users className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+              {followMutation.isPending || unfollowMutation.isPending
+                ? '...'
+                : isFollowing
+                  ? 'Following'
+                  : 'Follow'}
             </Button>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleMessageClick}>
               <MessageCircle className="w-4 h-4" />
             </Button>
           </div>
