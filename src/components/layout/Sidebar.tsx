@@ -13,6 +13,8 @@ import {
   LogOut,
   Settings,
   Search,
+  Film,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getProfile, PROFILE_QUERY_STALE_MS } from "@/features/profile/api";
 import { useQuery } from "@tanstack/react-query";
-import { searchUsers, type UserSearchHit } from "@/features/users/api";
+import { searchUsers, globalSearchItems, type UserSearchHit, type GlobalSearchItemResult } from "@/features/users/api";
 
 const navItems = [
   { path: "/discover", icon: Compass, label: "Discover" },
@@ -29,6 +31,16 @@ const navItems = [
   // { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: "/profile", icon: User, label: "Profile" },
 ];
+
+type SearchMode = "users" | "titles";
+
+const CATEGORY_ICONS: Record<string, string> = {
+  movie: "🎬",
+  series: "📺",
+  song: "🎵",
+  book: "📚",
+  game: "🎮",
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -41,8 +53,25 @@ export function Sidebar() {
     enabled: !!authUser,
     staleTime: PROFILE_QUERY_STALE_MS,
   });
+
+  const [searchMode, setSearchMode] = useState<SearchMode>("users");
+  
+  // Load saved search mode on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("taste-tapestry-search-mode");
+    if (saved === "users" || saved === "titles") {
+      setSearchMode(saved);
+    }
+  }, []);
+
+  const handleSetSearchMode = (mode: SearchMode) => {
+    setSearchMode(mode);
+    localStorage.setItem("taste-tapestry-search-mode", mode);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchHit[]>([]);
+  const [titleResults, setTitleResults] = useState<GlobalSearchItemResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
@@ -51,22 +80,31 @@ export function Sidebar() {
     async (q: string) => {
       if (!q.trim()) {
         setSearchResults([]);
+        setTitleResults([]);
         return;
       }
       setSearching(true);
       try {
-        const list = await searchUsers(q, {
-          excludeUserId: authUser?.id,
-        });
-        setSearchResults(list);
+        if (searchMode === "users") {
+          const list = await searchUsers(q, {
+            excludeUserId: authUser?.id,
+          });
+          setSearchResults(list);
+          setTitleResults([]);
+        } else {
+          const items = await globalSearchItems(q);
+          setTitleResults(items);
+          setSearchResults([]);
+        }
         setDropdownOpen(true);
       } catch {
         setSearchResults([]);
+        setTitleResults([]);
       } finally {
         setSearching(false);
       }
     },
-    [authUser?.id]
+    [authUser?.id, searchMode]
   );
 
   useEffect(() => {
@@ -87,11 +125,30 @@ export function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Clear results when switching search mode
+  useEffect(() => {
+    setSearchResults([]);
+    setTitleResults([]);
+    setDropdownOpen(false);
+    if (searchQuery.trim()) {
+      runSearch(searchQuery);
+    }
+  }, [searchMode]);
+
   const handleSelectUser = (id: string) => {
     setDropdownOpen(false);
     setSearchQuery("");
     setSearchResults([]);
+    setTitleResults([]);
     router.push(`/users/${id}`);
+  };
+
+  const handleSelectFavorite = (favoriteId: string) => {
+    setDropdownOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setTitleResults([]);
+    router.push(`/favorites/${favoriteId}`);
   };
 
   return (
@@ -100,11 +157,40 @@ export function Sidebar() {
         collapsed ? "w-20 px-2 py-4" : "w-64 p-4"
       }`}
     >
-      {/* User search (same as navbar) */}
+      {/* Search Section */}
       <div
         className={`mb-4 ${collapsed ? "hidden" : "block"}`}
         ref={searchContainerRef}
       >
+        {/* Search Mode Toggle */}
+        <div className="flex rounded-full bg-black/5 dark:bg-white/5 p-0.5 mb-2">
+          <button
+            type="button"
+            onClick={() => handleSetSearchMode("users")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
+              searchMode === "users"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="w-3 h-3" />
+            Users
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetSearchMode("titles")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
+              searchMode === "titles"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Film className="w-3 h-3" />
+            Titles
+          </button>
+        </div>
+
+        {/* Search Input */}
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
             <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -113,52 +199,118 @@ export function Sidebar() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() =>
-              searchResults.length > 0 && setDropdownOpen(true)
+              (searchResults.length > 0 || titleResults.length > 0) && setDropdownOpen(true)
             }
-            placeholder="Search users..."
-            className="pl-10 h-10 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 rounded-full transition-all"
+            placeholder={searchMode === "users" ? "Search users..." : "Search titles..."}
+            className="pl-10 pr-4 h-10 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 rounded-full transition-all"
           />
+
+          {/* Dropdown Results */}
           {dropdownOpen &&
-            (searchQuery.trim() || searchResults.length > 0) && (
-              <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-72 overflow-y-auto">
+            (searchQuery.trim() || searchResults.length > 0 || titleResults.length > 0) && (
+              <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
                 {searching ? (
                   <p className="px-3 py-4 text-sm text-muted-foreground text-center">
                     Searching...
                   </p>
-                ) : searchResults.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-muted-foreground text-center">
-                    {searchQuery.trim()
-                      ? "No users found"
-                      : "Type to search users"}
-                  </p>
+                ) : searchMode === "users" ? (
+                  /* User Search Results */
+                  searchResults.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      {searchQuery.trim()
+                        ? "No users found"
+                        : "Type to search users"}
+                    </p>
+                  ) : (
+                    searchResults.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleSelectUser(user.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                      >
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={user.avatar ?? undefined} />
+                          <AvatarFallback className="text-xs">
+                            {(
+                              user.displayName ||
+                              user.username ||
+                              "?"
+                            )[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {user.displayName || user.username || "User"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            @{user.username || user.id}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )
                 ) : (
-                  searchResults.map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => handleSelectUser(user.id)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarImage src={user.avatar ?? undefined} />
-                        <AvatarFallback className="text-xs">
-                          {(
-                            user.displayName ||
-                            user.username ||
-                            "?"
-                          )[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {user.displayName || user.username || "User"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          @{user.username || user.id}
-                        </p>
+                  /* Title Search Results */
+                  titleResults.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      {searchQuery.trim()
+                        ? "No titles found"
+                        : "Type to search titles"}
+                    </p>
+                  ) : (
+                    titleResults.map((item, idx) => (
+                      <div key={idx} className="px-2 py-2">
+                        {/* Title Header */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-base">
+                            {CATEGORY_ICONS[item.categoryId] ?? "📌"}
+                          </span>
+                          <p className="font-semibold text-sm text-foreground truncate">
+                            {item.title}
+                          </p>
+                        </div>
+
+                        {/* Users who have this title */}
+                        <div className="space-y-1 pl-1">
+                          {item.users.map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              onClick={() => handleSelectFavorite(u.favoriteId)}
+                              className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                            >
+                              <Avatar className="w-6 h-6 shrink-0">
+                                <AvatarImage src={u.avatar ?? undefined} />
+                                <AvatarFallback className="text-[10px]">
+                                  {(u.displayName || u.username || "?")[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs text-foreground truncate flex-1">
+                                {u.displayName || u.username}
+                              </span>
+                              <span
+                                className={`text-xs font-semibold shrink-0 ${
+                                  u.similarityScore !== null
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {u.similarityScore !== null
+                                  ? `${u.similarityScore}%`
+                                  : "Not enough data"}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Separator between items */}
+                        {idx < titleResults.length - 1 && (
+                          <div className="border-b border-border/50 mt-2" />
+                        )}
                       </div>
-                    </button>
-                  ))
+                    ))
+                  )
                 )}
               </div>
             )}

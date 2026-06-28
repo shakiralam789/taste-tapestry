@@ -187,3 +187,31 @@ export async function getTopMatches(
   );
   return data;
 }
+
+// ── Global Item Search ──────────────────────────────────────────────────────
+
+export interface ItemSearchUser {
+  id: string;
+  favoriteId: string;
+  displayName: string;
+  username: string;
+  avatar: string | null;
+  similarityScore: number | null;
+}
+
+export interface GlobalSearchItemResult {
+  title: string;
+  categoryId: string;
+  users: ItemSearchUser[];
+}
+
+export async function globalSearchItems(
+  query: string,
+): Promise<GlobalSearchItemResult[]> {
+  if (!query?.trim()) return [];
+  const { data } = await apiClient.get<GlobalSearchItemResult[]>(
+    '/search/items',
+    { params: { q: query.trim() } },
+  );
+  return data ?? [];
+}

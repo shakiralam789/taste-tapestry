@@ -15,7 +15,7 @@ import {
 } from "@/features/favorites/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
-import { getPublicFavoritesPage } from "@/features/users/api";
+import { getPublicFavoritesPage, getPublicProfile } from "@/features/users/api";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
 import { CATEGORY_EXTRA_FIELDS } from "@/features/favorites/category-fields";
 import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
@@ -198,6 +198,8 @@ export default function FavoriteShowPage() {
     enabled: typeof id === "string",
   });
 
+  const isOwner = favorite ? authUser?.id === favorite.userId : false;
+
   const { data: ownerFavorites = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
     queryKey: [
       "favorite-owner-favorites",
@@ -207,7 +209,6 @@ export default function FavoriteShowPage() {
     ],
     queryFn: async () => {
       if (!favorite?.userId || !favorite?.categoryId) return [];
-      const isOwner = authUser?.id === favorite.userId;
       if (isOwner) {
         // Owner should see their private items too; backend filters by categoryId
         return getFavorites(favorite.categoryId);
@@ -223,6 +224,12 @@ export default function FavoriteShowPage() {
     enabled: !!favorite?.userId && !!favorite?.categoryId,
   });
 
+  const { data: ownerProfile } = useQuery({
+    queryKey: ["public-profile", favorite?.userId],
+    queryFn: () => getPublicProfile(favorite?.userId ?? ""),
+    enabled: !!favorite?.userId && !isOwner, // Only fetch if it's not the current user's own favorite
+  });
+
   const fields = (favorite?.fields ?? {}) as FavoriteFields;
   const genreStr =
     Array.isArray(fields.genre) && fields.genre.length > 0
@@ -234,7 +241,6 @@ export default function FavoriteShowPage() {
     (favorite?.tags?.length ?? 0) > 0;
   const showJourney = favorite ? hasEmotionalJourney(favorite) : false;
   const musicUrl = fields.musicUrl;
-  const isOwner = favorite ? authUser?.id === favorite.userId : false;
   const showThemeMusicSection = isOwner || !!musicUrl;
 
   // Derived URL info
@@ -574,8 +580,29 @@ export default function FavoriteShowPage() {
                 <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground break-words">
                   {favorite.title}
                 </h1>
+
+                {ownerProfile && !isOwner && (
+                  <Link
+                    href={`/users/${favorite.userId}`}
+                    className="inline-flex items-center gap-2 mt-2 bg-muted/30 hover:bg-muted/60 p-1.5 pr-3.5 rounded-full transition-all border border-white/5 hover:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background group"
+                  >
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-muted ring-1 ring-white/10 group-hover:ring-white/20 transition-all">
+                      {ownerProfile.avatar ? (
+                        <img src={ownerProfile.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold">
+                          {(ownerProfile.displayName || ownerProfile.username || '?')[0].toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      Added by <span className="text-foreground">{ownerProfile.displayName || ownerProfile.username}</span>
+                    </span>
+                  </Link>
+                )}
+
                 {genreStr && (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-2">
                     {genreStr}
                   </p>
                 )}
@@ -1099,12 +1126,12 @@ export default function FavoriteShowPage() {
                       curvePoints={
                         Array.isArray(fields.emotionalCurve)
                           ? fields.emotionalCurve.map(
-                              (p, i): { id: string; x: number; y: number } =>
-                                "id" in p &&
+                            (p, i): { id: string; x: number; y: number } =>
+                              "id" in p &&
                                 typeof (p as { id?: string }).id === "string"
-                                  ? (p as { id: string; x: number; y: number })
-                                  : { id: `curve-${i}`, x: p.x, y: p.y },
-                            )
+                                ? (p as { id: string; x: number; y: number })
+                                : { id: `curve-${i}`, x: p.x, y: p.y },
+                          )
                           : []
                       }
                       emotionalSegments={
