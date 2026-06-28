@@ -1,17 +1,18 @@
 import { motion } from 'framer-motion';
-import { TasteMatch } from '@/types/wishbook';
+import { TopMatchItem } from '@/features/users/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface TasteMatchCardProps {
-  match: TasteMatch;
+  match: TopMatchItem;
   onClick?: () => void;
 }
 
 export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
-  const scorePercent = match.compatibilityScore;
+  const scorePercent = match.score;
+  const user = match.user;
+
   
   return (
     <motion.div
@@ -45,62 +46,24 @@ export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
             <Avatar className="w-12 h-12 ring-2 ring-primary/20">
-              <AvatarImage src={match.user.avatar} alt={match.user.name} />
-              <AvatarFallback>{match.user.name[0]}</AvatarFallback>
+              {user?.avatar && <AvatarImage src={user.avatar} alt={user.displayName} />}
+              <AvatarFallback>{user?.displayName?.[0] ?? 'U'}</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-foreground">{match.user.name}</h3>
-              <p className="text-sm text-muted-foreground">@{match.user.username}</p>
+              <h3 className="font-semibold text-foreground">{user?.displayName}</h3>
+              <p className="text-sm text-muted-foreground">@{user?.username}</p>
             </div>
           </div>
 
-          {/* Location */}
-          {match.user.location && (
-            <p className="text-sm text-muted-foreground mb-3">
-              📍 {match.user.location}
-            </p>
-          )}
-
-          {/* Category Breakdown */}
-          <div className="space-y-2 mb-4">
-            {match.breakdown.slice(0, 3).map((item) => (
-              <div key={item.category} className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-16">{item.category}</span>
-                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${item.score}%` }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="h-full rounded-full"
-                    style={{ background: 'var(--gradient-sunset)' }}
-                  />
-                </div>
-                <span className="text-xs font-medium w-8 text-right">{item.score}%</span>
+          {/* Reasons */}
+          <div className="space-y-2 mb-4 mt-4">
+            {match.reasons.slice(0, 3).map((reason, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span>{reason.text}</span>
               </div>
             ))}
           </div>
-
-          {/* Shared Favorites Preview */}
-          {match.sharedFavorites.length > 0 && (
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs text-muted-foreground">Shared:</span>
-              <div className="flex -space-x-2">
-                {match.sharedFavorites.slice(0, 3).map((fav) => (
-                  <div 
-                    key={fav.id}
-                    className="w-8 h-8 rounded-lg border-2 border-background overflow-hidden"
-                  >
-                    <img src={getFavoriteCoverImage(fav.image, fav.categoryId)} alt={fav.title} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-              {match.sharedFavorites.length > 3 && (
-                <span className="text-xs text-muted-foreground">
-                  +{match.sharedFavorites.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex gap-2">

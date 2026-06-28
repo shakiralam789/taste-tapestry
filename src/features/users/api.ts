@@ -156,3 +156,34 @@ export async function getSimilarity(userId: string): Promise<SimilarityResult> {
   const { data } = await apiClient.get<SimilarityResult>(`/users/${userId}/similarity`);
   return data;
 }
+
+export interface TopMatchItem {
+  matchedUserId: string;
+  score: number;
+  reasons: { text: string; signal: string }[];
+  user: {
+    id: string;
+    displayName: string;
+    username: string;
+    avatar: string | null;
+  } | null;
+}
+
+export interface PaginatedMatchesResponse {
+  items: TopMatchItem[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
+export async function getTopMatches(
+  userId: string,
+  limit = 20,
+  offset = 0,
+  refresh = false,
+): Promise<PaginatedMatchesResponse> {
+  const { data } = await apiClient.get<PaginatedMatchesResponse>(
+    `/users/${userId}/similarity/matches`,
+    { params: { limit, offset, refresh } }
+  );
+  return data;
+}
