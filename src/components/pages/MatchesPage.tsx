@@ -5,17 +5,33 @@ import { Layout } from '@/components/layout/Layout';
 import { TasteMatchCard } from '@/components/matching/TasteMatchCard';
 import { UserCard } from '@/components/users/UserCard';
 import { Button } from '@/components/ui/button';
-import { useWishbook } from '@/contexts/WishbookContext';
 import { Heart, Globe, Sparkles, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { getTopMatches } from '@/features/users/api';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getTopMatches, getDiscoverUsers, type DiscoverUser } from '@/features/users/api';
+import type { User } from '@/types/wishbook';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Loader2 } from 'lucide-react';
 
+/** Maps a backend discover user into the shape UserCard expects. */
+function toCardUser(u: DiscoverUser): User {
+  return {
+    id: u.id,
+    name: u.displayName || u.username || 'User',
+    displayName: u.displayName,
+    username: u.username || '',
+    avatar: u.avatar || '',
+    bio: u.bio || '',
+    location: u.location || undefined,
+    followers: u.followers,
+    following: u.following,
+    interests: [],
+    createdAt: new Date(u.createdAt),
+  };
+}
+
 export default function MatchesPage() {
-  const { allUsers } = useWishbook();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -69,7 +85,21 @@ export default function MatchesPage() {
     }
   };
 
-  const matches = data?.pages.flatMap(page => page.items) ?? [];
+  // Exclude matches whose user is hidden (deactivated / pending deletion → enriched as null).
+  const matches = (data?.pages.flatMap(page => page.items) ?? []).filter(
+    (m) => m.user,
+  );
+
+  const {
+    data: discoverData,
+    status: discoverStatus,
+  } = useQuery({
+    queryKey: ['discoverUsers', user?.id],
+    queryFn: () => getDiscoverUsers(24, 0),
+    enabled: !!user?.id,
+  });
+
+  const discoverUsers = discoverData?.items ?? [];
 
   return (
     <Layout>
@@ -201,18 +231,34 @@ export default function MatchesPage() {
                 </div>
 
                 {/* Users from Different Countries */}
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                >
-                  {allUsers.filter(u => u.id !== user?.id).map((u) => (
-                    <motion.div key={u.id} variants={itemVariants}>
-                      <UserCard user={u} />
-                    </motion.div>
-                  ))}
-                </motion.div>
+                {discoverStatus === 'pending' ? (
+                  <div className="py-16 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                    <p className="mt-4 text-muted-foreground">Finding people to explore...</p>
+                  </div>
+                ) : discoverUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                      <Globe className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">
+                      No one else is here yet. Check back soon!
+                    </p>
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                  >
+                    {discoverUsers.map((u) => (
+                      <motion.div key={u.id} variants={itemVariants}>
+                        <UserCard user={toCardUser(u)} />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
               </motion.div>
             </TabsContent>
           </Tabs>

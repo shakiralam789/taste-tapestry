@@ -32,6 +32,20 @@ export async function register(payload: {
   return data;
 }
 
+export async function deactivateAccount(): Promise<void> {
+  await apiClient.post("/users/me/deactivate");
+}
+
+export async function deleteAccount(
+  password: string,
+): Promise<{ deletionScheduledAt: string }> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    deletionScheduledAt: string;
+  }>("/users/me/delete", { password });
+  return { deletionScheduledAt: data.deletionScheduledAt };
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
   await apiClient.post("/auth/forgot-password", { email });
 }

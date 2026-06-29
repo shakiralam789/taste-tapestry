@@ -41,6 +41,35 @@ export async function searchUsers(
   return data ?? [];
 }
 
+export interface DiscoverUser {
+  id: string;
+  displayName: string | null;
+  username: string | null;
+  avatar: string | null;
+  bio: string | null;
+  location: string | null;
+  country: string | null;
+  followers: number;
+  following: number;
+  createdAt: string;
+}
+
+export interface DiscoverUsersResponse {
+  items: DiscoverUser[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
+export async function getDiscoverUsers(
+  limit = 24,
+  offset = 0,
+): Promise<DiscoverUsersResponse> {
+  const { data } = await apiClient.get<DiscoverUsersResponse>("/users/discover", {
+    params: { limit, offset },
+  });
+  return data ?? { items: [], hasMore: false, nextOffset: offset };
+}
+
 export interface SuggestedUser {
   id: string;
   displayName: string;

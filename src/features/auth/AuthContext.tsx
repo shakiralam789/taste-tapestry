@@ -25,6 +25,8 @@ type AuthContextValue = {
     extra: { dateOfBirth: string; country?: string },
   ) => Promise<void>;
   logout: () => Promise<void>;
+  /** Clears in-memory auth + cached queries without calling the server (e.g. after the session was already revoked). */
+  endSession: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -121,12 +123,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearAuth, queryClient]);
 
+  const endSession = useCallback(() => {
+    clearAuth();
+    queryClient.clear();
+  }, [clearAuth, queryClient]);
+
   const value: AuthContextValue = {
     user,
     loading,
     loginWithEmail,
     registerWithEmail,
     logout,
+    endSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -144,6 +152,7 @@ export function useAuth(): AuthContextValue {
         loginWithEmail: async () => { },
         registerWithEmail: async () => { },
         logout: async () => { },
+        endSession: () => { },
       };
     }
     throw new Error("useAuth must be used within an AuthProvider");
