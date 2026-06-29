@@ -19,6 +19,8 @@ export interface PublicProfile {
   avatar: string | null;
   bio: string | null;
   location: string | null;
+  country: string | null;
+  age?: number | null;
   createdAt: string;
   followersCount?: number;
   followingCount?: number;

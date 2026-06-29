@@ -12,6 +12,12 @@ export interface Profile {
   avatar: string | null;
   bio: string | null;
   location: string | null;
+  /** ISO 3166-1 alpha-2 country code. */
+  country: string | null;
+  /** Owner-only: raw date of birth (YYYY-MM-DD). Not present on public profiles. */
+  dateOfBirth?: string | null;
+  /** Derived age in years (present on both own and public profiles). */
+  age?: number | null;
   bannerUrl?: string | null;
   interests?: any[];
   createdAt: string;
@@ -22,7 +28,15 @@ export interface Profile {
 export type UpdateProfilePayload = Partial<
   Pick<
     Profile,
-    "displayName" | "username" | "avatar" | "bio" | "location" | "bannerUrl" | "interests"
+    | "displayName"
+    | "username"
+    | "avatar"
+    | "bio"
+    | "location"
+    | "country"
+    | "dateOfBirth"
+    | "bannerUrl"
+    | "interests"
   >
 >;
 

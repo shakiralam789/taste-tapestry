@@ -20,8 +20,9 @@ type AuthContextValue = {
   registerWithEmail: (
     email: string,
     password: string,
-    displayName?: string,
-    username?: string,
+    displayName: string | undefined,
+    username: string | undefined,
+    extra: { dateOfBirth: string; country?: string },
   ) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -88,8 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (
       email: string,
       password: string,
-      displayName?: string,
-      username?: string,
+      displayName: string | undefined,
+      username: string | undefined,
+      extra: { dateOfBirth: string; country?: string },
     ) => {
       if (!username?.trim()) {
         throw new Error("Username is required");
@@ -99,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: username.trim(),
         password,
         displayName,
+        dateOfBirth: extra.dateOfBirth,
+        country: extra.country,
       });
       setAccessToken(res.accessToken);
       setUser(res.user);

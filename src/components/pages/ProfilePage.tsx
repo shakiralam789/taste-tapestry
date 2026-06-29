@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { CountrySelect } from "@/components/ui/country-select";
+import {
+  MIN_SIGNUP_AGE,
+  ageFromDateOfBirth,
+  maxDateOfBirthForMinAge,
+} from "@/lib/age";
 
 import { useAuth } from "@/features/auth/AuthContext";
 import { updateProfile, uploadAvatar, uploadBanner } from "@/features/profile/api";
@@ -63,6 +69,8 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     avatar: "",
     bio: "",
     location: "",
+    country: "",
+    dateOfBirth: "",
     bannerUrl: "",
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -139,6 +147,8 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
         avatar: profile.avatar ?? "",
         bio: profile.bio ?? "",
         location: profile.location ?? "",
+        country: profile.country ?? "",
+        dateOfBirth: profile.dateOfBirth ?? "",
         bannerUrl: profile.bannerUrl ?? "",
       });
     }
@@ -146,6 +156,19 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (editForm.dateOfBirth) {
+      const age = ageFromDateOfBirth(editForm.dateOfBirth);
+      if (age === null) {
+        toast.error("Please enter a valid date of birth");
+        return;
+      }
+      if (age < MIN_SIGNUP_AGE) {
+        toast.error(`You must be at least ${MIN_SIGNUP_AGE} years old`);
+        return;
+      }
+    }
+
     setEditSubmitting(true);
     try {
       await updateProfile({
@@ -154,6 +177,8 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
         avatar: editForm.avatar.trim() || undefined,
         bio: editForm.bio.trim() || undefined,
         location: editForm.location.trim() || undefined,
+        country: editForm.country || undefined,
+        dateOfBirth: editForm.dateOfBirth || undefined,
         bannerUrl: editForm.bannerUrl.trim() || undefined,
       });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -518,6 +543,37 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
                 placeholder="City or region"
                 className="mt-1"
               />
+            </div>
+            <div>
+              <Label htmlFor="edit-country">Country</Label>
+              <div className="mt-1">
+                <CountrySelect
+                  id="edit-country"
+                  value={editForm.country}
+                  onChange={(value) =>
+                    setEditForm((prev) => ({ ...prev, country: value }))
+                  }
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="edit-dob">Date of birth</Label>
+              <Input
+                id="edit-dob"
+                type="date"
+                max={maxDateOfBirthForMinAge(MIN_SIGNUP_AGE)}
+                value={editForm.dateOfBirth}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    dateOfBirth: e.target.value,
+                  }))
+                }
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Only your age is shown to others, never your birth date.
+              </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button
