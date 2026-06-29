@@ -39,6 +39,21 @@ export async function searchUsers(
   return data ?? [];
 }
 
+export interface SuggestedUser {
+  id: string;
+  displayName: string;
+  username: string;
+  avatar: string | null;
+  matchScore: number | null;
+}
+
+export async function getSuggestedUsers(limit = 5): Promise<SuggestedUser[]> {
+  const { data } = await apiClient.get<SuggestedUser[]>("/users/suggested", {
+    params: { limit },
+  });
+  return data ?? [];
+}
+
 export async function getPublicProfile(id: string): Promise<PublicProfile | null> {
   const { data } = await apiClient.get<PublicProfile | null>(`/users/${id}`);
   return data ?? null;
