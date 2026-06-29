@@ -249,14 +249,14 @@ export function TimeCapsuleCard({
         >
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 px-2 rounded-full group"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-secondary hover:bg-secondary/10 px-2 rounded-full group"
             onClick={(e) => {
               e.stopPropagation();
               loveMutation.mutate();
             }}
           >
             <Heart
-              className={`w-4 h-4 group-hover:scale-110 transition-transform ${loved ? "fill-red-500 text-red-500" : ""}`}
+              className={`w-4 h-4 group-hover:scale-110 transition-transform ${loved ? "fill-secondary text-secondary" : ""}`}
             />
             <span>{loveCount}</span>
           </button>

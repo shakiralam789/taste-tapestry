@@ -302,7 +302,7 @@ export default function CapsuleShowPage() {
               >
                 <Heart
                   className={`w-3.5 h-3.5 ${loved
-                    ? "fill-red-500 text-red-500"
+                    ? "fill-secondary text-secondary"
                     : "fill-white/20"
                     }`}
                 />

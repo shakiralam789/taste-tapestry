@@ -134,7 +134,7 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
         {/* Action Bar */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
           <div className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 px-2 rounded-full group">
+            <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground hover:text-secondary hover:bg-secondary/10 px-2 rounded-full group">
               <Heart className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-xs">24</span>
             </Button>

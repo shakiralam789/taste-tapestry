@@ -140,7 +140,7 @@ export function ProfilePostCard({
               }}
             >
               <Heart
-                className={`w-3.5 h-3.5 ${loved ? "fill-red-500 text-red-500" : "fill-white/10"
+                className={`w-3.5 h-3.5 ${loved ? "fill-secondary text-secondary" : "fill-white/10"
                   }`}
               />
               <span>{loveCount}</span>
@@ -219,7 +219,7 @@ export function ProfilePostCard({
                 }}
               >
                 <Heart
-                  className={`w-4 h-4 ${loved ? "fill-red-500 text-red-500" : "fill-white/20"
+                  className={`w-4 h-4 ${loved ? "fill-secondary text-secondary" : "fill-white/20"
                     }`}
                 />{" "}
                 {loveCount}

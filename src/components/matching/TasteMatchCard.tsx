@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFollowStatus, followUser, unfollowUser } from '@/features/users/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'nextjs-toploader/app';
 
 interface TasteMatchCardProps {
   match: TopMatchItem;
@@ -60,6 +60,11 @@ export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
     }
   };
 
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/users/${match.matchedUserId}`);
+  };
+
   const handleMessageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!auth.user) {
@@ -98,13 +103,16 @@ export function TasteMatchCard({ match, onClick }: TasteMatchCardProps) {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
+          <div
+            className="flex items-center gap-3 mb-2 cursor-pointer w-fit group/profile"
+            onClick={handleProfileClick}
+          >
             <Avatar className="w-12 h-12 ring-2 ring-primary/20">
               {user?.avatar && <AvatarImage src={user.avatar} alt={user.displayName} />}
               <AvatarFallback>{user?.displayName?.[0] ?? 'U'}</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-foreground">{user?.displayName}</h3>
+              <h3 className="font-semibold text-foreground group-hover/profile:text-primary transition-colors">{user?.displayName}</h3>
               <p className="text-sm text-muted-foreground">@{user?.username}</p>
             </div>
           </div>
