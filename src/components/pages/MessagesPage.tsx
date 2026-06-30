@@ -101,13 +101,14 @@ function ConversationItem({
   const qc = useQueryClient();
   const router = useRouter();
 
-  const { data: partner } = useQuery({
+  const { data: partner, isFetched: isPartnerFetched } = useQuery({
     queryKey: ["user-profile", partnerId],
-    queryFn: () => getPublicProfile(partnerId),
+    queryFn: () => getPublicProfile(partnerId).catch(() => null),
     staleTime: 5 * 60 * 1000,
   });
 
-  const name = partner?.displayName || partner?.username || "Loading…";
+  const isDeactivated = isPartnerFetched && !partner;
+  const name = isDeactivated ? "User is unavailable" : (partner?.displayName || partner?.username || "Loading…");
   const isMuted = convo.mutedBy.includes(myId);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -148,7 +149,11 @@ function ConversationItem({
       >
         <div className="relative shrink-0">
           <Avatar className="w-12 h-12">
-            {partner?.avatar && <AvatarImage src={partner.avatar} />}
+            {partner?.avatar && !isDeactivated ? (
+              <AvatarImage src={partner.avatar} />
+            ) : isDeactivated ? (
+              <AvatarImage src="/images/default-user.jpg" />
+            ) : null}
             <AvatarFallback>{initials(name)}</AvatarFallback>
           </Avatar>
           {isOnline && (
@@ -414,18 +419,19 @@ function MessagesPageInner() {
     return convo && user ? getPartnerId(convo, user.id) : null;
   }, [activeConvoId, conversations, pendingPartner, user]);
 
-  const { data: partner } = useQuery({
+  const { data: partner, isFetched: isCurrentPartnerFetched } = useQuery({
     queryKey: ["user-profile", currentPartnerId],
     queryFn: () =>
       currentPartnerId
-        ? getPublicProfile(currentPartnerId)
+        ? getPublicProfile(currentPartnerId).catch(() => null)
         : Promise.resolve(null),
     enabled: !!currentPartnerId,
     staleTime: 5 * 60 * 1000,
   });
 
-  const partnerName = partner?.displayName || partner?.username || pendingPartner?.displayName || "User";
-  const partnerAvatar = partner?.avatar || pendingPartner?.avatar;
+  const isCurrentDeactivated = !!currentPartnerId && isCurrentPartnerFetched && !partner && !pendingPartner;
+  const partnerName = isCurrentDeactivated ? "User is unavailable" : (partner?.displayName || partner?.username || pendingPartner?.displayName || "User");
+  const partnerAvatar = isCurrentDeactivated ? "/images/default-user.jpg" : (partner?.avatar || pendingPartner?.avatar);
   const isOnline = currentPartnerId ? onlineUsers.has(currentPartnerId) : false;
   const isTyping = activeConvoId ? !!typingInConvo[activeConvoId] : false;
 
@@ -693,20 +699,26 @@ function MessagesPageInner() {
             </div>
 
             {/* Input Area */}
-            <MessageInput
-              onSend={sendMessage}
-              onEdit={editMessageLocal}
-              onTypingChange={(typing) =>
-                activeConvoId && sendTyping(activeConvoId, typing)
-              }
-              disabled={!user}
-              editingMessage={editingMessage}
-              replyingToMessage={replyingToMessage}
-              onCancelAction={() => {
-                setEditingMessage(null);
-                setReplyingToMessage(null);
-              }}
-            />
+            {isCurrentDeactivated ? (
+              <div className="p-4 border-t border-white/10 text-center text-muted-foreground bg-background/50 text-sm">
+                This person is unavailable.
+              </div>
+            ) : (
+              <MessageInput
+                onSend={sendMessage}
+                onEdit={editMessageLocal}
+                onTypingChange={(typing) =>
+                  activeConvoId && sendTyping(activeConvoId, typing)
+                }
+                disabled={!user}
+                editingMessage={editingMessage}
+                replyingToMessage={replyingToMessage}
+                onCancelAction={() => {
+                  setEditingMessage(null);
+                  setReplyingToMessage(null);
+                }}
+              />
+            )}
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-muted-foreground gap-4">
