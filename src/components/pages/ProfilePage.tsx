@@ -38,6 +38,8 @@ import {
   Share2,
   ChevronRight,
   Loader2,
+  Globe,
+  Cake,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -96,7 +98,8 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
     displayUsername,
     displayAvatar,
     displayBio,
-    displayLocation,
+    displayLocationStr,
+    displayDob,
     displayBannerUrl,
     displaySinceYear,
   } = useProfileInfo();
@@ -367,40 +370,52 @@ function ProfilePageInner({ children }: { children: React.ReactNode }) {
               </p>
 
 
-              <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {displayLocation}
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Since {displaySinceYear}
+              <div className="flex items-center justify-center gap-x-4 gap-y-2 md:text-sm text-xs text-muted-foreground md:mb-6 mb-4 w-full flex-wrap font-medium">
+                {displayLocationStr && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4" />
+                    <span>{displayLocationStr}</span>
+                  </div>
+                )}
+                {displayDob && (
+                  <>
+                    {displayLocationStr && <span className="text-white/20 hidden sm:inline">·</span>}
+                    <div className="flex items-center gap-1.5">
+                      <Cake className="w-4 h-4" />
+                      <span>{displayDob}</span>
+                    </div>
+                  </>
+                )}
+                {(displayLocationStr || displayDob) && <span className="text-white/20 hidden sm:inline">·</span>}
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {displaySinceYear}</span>
                 </div>
               </div>
 
-             
+
               {/* Quick discovery links */}
               <div className="w-full space-y-2">
-                 <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Edit
-                </Button>
-              </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditOpen(true)}
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit
+                  </Button>
+                </div>
                 <Link href="/matches" className="block">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 transition-colors">
                     <span className="flex items-center gap-2 text-sm font-medium">

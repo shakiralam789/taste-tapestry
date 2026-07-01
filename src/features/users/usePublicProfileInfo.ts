@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getPublicProfile, type PublicProfile } from "./api";
+import { countryName } from "@/lib/countries";
 
 export function usePublicProfileInfo(id: string | undefined) {
   const {
@@ -28,7 +29,15 @@ export function usePublicProfileInfo(id: string | undefined) {
   const displayBio =
     safeProfile?.bio?.trim() || "This user hasn't added a bio yet.";
 
-  const displayLocation = safeProfile?.location?.trim() || "";
+  const locationParts = [
+    safeProfile?.location?.trim(), 
+    safeProfile?.country?.trim() ? countryName(safeProfile.country.trim()) : ""
+  ].filter(Boolean);
+  const displayLocationStr = locationParts.length > 0 ? locationParts.join(", ") : "";
+
+  const displayDob = safeProfile?.age 
+    ? `${safeProfile.age} years old` 
+    : "";
 
   const displaySinceYear = safeProfile?.createdAt
     ? new Date(safeProfile.createdAt).getFullYear()
@@ -41,7 +50,8 @@ export function usePublicProfileInfo(id: string | undefined) {
     displayName,
     displayUsername,
     displayBio,
-    displayLocation,
+    displayLocationStr,
+    displayDob,
     displaySinceYear,
   };
 }

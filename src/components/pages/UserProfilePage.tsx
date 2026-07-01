@@ -24,6 +24,7 @@ import {
   Calendar,
   MessageCircle,
   Heart,
+  Cake,
 } from "lucide-react";
 import { TabsListLink } from "@/components/ui/tabs";
 import { useParams, usePathname } from "next/navigation";
@@ -55,7 +56,8 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
     displayName,
     displayUsername,
     displayBio,
-    displayLocation,
+    displayLocationStr,
+    displayDob,
     displaySinceYear,
   } = usePublicProfileInfo(id);
 
@@ -213,16 +215,26 @@ function UserProfilePageInner({ children }: { children: React.ReactNode }) {
                 {displayBio}
               </p>
 
-              <div className="flex items-center justify-center gap-4 md:text-sm text-xs text-gray-400 md:mb-6 mb-4 w-full flex-wrap">
-                {displayLocation && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {displayLocation}
+              <div className="flex items-center justify-center gap-x-4 gap-y-2 md:text-sm text-xs text-muted-foreground md:mb-6 mb-4 w-full flex-wrap font-medium">
+                {displayLocationStr && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4" />
+                    <span>{displayLocationStr}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Since {displaySinceYear}
+                {displayDob && (
+                  <>
+                    {displayLocationStr && <span className="text-white/20 hidden sm:inline">·</span>}
+                    <div className="flex items-center gap-1.5">
+                      <Cake className="w-4 h-4" />
+                      <span>{displayDob}</span>
+                    </div>
+                  </>
+                )}
+                {(displayLocationStr || displayDob) && <span className="text-white/20 hidden sm:inline">·</span>}
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {displaySinceYear}</span>
                 </div>
               </div>
 

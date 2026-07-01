@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getProfile, PROFILE_QUERY_STALE_MS } from "./api";
+import { countryName } from "@/lib/countries";
 
 export function useProfileInfo() {
   const { user: authUser } = useAuth();
@@ -40,6 +41,18 @@ export function useProfileInfo() {
     ? new Date(profile.createdAt).getFullYear()
     : new Date().getFullYear();
 
+  const locationParts = [
+    profile?.location?.trim(), 
+    profile?.country?.trim() ? countryName(profile.country.trim()) : ""
+  ].filter(Boolean);
+  const displayLocationStr = locationParts.length > 0 ? locationParts.join(", ") : "";
+  
+  const displayDob = profile?.dateOfBirth 
+    ? `Born ${new Date(profile.dateOfBirth).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`
+    : profile?.age 
+      ? `${profile.age} years old` 
+      : "";
+
   return {
     profile,
     loading: isLoading,
@@ -47,7 +60,8 @@ export function useProfileInfo() {
     displayUsername,
     displayAvatar,
     displayBio,
-    displayLocation,
+    displayLocationStr,
+    displayDob,
     displayBannerUrl,
     displaySinceYear,
   };
