@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { hover, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { TimeCapsule } from "@/types/wishbook";
@@ -24,6 +24,7 @@ import { useNotifications } from "@/features/notifications/NotificationsContext"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { Wrapper } from "./Wrapper";
 
 interface TimeCapsuleCardProps {
   capsule: TimeCapsule;
@@ -35,6 +36,7 @@ interface TimeCapsuleCardProps {
   authorName?: string;
   authorSubtitle?: string;
   authorAvatar?: string | null;
+  authorID?: string | null | undefined;
 }
 
 export function TimeCapsuleCard({
@@ -47,6 +49,7 @@ export function TimeCapsuleCard({
   authorName,
   authorSubtitle,
   authorAvatar,
+  authorID,
 }: TimeCapsuleCardProps) {
   const visibility = capsule.visibility ?? "public";
   const unlockLabel =
@@ -125,14 +128,16 @@ export function TimeCapsuleCard({
     >
       {/* Header - like FavoriteCard */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
+        <Wrapper
+          authorID={authorID}
+          className="flex items-center gap-3 group">
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
             <AvatarImage src={authorAvatar ?? undefined} />
             <AvatarFallback>{displayAuthorName[0] ?? "T"}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground">
+              <span className={`capitalize font-bold text-foreground ${authorID ? "group-hover:text-primary" : ""}`}>
                 {displayAuthorName}
               </span>
               {capsule.createdAt && (
@@ -145,7 +150,7 @@ export function TimeCapsuleCard({
               {displayAuthorSubtitle}
             </span>
           </div>
-        </div>
+        </Wrapper>
         {showActions && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -214,18 +219,26 @@ export function TimeCapsuleCard({
 
         {/* Media */}
         {coverUrl && (
-          <div className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center">
+          <div className="relative rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center">
             {isVideoCover ? (
               <VideoPlayer
                 src={coverUrl}
                 videoClassName="max-h-[420px] w-full object-contain"
               />
             ) : (
-              <img
-                src={getOptimizedUrl(coverUrl, 800)}
-                alt={capsule.title}
-                className="max-h-[420px] w-full object-contain"
-              />
+
+              <>
+                <img
+                  src={getOptimizedUrl(coverUrl, 800)}
+                  alt={capsule.title}
+                  className="max-h-[420px] w-full object-contain z-10"
+                />
+                <img
+                  src={getOptimizedUrl(coverUrl, 800)}
+                  alt={capsule.title}
+                  className="absolute inset-0 w-full h-full object-cover z-0 blur-2xl opacity-30"
+                />
+              </>
             )}
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'nextjs-toploader/app';
 import { TrendingUp, UserPlus, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -159,7 +159,7 @@ export function RightSidebar() {
 
       {/* Footer */}
       <div className="mt-auto pt-4 text-xs text-muted-foreground text-center">
-        <p>© 2026 Nebula Social. All rights reserved.</p>
+        <p>© 2026 TasteTapestry. All rights reserved.</p>
         <div className="flex justify-center gap-4 mt-2">
           <span className="hover:text-primary cursor-pointer">Privacy</span>
           <span className="hover:text-primary cursor-pointer">Terms</span>

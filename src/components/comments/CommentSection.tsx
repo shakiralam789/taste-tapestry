@@ -242,7 +242,7 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
                 </div>
             )}
 
-            <div className={isInline ? "mb-4" : "mb-10"}>
+            <div className={isInline ? `${comments.length > 0 && "mb-4"}` : "mb-10"}>
                 <CommentInput
                     onSubmit={handleCreateComment}
                     placeholder={isInline ? "Write a comment..." : "Share your thoughts on this capsule..."}

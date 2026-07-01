@@ -49,6 +49,7 @@ export default function HomePage() {
                     onClick={() => router.push(`/capsules/${post.capsule.id}`)}
                     authorName={post.author.displayName || post.author.username || "Unknown"}
                     authorAvatar={post.author.avatar}
+                    authorID={post.author.id}
                     authorSubtitle={`Time capsule • ${post.capsule.period || 'A moment'}`}
                     showActions={false} 
                   />
