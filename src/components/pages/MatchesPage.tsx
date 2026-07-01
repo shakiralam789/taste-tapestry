@@ -3,50 +3,20 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { TasteMatchCard } from '@/components/matching/TasteMatchCard';
-import { UserCard } from '@/components/users/UserCard';
 import { Button } from '@/components/ui/button';
-import { Heart, Globe, Sparkles, RefreshCw } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Heart, RefreshCw } from 'lucide-react';
+import { MultiCountrySelect } from '@/components/ui/multi-country-select';
 
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getTopMatches, getDiscoverUsers, type DiscoverUser } from '@/features/users/api';
-import type { User } from '@/types/wishbook';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { getTopMatches } from '@/features/users/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Loader2 } from 'lucide-react';
-
-/** Maps a backend discover user into the shape UserCard expects. */
-function toCardUser(u: DiscoverUser): User {
-  return {
-    id: u.id,
-    name: u.displayName || u.username || 'User',
-    displayName: u.displayName,
-    username: u.username || '',
-    avatar: u.avatar || '',
-    bio: u.bio || '',
-    location: u.location || undefined,
-    followers: u.followers,
-    following: u.following,
-    interests: [],
-    createdAt: new Date(u.createdAt),
-  };
-}
 
 export default function MatchesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
   const {
     data,
@@ -54,13 +24,11 @@ export default function MatchesPage() {
     hasNextPage,
     isFetchingNextPage,
     status,
-    refetch,
-    isRefetching
   } = useInfiniteQuery({
-    queryKey: ['topMatches', user?.id],
+    queryKey: ['topMatches', user?.id, selectedCountries.join(',')],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      return getTopMatches(user.id, 20, pageParam, false);
+      return getTopMatches(user.id, 20, pageParam, false, selectedCountries.length > 0 ? selectedCountries.join(',') : undefined);
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextOffset : undefined,
@@ -73,8 +41,8 @@ export default function MatchesPage() {
     if (!user?.id) return;
     setIsForceRefreshing(true);
     try {
-      const freshData = await getTopMatches(user.id, 20, 0, true);
-      queryClient.setQueryData(['topMatches', user.id], {
+      const freshData = await getTopMatches(user.id, 20, 0, true, selectedCountries.length > 0 ? selectedCountries.join(',') : undefined);
+      queryClient.setQueryData(['topMatches', user.id, selectedCountries.join(',')], {
         pages: [freshData],
         pageParams: [0],
       });
@@ -85,21 +53,9 @@ export default function MatchesPage() {
     }
   };
 
-  // Exclude matches whose user is hidden (deactivated / pending deletion → enriched as null).
   const matches = (data?.pages.flatMap(page => page.items) ?? []).filter(
     (m) => m.user,
   );
-
-  const {
-    data: discoverData,
-    status: discoverStatus,
-  } = useQuery({
-    queryKey: ['discoverUsers', user?.id],
-    queryFn: () => getDiscoverUsers(24, 0),
-    enabled: !!user?.id,
-  });
-
-  const discoverUsers = discoverData?.items ?? [];
 
   return (
     <Layout>
@@ -124,30 +80,30 @@ export default function MatchesPage() {
             </p>
           </motion.div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="matches" className="space-y-8">
-            <TabsList className="mx-auto grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="matches" className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                Top Matches
-              </TabsTrigger>
-              <TabsTrigger value="cultural" className="gap-2">
-                <Globe className="w-4 h-4" />
-                Cultural Exchange
-              </TabsTrigger>
-            </TabsList>
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mb-8">
+            <div className="w-full sm:w-96">
+              <MultiCountrySelect 
+                values={selectedCountries} 
+                onChange={setSelectedCountries}
+                placeholder="Filter by Country..."
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={handleRefresh} 
+              disabled={status === 'pending' || isForceRefreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${(status === 'pending' || isForceRefreshing) ? 'animate-spin' : ''}`} />
+              Refresh Matches
+            </Button>
+          </div>
 
-            {/* Top Matches Tab */}
-            <TabsContent value="matches">
-              <div className="flex justify-end mb-6">
-                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={status === 'pending' || isForceRefreshing}>
-                  <RefreshCw className={`w-4 h-4 ${(status === 'pending' || isForceRefreshing) ? 'animate-spin' : ''}`} />
-                  Refresh Matches
-                </Button>
-              </div>
-
-              {status === 'pending' ? (
-                <div className="py-20 text-center">
+          {/* Top Matches Content */}
+          <div className="space-y-8">
+            {status === 'pending' ? (
+              <div className="py-20 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   <p className="mt-4 text-muted-foreground">Finding your taste twins...</p>
                 </div>
@@ -168,8 +124,8 @@ export default function MatchesPage() {
                     className="grid grid-cols-1 lg:grid-cols-2 gap-6"
                   >
                     {matches.map((match, i) => (
-                      <motion.div 
-                        key={match.matchedUserId} 
+                      <motion.div
+                        key={match.matchedUserId}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
@@ -199,69 +155,7 @@ export default function MatchesPage() {
                   )}
                 </>
               )}
-            </TabsContent>
-
-            {/* Cultural Exchange Tab */}
-            <TabsContent value="cultural">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-8"
-              >
-                {/* Cultural Exchange Info */}
-                <div className="elevated-card p-6 text-center">
-                  <Globe className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="font-display text-xl font-semibold mb-2">
-                    Cultural Exchange Matching
-                  </h3>
-                  <p className="text-muted-foreground max-w-xl mx-auto mb-4">
-                    Connect with users from different countries and discover their favorite
-                    movies, music, and books. Expand your horizons through shared taste!
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {['🇯🇵 Japan', '🇫🇷 France', '🇧🇷 Brazil', '🇰🇷 Korea', '🇮🇳 India'].map((country) => (
-                      <span
-                        key={country}
-                        className="px-3 py-1.5 rounded-full bg-accent text-sm"
-                      >
-                        {country}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Users from Different Countries */}
-                {discoverStatus === 'pending' ? (
-                  <div className="py-16 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                    <p className="mt-4 text-muted-foreground">Finding people to explore...</p>
-                  </div>
-                ) : discoverUsers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                      <Globe className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground">
-                      No one else is here yet. Check back soon!
-                    </p>
-                  </div>
-                ) : (
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                  >
-                    {discoverUsers.map((u) => (
-                      <motion.div key={u.id} variants={itemVariants}>
-                        <UserCard user={toCardUser(u)} />
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </motion.div>
-            </TabsContent>
-          </Tabs>
+            </div>
         </div>
       </div>
     </Layout>

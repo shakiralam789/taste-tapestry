@@ -226,10 +226,13 @@ export async function getTopMatches(
   limit = 20,
   offset = 0,
   refresh = false,
+  country?: string,
 ): Promise<PaginatedMatchesResponse> {
+  const params: Record<string, string | number | boolean> = { limit, offset, refresh };
+  if (country) params.country = country;
   const { data } = await apiClient.get<PaginatedMatchesResponse>(
     `/users/${userId}/similarity/matches`,
-    { params: { limit, offset, refresh } }
+    { params }
   );
   return data;
 }
