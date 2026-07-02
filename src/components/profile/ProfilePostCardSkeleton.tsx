@@ -8,7 +8,7 @@ interface ProfilePostCardSkeletonProps {
 }
 
 export function ProfilePostCardSkeleton({
-  variant = "grid",
+  variant = "list",
 }: ProfilePostCardSkeletonProps) {
   if (variant === "list") {
     return (

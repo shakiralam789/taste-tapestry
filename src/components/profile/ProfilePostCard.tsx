@@ -19,7 +19,7 @@ interface ProfilePostCardProps {
 
 export function ProfilePostCard({
   favorite,
-  variant = "grid",
+  variant = "list",
   onTitleClick,
 }: ProfilePostCardProps) {
   const queryClient = useQueryClient();
@@ -96,17 +96,6 @@ export function ProfilePostCard({
               </span>
             )}
           </div>
-          {(() => {
-            const sub = getCategoryCardSubtitle(
-              favorite.categoryId,
-              favorite.fields,
-            );
-            return sub ? (
-              <p className="text-[11px] text-muted-foreground truncate mb-0.5">
-                {sub}
-              </p>
-            ) : null;
-          })()}
           <button
             type="button"
             onClick={(e) => {

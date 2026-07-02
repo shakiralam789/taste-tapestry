@@ -36,7 +36,6 @@ import { searchUsers, type UserSearchHit } from "@/features/users/api";
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/discover", icon: Compass, label: "Collections" },
-  { path: "/mood", icon: Sparkles, label: "Mood" },
   { path: "/capsules", icon: Clock, label: "Capsules" },
 ];
 
@@ -261,7 +260,7 @@ export function Navbar() {
                   className="overflow-y-auto overflow-x-hidden"
                   style={{ maxHeight: "calc(100vh - 70px)" }}
                 >
-                  <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
+                  <DropdownMenuLabel className="sticky top-0 bg-card z-10 flex items-center justify-between px-3 py-2">
                     <span className="text-sm font-semibold">Notifications</span>
                     {notifications.length > 0 && (
                       <button

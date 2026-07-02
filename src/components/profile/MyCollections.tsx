@@ -4,9 +4,8 @@ import {
   deleteFavorite,
   PROFILE_PREVIEW_LIMIT,
 } from "@/features/favorites/api";
-import { getCookie, setCookie } from "@/lib/cookies";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
@@ -62,10 +61,6 @@ export default function MyCollections() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<
     string | "all"
   >("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
-    const stored = getCookie("profileCollectionView");
-    return stored === "list" || stored === "grid" ? stored : "grid";
-  });
   const [favoriteToDelete, setFavoriteToDelete] = useState<Favorite | null>(
     null,
   );
@@ -101,13 +96,20 @@ export default function MyCollections() {
   });
 
   const toggleFavoriteVisibilityMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'published' | 'private' }) =>
-      updateFavorite(id, { status }),
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "published" | "private";
+    }) => updateFavorite(id, { status }),
     onSuccess: (_, { status }) => {
       void queryClient.invalidateQueries({ queryKey: ["favorites"] });
       void queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
       void queryClient.invalidateQueries({ queryKey: ["timeline"] });
-      toast.success(status === 'published' ? "Item is now public" : "Item is now private");
+      toast.success(
+        status === "published" ? "Item is now public" : "Item is now private",
+      );
     },
     onError: () => toast.error("Could not update visibility"),
   });
@@ -138,12 +140,6 @@ export default function MyCollections() {
     onError: () => toast.error("Could not add to album"),
   });
 
-  useEffect(() => {
-    setCookie("profileCollectionView", viewMode, {
-      maxAgeSeconds: 60 * 60 * 24 * 365,
-      path: "/",
-    });
-  }, [viewMode]);
   return (
     <>
       <div className="flex flex-col gap-4 mb-6">
@@ -175,7 +171,11 @@ export default function MyCollections() {
               }
               className="flex-1 sm:flex-none"
             >
-              <Button variant="outline" size="sm" className="w-full sm:w-auto rounded-full">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto rounded-full"
+              >
                 <Plus className="w-4 h-4 mr-1 group-hover:rotate-90 transition-transform" />{" "}
                 Add new
               </Button>
@@ -198,7 +198,7 @@ export default function MyCollections() {
                   onClick={() => setSelectedCategoryFilter(cat.value)}
                   className={`rounded-full`}
                 >
-                  <span aria-hidden >
+                  <span aria-hidden>
                     {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
                   </span>
                   <span className="hidden sm:block">{cat.label}</span>
@@ -206,47 +206,17 @@ export default function MyCollections() {
               );
             })}
           </div>
-          <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                viewMode === "grid"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-white/5"
-              }`}
-              aria-label="Grid view"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                viewMode === "list"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-white/5"
-              }`}
-              aria-label="List view"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className={
-          viewMode === "grid"
-            ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            : "flex flex-col gap-3"
-        }
+        className={"flex flex-col gap-3"}
       >
         {favoritesLoading && favorites.length === 0 ? (
           Array.from({ length: 3 }).map((_, idx) => (
-            <ProfilePostCardSkeleton key={idx} variant={viewMode} />
+            <ProfilePostCardSkeleton key={idx} />
           ))
         ) : favorites.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-card/20 text-center">
@@ -264,13 +234,9 @@ export default function MyCollections() {
           </div>
         ) : (
           favorites.slice(0, PROFILE_PREVIEW_LIMIT).map((favorite) => (
-            <div
-              key={favorite.id}
-              className={`relative ${viewMode === "list" ? "w-full" : ""}`}
-            >
+            <div key={favorite.id} className={`relative w-full`}>
               <ProfilePostCard
                 favorite={favorite}
-                variant={viewMode}
                 onTitleClick={() => router.push(`/favorites/${favorite.id}`)}
               />
               {authUser && (
@@ -294,7 +260,7 @@ export default function MyCollections() {
                       className="w-40 text-sm"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {favorite.status !== 'draft' && (
+                      {favorite.status !== "draft" && (
                         <DropdownMenuItem
                           className="flex items-center gap-2 cursor-pointer"
                           onSelect={(e) => {
@@ -307,10 +273,13 @@ export default function MyCollections() {
                           Add to album
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onSelect={(e) => {
-                        e.preventDefault();
-                        router.push(`/favorites/${favorite.id}/edit`);
-                      }}>
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 cursor-pointer"
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          router.push(`/favorites/${favorite.id}/edit`);
+                        }}
+                      >
                         <PenIcon className="w-4 h-4" />
                         Edit
                       </DropdownMenuItem>
@@ -322,16 +291,19 @@ export default function MyCollections() {
                             return;
                           toggleFavoriteVisibilityMutation.mutate({
                             id: favorite.id,
-                            status: favorite.status === 'published' ? 'private' : 'published',
+                            status:
+                              favorite.status === "published"
+                                ? "private"
+                                : "published",
                           });
                         }}
                       >
-                        {favorite.status === 'published' ? (
+                        {favorite.status === "published" ? (
                           <>
                             <Lock className="w-4 h-4" />
                             Make private
                           </>
-                        ) : favorite.status === 'draft' ? (
+                        ) : favorite.status === "draft" ? (
                           <>
                             <Globe className="w-4 h-4" />
                             Publish draft

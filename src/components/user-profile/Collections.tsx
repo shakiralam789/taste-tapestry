@@ -1,15 +1,13 @@
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { getPublicFavorites, getPublicProfile } from "@/features/users/api";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import {
   ArrowLeft,
   ChevronRight,
   Images,
-  LayoutGrid,
-  List,
 } from "lucide-react";
 import { ProfilePostCardSkeleton } from "../profile/ProfilePostCardSkeleton";
 import { PROFILE_PREVIEW_LIMIT } from "@/features/favorites/api";
@@ -43,7 +41,6 @@ export default function Collections() {
     },
     enabled: !!id && !!profile,
   });
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filteredFavorites = favorites;
 
@@ -103,7 +100,7 @@ export default function Collections() {
                     selectedCategoryFilter === cat.value ? "default" : "outline"
                   }
                   onClick={() => setSelectedCategoryFilter(cat.value)}
-                  className={`rounded-full`}
+                  className={` rounded-full`}
                 >
                   <span aria-hidden>
                     {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
@@ -113,45 +110,13 @@ export default function Collections() {
               );
             })}
           </div>
-          <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-card/60 px-0.5 py-0.5">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                viewMode === "grid"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-white/5"
-              }`}
-              aria-label="Grid view"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-xs ${
-                viewMode === "list"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-white/5"
-              }`}
-              aria-label="List view"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 
       {favoritesLoading ? (
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-              : "flex flex-col gap-3"
-          }
-        >
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, idx) => (
-            <ProfilePostCardSkeleton key={idx} variant={viewMode} />
+            <ProfilePostCardSkeleton key={idx} />
           ))}
         </div>
       ) : filteredFavorites.length === 0 ? (
@@ -164,13 +129,7 @@ export default function Collections() {
         </div>
       ) : (
         <>
-          <div
-            className={
-              viewMode === "grid"
-                ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                : "flex flex-col gap-3"
-            }
-          >
+          <div className={"flex flex-col gap-3"}>
             {filteredFavorites
               .slice(0, PROFILE_PREVIEW_LIMIT)
               .map((favorite, index) => (
@@ -182,11 +141,10 @@ export default function Collections() {
                     delay: index * staggerDelay,
                     duration: 0.25,
                   }}
-                  className={viewMode === "list" ? "w-full" : ""}
+                  className="w-full"
                 >
                   <ProfilePostCard
                     favorite={favorite}
-                    variant={viewMode}
                     onTitleClick={() =>
                       router.push(`/favorites/${favorite.id}`)
                     }

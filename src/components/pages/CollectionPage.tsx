@@ -450,7 +450,7 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                             {isLoading && allItems.length === 0 ? (
                                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                     {Array.from({ length: 10 }).map((_, idx) => (
-                                        <ProfilePostCardSkeleton key={idx} variant="grid" />
+                                        <ProfilePostCardSkeleton key={idx} />
                                     ))}
                                 </div>
                             ) : allItems.length === 0 ? (
@@ -459,12 +459,11 @@ function CollectionPageInner({ userId }: CollectionPageProps) {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-2  gap-4">
                                         {allItems.map((favorite) => (
                                             <div key={favorite.id} className="relative group">
                                                 <ProfilePostCard
                                                     favorite={favorite}
-                                                    variant="grid"
                                                     onTitleClick={() =>
                                                         router.push(`/favorites/${favorite.id}`)
                                                     }

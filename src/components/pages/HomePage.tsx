@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { TimeCapsuleCardSkeleton } from "@/components/capsules/TimeCapsuleCardSkeleton";
@@ -9,10 +9,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTimeline } from "@/features/feed/useTimeline";
 import { useInView } from "react-intersection-observer";
-import { Clock } from "lucide-react";
+import { Clock, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type PostType = "capsule" | "collection-review";
+
+const CREATE_POST_ROUTES: Record<PostType, string> = {
+  capsule: "/create-capsule",
+  "collection-review": "/add-favorite",
+};
 
 export default function HomePage() {
   const router = useRouter();
+  const [postType, setPostType] = useState<PostType>("capsule");
   const { posts, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useTimeline();
   const { ref, inView } = useInView();
 
@@ -26,16 +35,54 @@ export default function HomePage() {
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
         <div className="max-w-2xl mx-auto md:px-4 pt-4">
-          {/* Create Post Input (Desktop) */}
-          <div className="px-4 md:px-0 mb-6 relative group">
-            <Link href="/create-capsule">
-              <div className="flex gap-4 p-4 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm border border-white/5 cursor-text hover:bg-card/80 transition-colors">
-                <div className="flex-1 text-muted-foreground pt-2 md:text-base text-sm">
-                  Share your taste with the universe...
+          {/* Create Post Input */}
+          <div className="px-4 md:px-0 mb-6">
+            <div className="p-4 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm border border-white/5 hover:bg-card/80 transition-colors">
+              <button
+                type="button"
+                onClick={() => router.push(CREATE_POST_ROUTES[postType])}
+                className="w-full text-left text-muted-foreground mb-4 md:text-base text-sm cursor-text"
+              >
+                Share your taste with the universe...
+              </button>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPostType("capsule")}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                      postType === "capsule"
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    <Clock className="w-4 h-4" />
+                    Time Capsule
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPostType("collection-review")}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                      postType === "collection-review"
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    <Star className="w-4 h-4" />
+                    Collection Review
+                  </button>
                 </div>
-                <Button size="sm" variant="gradient">Post</Button>
+                <Button
+                  size="sm"
+                  variant="gradient"
+                  onClick={() => router.push(CREATE_POST_ROUTES[postType])}
+                >
+                  Post
+                </Button>
               </div>
-            </Link>
+            </div>
           </div>
 
           {/* Feed */}
