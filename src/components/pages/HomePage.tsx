@@ -34,7 +34,7 @@ export default function HomePage() {
   return (
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
       <div className="min-h-screen pb-12">
-        <div className="max-w-2xl mx-auto md:px-4 pt-4">
+        <div className="max-w-[700px] mx-auto md:px-4 pt-4">
           {/* Create Post Input */}
           <div className="px-4 md:px-0 mb-6">
             <div className="p-4 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm border border-white/5 hover:bg-card/80 transition-colors">

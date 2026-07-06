@@ -64,12 +64,11 @@ export function FavoriteCard({ favorite, onClick }: FavoriteCardProps) {
                 • {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
               </span>
             </div>
-            {favorite.timePeriod && (
-               <p className="text-xs text-primary/80 flex items-center gap-1">
-                 <Star className="w-3 h-3 fill-current" /> 
-                 {favorite.title} • {favorite.rating}/10
-               </p>
-            )}
+            <p className="text-xs text-primary/80 flex items-center gap-1">
+              <Star className="w-3 h-3 fill-current" /> 
+              {favorite.timePeriod ? `${favorite.timePeriod} • ` : ""}
+              {favorite.rating}/10
+            </p>
           </div>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
