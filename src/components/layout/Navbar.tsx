@@ -31,7 +31,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import { useQuery } from "@tanstack/react-query";
 import { getTotalUnreadCount } from "@/features/messages/api";
-import { searchUsers, type UserSearchHit } from "@/features/users/api";
+import { globalSearchItems, type GlobalSearchItemResult } from "@/features/users/api";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -45,7 +45,7 @@ export function Navbar() {
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState("");
-  const [mobileSearchResults, setMobileSearchResults] = useState<UserSearchHit[]>([]);
+  const [mobileSearchResults, setMobileSearchResults] = useState<GlobalSearchItemResult[]>([]);
   const [mobileSearching, setMobileSearching] = useState(false);
   const [mobileSearchDropdownOpen, setMobileSearchDropdownOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
@@ -62,7 +62,7 @@ export function Navbar() {
       }
       setMobileSearching(true);
       try {
-        const list = await searchUsers(q, { excludeUserId: user?.id });
+        const list = await globalSearchItems(q);
         setMobileSearchResults(list);
         setMobileSearchDropdownOpen(true);
       } catch {
@@ -71,7 +71,7 @@ export function Navbar() {
         setMobileSearching(false);
       }
     },
-    [user?.id]
+    []
   );
 
   useEffect(() => {
@@ -89,12 +89,18 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMobileSelectUser = (id: string) => {
+  const handleMobileSelectTitle = (title: string) => {
     setMobileSearchDropdownOpen(false);
     setMobileSearchQuery("");
     setMobileSearchResults([]);
     setIsMobileSearchOpen(false);
-    router.push(`/users/${id}`);
+    router.push(`/search?q=${encodeURIComponent(title)}`);
+  };
+
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && mobileSearchQuery.trim()) {
+      handleMobileSelectTitle(mobileSearchQuery.trim());
+    }
   };
 
   const { data: messagesUnreadCount = 0 } = useQuery({
@@ -151,8 +157,9 @@ export function Navbar() {
                 value={mobileSearchQuery}
                 onChange={(e) => setMobileSearchQuery(e.target.value)}
                 onFocus={() => mobileSearchResults.length > 0 && setMobileSearchDropdownOpen(true)}
-                placeholder="Search users..."
+                placeholder="Search favorites..."
                 className="pl-10 h-8 bg-muted/50 border-border rounded-full w-full"
+                onKeyDown={handleSearchSubmit}
                 autoFocus
               />
               {mobileSearchDropdownOpen && (mobileSearchQuery.trim() || mobileSearchResults.length > 0) && (
@@ -161,26 +168,21 @@ export function Navbar() {
                     <p className="px-3 py-4 text-sm text-muted-foreground text-center">Searching...</p>
                   ) : mobileSearchResults.length === 0 ? (
                     <p className="px-3 py-4 text-sm text-muted-foreground text-center">
-                      {mobileSearchQuery.trim() ? "No users found" : "Type to search users"}
+                      {mobileSearchQuery.trim() ? "No results found" : "Type to search favorites"}
                     </p>
                   ) : (
-                    mobileSearchResults.map((u) => (
+                    mobileSearchResults.map((res) => (
                       <button
-                        key={u.id}
+                        key={`${res.categoryId}-${res.title}`}
                         type="button"
-                        onClick={() => handleMobileSelectUser(u.id)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-muted transition-colors"
+                        onClick={() => handleMobileSelectTitle(res.title)}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-muted transition-colors"
                       >
-                        <Avatar className="w-8 h-8 shrink-0">
-                          <AvatarImage src={u.avatar ?? undefined} />
-                          <AvatarFallback className="text-xs">
-                            {(u.displayName || u.username || "?")[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{u.displayName || u.username || "User"}</p>
-                          <p className="text-xs text-muted-foreground truncate">@{u.username || u.id}</p>
+                        <div className="flex flex-col min-w-0">
+                          <p className="font-medium text-sm truncate">{res.title}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{res.categoryId}</p>
                         </div>
+                        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       </button>
                     ))
                   )}

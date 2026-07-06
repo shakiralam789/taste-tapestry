@@ -143,12 +143,18 @@ export function Sidebar() {
     router.push(`/users/${id}`);
   };
 
-  const handleSelectFavorite = (favoriteId: string) => {
+  const handleSelectTitle = (title: string) => {
     setDropdownOpen(false);
     setSearchQuery("");
     setSearchResults([]);
     setTitleResults([]);
-    router.push(`/favorites/${favoriteId}`);
+    router.push(`/search?q=${encodeURIComponent(title)}`);
+  };
+
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      handleSelectTitle(searchQuery.trim());
+    }
   };
 
   return (
@@ -201,6 +207,7 @@ export function Sidebar() {
             onFocus={() =>
               (searchResults.length > 0 || titleResults.length > 0) && setDropdownOpen(true)
             }
+            onKeyDown={searchMode === "titles" ? handleSearchSubmit : undefined}
             placeholder={searchMode === "users" ? "Search users..." : "Search titles..."}
             className="pl-10 pr-4 h-10 bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground focus:border-primary/50 focus:ring-primary/20 rounded-full transition-all"
           />
@@ -260,55 +267,27 @@ export function Sidebar() {
                     </p>
                   ) : (
                     titleResults.map((item, idx) => (
-                      <div key={idx} className="px-2 py-2">
-                        {/* Title Header */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-base">
+                      <button
+                        key={`${item.categoryId}-${item.title}`}
+                        type="button"
+                        onClick={() => handleSelectTitle(item.title)}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0">
                             {CATEGORY_ICONS[item.categoryId] ?? "📌"}
                           </span>
-                          <p className="font-semibold text-sm text-foreground truncate">
-                            {item.title}
-                          </p>
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-semibold text-sm text-foreground truncate">
+                              {item.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {item.categoryId}
+                            </p>
+                          </div>
                         </div>
-
-                        {/* Users who have this title */}
-                        <div className="space-y-1 pl-1">
-                          {item.users.map((u) => (
-                            <button
-                              key={u.id}
-                              type="button"
-                              onClick={() => handleSelectFavorite(u.favoriteId)}
-                              className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                            >
-                              <Avatar className="w-6 h-6 shrink-0">
-                                <AvatarImage src={u.avatar ?? undefined} />
-                                <AvatarFallback className="text-[10px]">
-                                  {(u.displayName || u.username || "?")[0]}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs text-foreground truncate flex-1">
-                                {u.displayName || u.username}
-                              </span>
-                              <span
-                                className={`text-xs font-semibold shrink-0 ${
-                                  u.similarityScore !== null
-                                    ? "text-primary"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {u.similarityScore !== null
-                                  ? `${u.similarityScore}%`
-                                  : "Not enough data"}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Separator between items */}
-                        {idx < titleResults.length - 1 && (
-                          <div className="border-b border-border/50 mt-2" />
-                        )}
-                      </div>
+                        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      </button>
                     ))
                   )
                 )}
