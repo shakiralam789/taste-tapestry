@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { EmotionalCurvePoint, EmotionalSegment } from "@/types/wishbook";
 import { EMOTION_COLOR_PRESETS, getEmotionFill } from "@/data/emotionColors";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
@@ -454,6 +455,18 @@ export function EmotionalJourneyView({
     return () => ro.disconnect();
   }, []);
 
+  // Prevent body scroll when fullscreen media is open
+  useEffect(() => {
+    if (fullscreenMedia) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [fullscreenMedia]);
+
   // Per-episode: use selected episode's duration and segments
   const totalSecForSeries =
     isSeriesMode && episodeDurations[episodeIndex] != null
@@ -830,14 +843,20 @@ export function EmotionalJourneyView({
           </div>
         )
       }
-      {fullscreenMedia && (
+      {fullscreenMedia && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-          onClick={() => setFullscreenMedia(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={(e) => {
+            e.stopPropagation();
+            setFullscreenMedia(null);
+          }}
         >
           <button
             type="button"
-            onClick={() => setFullscreenMedia(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullscreenMedia(null);
+            }}
             className="absolute top-6 right-6 z-10 rounded-full p-2 bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-110"
           >
             <X className="w-6 h-6" />
@@ -863,7 +882,8 @@ export function EmotionalJourneyView({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div >
   );

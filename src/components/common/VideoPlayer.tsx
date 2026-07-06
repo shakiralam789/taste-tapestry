@@ -14,6 +14,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export function VideoPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(mutedByDefault ? 0 : 1);
   const [lastNonZeroVolume, setLastNonZeroVolume] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [hoveredRecently, setHoveredRecently] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,7 +230,7 @@ export function VideoPlayer({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full h-full cursor-pointer group bg-black",
+        "relative w-full h-full cursor-pointer group bg-black aspect-video",
         containerClassName,
       )}
       onClick={(e) => {
@@ -279,12 +281,22 @@ export function VideoPlayer({
             setIsMuted(false);
           }
         }}
+        onWaiting={() => setIsLoading(true)}
+        onPlaying={() => setIsLoading(false)}
+        onCanPlay={() => setIsLoading(false)}
         onTimeUpdate={() => {
           const video = videoRef.current;
           if (!video) return;
           setCurrentTime(video.currentTime || 0);
         }}
       />
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
+          <Loader2 className="w-8 h-8 text-white animate-spin opacity-80" />
+        </div>
+      )}
 
       <div
         className={cn(

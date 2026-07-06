@@ -6,7 +6,7 @@ import { EmotionalJourneyView } from '@/components/favorites/EmotionalJourneyVie
 import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star, ChevronDown, ChevronUp, ArrowRight, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -154,10 +154,17 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowEmotionalJourney(prev => !prev); }}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-card/30 border border-white/5 hover:bg-card/50 transition-colors text-sm text-muted-foreground"
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm group ${
+                showEmotionalJourney 
+                  ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgba(var(--primary),0.1)]' 
+                  : 'bg-card/30 border-white/5 hover:bg-card/50 hover:border-white/10 text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <span className="font-medium">Emotional Journey</span>
-              {showEmotionalJourney ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <div className="flex items-center gap-2.5">
+                <Activity className={`w-4 h-4 ${showEmotionalJourney ? 'text-primary' : 'text-primary/60 group-hover:text-primary transition-colors'}`} />
+                <span className="font-medium">Emotional Journey</span>
+              </div>
+              {showEmotionalJourney ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 group-hover:text-foreground transition-colors" />}
             </button>
             <AnimatePresence>
               {showEmotionalJourney && (
