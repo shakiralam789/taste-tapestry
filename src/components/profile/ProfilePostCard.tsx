@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
 import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
-import { Star, Eye, MousePointerClick } from "lucide-react";
+import { Star, Eye, MousePointerClick, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { useImpressionTracker } from "@/hooks/useImpressionTracker";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useClickTracker } from "@/hooks/useClickTracker";
@@ -39,6 +39,29 @@ export function ProfilePostCard({
       trackClick(favorite.id);
     }
     if (onTitleClick) onTitleClick();
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/favorites/${favorite.id}`;
+    const title = favorite.title || "Check out this favorite on Taste Tapestry";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          toast.error("Could not share favorite");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard!");
+      } catch {
+        toast.error("Could not copy link");
+      }
+    }
   };
 
   if (variant === "list") {
@@ -103,6 +126,14 @@ export function ProfilePostCard({
                 </span>
               </>
             )}
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-green-500 transition-colors"
+              title="Share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </motion.div>
@@ -165,16 +196,26 @@ export function ProfilePostCard({
             }}
             className="cursor-default p-3 md:p-5 pt-2 md:pt-2.5 flex items-center justify-between text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75"
           >
-            {isOwner && (
-              <>
-                <span className="flex items-center gap-1.5 text-white/60 text-[11px]" title="Views">
-                  <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
-                </span>
-                <span className="flex items-center gap-1.5 text-white/60 text-[11px] ml-3" title="Clicks">
-                  <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
-                </span>
-              </>
-            )}
+            <div className="flex items-center gap-3">
+              {isOwner && (
+                <>
+                  <span className="flex items-center gap-1.5 text-white/60 text-[11px]" title="Views">
+                    <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-white/60 text-[11px]" title="Clicks">
+                    <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
+                  </span>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex items-center text-white/60 hover:text-green-400 transition-colors"
+                title="Share"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
             {favorite.rating != null && (
               <span className="flex items-center gap-1 text-yellow-500 font-bold">
                 <Star className="w-3.5 h-3.5 fill-yellow-500" />
