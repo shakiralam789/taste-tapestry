@@ -226,7 +226,7 @@ function SearchResultsContent() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center items-center gap-2 md:gap-3 overflow-x-auto pb-4 md:mb-10 mb-6 scrollbar-hide px-1"
+            className="flex justify-center items-center gap-2 md:gap-3 overflow-x-auto py-1 md:mb-6 mb-4 scrollbar-hide px-1"
           >
             {CATEGORY_TABS.map((category) => {
               const Icon = "icon" in category ? category.icon : undefined;

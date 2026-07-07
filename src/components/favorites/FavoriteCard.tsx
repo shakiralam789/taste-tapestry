@@ -27,10 +27,12 @@ interface FavoriteCardProps {
 }
 
 export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentage }: FavoriteCardProps) {
-  const { allUsers } = useWishbook();
+  const { allUsers, categories } = useWishbook();
   const { user } = useAuth();
   const router = useRouter();
   const [showEmotionalJourney, setShowEmotionalJourney] = useState(false);
+
+  const category = categories.find(c => c.id === favorite.categoryId);
 
   const { ref } = useImpressionTracker({
     itemId: favorite.id,
@@ -106,12 +108,6 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
               e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
             }}
           />
-          {/* Match percentage badge overlay */}
-          {matchPercentage !== undefined && matchPercentage !== null && (
-            <span className="absolute top-2 left-2 z-20 text-[10px] font-bold text-primary px-1.5 py-0.5 rounded-md bg-primary/15 border border-primary/30 backdrop-blur-sm">
-              {matchPercentage}%
-            </span>
-          )}
         </div>
 
         {/* Right: Content */}
@@ -126,16 +122,24 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
                 <AvatarImage src={author.avatar ?? undefined} />
                 <AvatarFallback className="text-[10px]">{author.name[0]}</AvatarFallback>
               </Avatar>
-              <span
-                className="text-xs font-medium text-foreground/80 hover:underline cursor-pointer truncate"
-                onClick={handleAuthorClick}
-              >
-                {author.name}
-              </span>
-              <span className="text-muted-foreground text-[10px] flex-shrink-0">
-                {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
-              </span>
+              <div className="min-w-0">
+                <span
+                  className="text-xs font-medium text-foreground/80 hover:underline cursor-pointer truncate block"
+                  onClick={handleAuthorClick}
+                >
+                  {author.name}
+                </span>
+                <span className="text-muted-foreground text-[10px]">
+                  {category && <>{category.icon} {category.name} · </>}
+                  {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
+                </span>
+              </div>
             </div>
+            {matchPercentage !== undefined && matchPercentage !== null && (
+              <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 rounded-md bg-primary/15 border border-primary/30 backdrop-blur-sm flex-shrink-0">
+                {matchPercentage}% Match
+              </span>
+            )}
           </div>
 
           {/* Title */}
