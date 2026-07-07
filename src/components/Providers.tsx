@@ -9,6 +9,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WishbookProvider } from "@/contexts/WishbookContext";
 import { AuthProvider } from "@/features/auth/AuthContext";
+import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
@@ -22,11 +23,13 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <TooltipProvider>
           <WishbookProvider>
-            <AuthProvider>
-              <Toaster />
-              <Sonner />
-              {children}
-            </AuthProvider>
+            <AnalyticsProvider>
+              <AuthProvider>
+                <Toaster />
+                <Sonner />
+                {children}
+              </AuthProvider>
+            </AnalyticsProvider>
           </WishbookProvider>
         </TooltipProvider>
       </ThemeProvider>

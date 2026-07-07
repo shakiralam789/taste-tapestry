@@ -13,6 +13,7 @@ import {
   updateFavorite,
   uploadFavoriteMusic,
 } from "@/features/favorites/api";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
 import { getPublicFavoritesPage, getPublicProfile } from "@/features/users/api";
@@ -152,6 +153,7 @@ export default function FavoriteShowPage() {
   const id = params?.id;
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const { trackEvent } = useAnalytics();
   const queryClient = useQueryClient();
 
   // ── Link-input state ──────────────────────────────────────────────────────
@@ -199,6 +201,15 @@ export default function FavoriteShowPage() {
   });
 
   const isOwner = favorite ? authUser?.id === favorite.userId : false;
+
+  // ── Track view on page load ─────────────────────────────────────────────
+  const viewTracked = useRef(false);
+  useEffect(() => {
+    if (favorite?.id && !viewTracked.current && !isOwner) {
+      viewTracked.current = true;
+      trackEvent({ itemId: favorite.id, eventType: "impression", source: "details" });
+    }
+  }, [favorite?.id, trackEvent, isOwner]);
 
   const { data: ownerFavorites = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
     queryKey: [

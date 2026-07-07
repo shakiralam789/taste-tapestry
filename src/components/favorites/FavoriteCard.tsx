@@ -6,11 +6,14 @@ import { EmotionalJourneyView } from '@/components/favorites/EmotionalJourneyVie
 import { getFavoriteCoverImage } from '@/features/favorites/default-covers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star, ChevronDown, ChevronUp, ArrowRight, Activity } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Star, ChevronDown, ChevronUp, ArrowRight, Activity, Eye, MousePointerClick } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useImpressionTracker } from '@/hooks/useImpressionTracker';
+import { useClickTracker } from '@/hooks/useClickTracker';
+import { useAuth } from '@/features/auth/AuthContext';
 
 interface FavoriteCardProps {
   favorite: Favorite;
@@ -25,8 +28,17 @@ interface FavoriteCardProps {
 
 export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentage }: FavoriteCardProps) {
   const { allUsers } = useWishbook();
+  const { user } = useAuth();
   const router = useRouter();
   const [showEmotionalJourney, setShowEmotionalJourney] = useState(false);
+
+  const { ref } = useImpressionTracker({
+    itemId: favorite.id,
+    source: "feed",
+    enabled: user?.id !== favorite.userId,
+  });
+
+  const { trackClick } = useClickTracker("feed");
 
   const author = authorOverride || allUsers.find(u => u.id === favorite.userId) || {
     name: 'Unknown User',
@@ -68,6 +80,7 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -128,7 +141,10 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
           {/* Title */}
           <h3
             className="text-sm md:text-base font-display font-semibold leading-tight cursor-pointer hover:text-primary transition-colors line-clamp-1 mb-1"
-            onClick={onClick}
+            onClick={(e) => {
+              if (user?.id !== favorite.userId) trackClick(favorite.id);
+              if (onClick) onClick();
+            }}
           >
             {favorite.title}
           </h3>
@@ -191,14 +207,29 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
                 <Bookmark className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
               </Button>
             </div>
-            <button
-              type="button"
-              onClick={onClick}
-              className="capitalize text-primary/60 inline-flex items-center gap-1 text-[11px] hover:text-primary cursor-pointer transition-colors"
-            >
-              details
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground mr-2">
+                {user?.id === favorite.userId && (
+                  <>
+                    <span className="flex items-center gap-1" title="Views">
+                      <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
+                    </span>
+                    <span className="flex items-center gap-1" title="Clicks">
+                      <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
+                    </span>
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onClick}
+                className="capitalize text-primary/60 inline-flex items-center gap-1 text-[11px] hover:text-primary cursor-pointer transition-colors"
+              >
+                details
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,11 @@
 "use client";
+import { useEffect, useState, useRef } from "react";
 import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Eye, MousePointerClick } from "lucide-react";
+import { useImpressionTracker } from "@/hooks/useImpressionTracker";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useClickTracker } from "@/hooks/useClickTracker";
 import { PrivateBadge } from "@/components/common/PrivateBadge";
 import { DraftBadge } from "@/components/common/DraftBadge";
 import { getCategoryCardSubtitle } from "@/features/favorites/category-fields";
@@ -19,14 +23,32 @@ export function ProfilePostCard({
   variant = "list",
   onTitleClick,
 }: ProfilePostCardProps) {
+  const { user } = useAuth();
+  const isOwner = user?.id === favorite.userId;
+
+  const { ref } = useImpressionTracker({
+    itemId: favorite.id,
+    source: "profile",
+    enabled: !isOwner,
+  });
+  
+  const { trackClick } = useClickTracker("profile");
+
+  const handleTitleClick = () => {
+    if (!isOwner) {
+      trackClick(favorite.id);
+    }
+    if (onTitleClick) onTitleClick();
+  };
 
   if (variant === "list") {
     return (
       <motion.div
+        ref={ref}
         whileHover={{ y: -3 }}
         className="group relative flex rounded-2xl overflow-hidden bg-muted border border-white/5"
       >
-        <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden">
+        <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden cursor-pointer" onClick={handleTitleClick}>
           <img
             src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
             alt={favorite.title}
@@ -56,7 +78,7 @@ export function ProfilePostCard({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onTitleClick?.();
+              handleTitleClick();
             }}
             className="text-left w-fit"
           >
@@ -70,6 +92,18 @@ export function ProfilePostCard({
           {favorite.status === 'draft' && (
             <DraftBadge className="absolute top-2 left-2 w-fit mt-0.5 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-400 ring-gray-500/20" />
           )}
+          <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+            {isOwner && (
+              <>
+                <span className="flex items-center gap-1.5" title="Views">
+                  <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
+                </span>
+                <span className="flex items-center gap-1.5" title="Clicks">
+                  <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </motion.div>
     );
@@ -78,6 +112,7 @@ export function ProfilePostCard({
   // Default grid variant
   return (
     <motion.div
+      ref={ref}
       onClick={() => onTitleClick?.()}
       whileHover={{ y: -5 }}
       className="group relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
@@ -124,19 +159,29 @@ export function ProfilePostCard({
               {favorite.title}
             </p>
           </div>
-          {favorite.rating != null && (
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="cursor-default p-3 md:p-5 pt-2 md:pt-2.5 flex items-center justify-end text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75"
-            >
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="cursor-default p-3 md:p-5 pt-2 md:pt-2.5 flex items-center justify-between text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75"
+          >
+            {isOwner && (
+              <>
+                <span className="flex items-center gap-1.5 text-white/60 text-[11px]" title="Views">
+                  <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
+                </span>
+                <span className="flex items-center gap-1.5 text-white/60 text-[11px] ml-3" title="Clicks">
+                  <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
+                </span>
+              </>
+            )}
+            {favorite.rating != null && (
               <span className="flex items-center gap-1 text-yellow-500 font-bold">
                 <Star className="w-3.5 h-3.5 fill-yellow-500" />
                 {favorite.rating}
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </motion.div>

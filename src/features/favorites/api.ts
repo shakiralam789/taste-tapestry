@@ -130,4 +130,25 @@ export async function uploadFavoriteMusic(
   };
 }
 
+export async function trackFavoriteImpression(
+  id: string,
+): Promise<{ viewCount: number }> {
+  const { data } = await apiClient.post<{ viewCount: number }>(
+    `/favorites/${id}/view`,
+  );
+  return data;
+}
 
+export async function trackAnalyticsBatch(
+  events: Array<{
+    itemId: string;
+    eventType: "impression" | "click";
+    sessionId: string;
+    source?: string;
+    device?: string;
+    platform?: string;
+  }>
+): Promise<void> {
+  // Fire and forget
+  await apiClient.post("/analytics/batch", { events });
+}

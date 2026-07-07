@@ -143,6 +143,9 @@ export interface Favorite {
   fields: Record<string, any>;
   /** The visibility and draft state of this item. */
   status?: FavoriteStatus;
+  /** Number of views / impressions */
+  viewCount?: number;
+  clickCount?: number;
 }
 
 export interface MovieFavorite extends Favorite {
