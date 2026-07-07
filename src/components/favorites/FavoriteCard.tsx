@@ -44,7 +44,7 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
   const handleShare = async () => {
     const url = `${window.location.origin}/favorites/${favorite.id}`;
     const title = favorite.title || "Check out this favorite on Taste Tapestry";
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -67,104 +67,163 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 mb-4 hover:border-primary/20 transition-colors"
+      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden mb-4 hover:border-primary/20 transition-colors"
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <Avatar 
-            className="w-10 h-10 ring-2 ring-primary/20 cursor-pointer"
-            onClick={handleAuthorClick}
-          >
-            <AvatarImage src={author.avatar ?? undefined} />
-            <AvatarFallback>{author.name[0]}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center gap-2">
+      {/* Main horizontal layout */}
+      <div className="flex">
+        {/* Left: Poster Image */}
+        <div className="relative flex-shrink-0 w-28 md:w-36 bg-black/60 overflow-hidden">
+          <img
+            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+            alt={favorite.title}
+            className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-125"
+            onError={(e) => {
+              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+            }}
+          />
+          <img
+            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
+            alt={favorite.title}
+            className="relative w-full h-full object-cover z-10"
+            onError={(e) => {
+              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
+            }}
+          />
+          {/* Match percentage badge overlay */}
+          {matchPercentage !== undefined && matchPercentage !== null && (
+            <span className="absolute top-2 left-2 z-20 text-[10px] font-bold text-primary px-1.5 py-0.5 rounded-md bg-primary/15 border border-primary/30 backdrop-blur-sm">
+              {matchPercentage}%
+            </span>
+          )}
+        </div>
+
+        {/* Right: Content */}
+        <div className="flex-1 min-w-0 p-3 md:p-4 flex flex-col justify-between">
+          {/* Top: Author row */}
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar
+                className="w-6 h-6 ring-1 ring-primary/20 cursor-pointer flex-shrink-0"
+                onClick={handleAuthorClick}
+              >
+                <AvatarImage src={author.avatar ?? undefined} />
+                <AvatarFallback className="text-[10px]">{author.name[0]}</AvatarFallback>
+              </Avatar>
               <span
-                className="font-bold text-foreground hover:underline cursor-pointer"
+                className="text-xs font-medium text-foreground/80 hover:underline cursor-pointer truncate"
                 onClick={handleAuthorClick}
               >
                 {author.name}
               </span>
-              <span className="text-muted-foreground text-xs">
-                • {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
+              <span className="text-muted-foreground text-[10px] flex-shrink-0">
+                {formatDistanceToNow(new Date(favorite.createdAt), { addSuffix: true })}
               </span>
             </div>
-            <p className="text-xs text-primary/80 flex items-center gap-1">
-              <Star className="w-3 h-3 fill-current" /> 
-              {favorite.timePeriod ? `${favorite.timePeriod} • ` : ""}
-              {favorite.rating}/10
-            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {matchPercentage !== undefined && matchPercentage !== null && (
-            <span className="text-xs font-semibold text-primary px-2 py-1 rounded-full bg-primary/10 border border-primary/20">
-              {matchPercentage}% Match
+
+          {/* Title */}
+          <h3
+            className="text-sm md:text-base font-display font-semibold leading-tight cursor-pointer hover:text-primary transition-colors line-clamp-1 mb-1"
+            onClick={onClick}
+          >
+            {favorite.title}
+          </h3>
+
+          {/* Why I Like - truncated */}
+          <p className="text-xs text-foreground/70 leading-relaxed mb-2">
+            {favorite.whyILike.length > 110 ? (
+              <>
+                {favorite.whyILike.substring(0, 110)}...{" "}
+                <span
+                  className="text-primary hover:underline cursor-pointer font-medium"
+                  onClick={onClick}
+                >
+                  See more
+                </span>
+              </>
+            ) : (
+              favorite.whyILike
+            )}
+          </p>
+
+          {/* Rating + Tags row */}
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary/90 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+              <Star className="w-3 h-3 fill-current" />
+              {favorite.rating}/10
             </span>
-          )}
+            {favorite.timePeriod && (
+              <span className="text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
+                {favorite.timePeriod}
+              </span>
+            )}
+            {favorite.mood.slice(0, 2).map((m) => (
+              <span key={m} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/5 text-primary/70 border border-primary/10">
+                #{m}
+              </span>
+            ))}
+            {favorite.tags.slice(0, 1).map((t) => (
+              <span key={t} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-secondary/5 text-secondary/70 border border-secondary/10">
+                #{t}
+              </span>
+            ))}
+            {(favorite.mood.length + favorite.tags.length) > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{favorite.mood.length + favorite.tags.length - 3}</span>
+            )}
+          </div>
+
+          {/* Action Bar */}
+          <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-muted-foreground hover:text-green-500 hover:bg-green-500/10 px-1.5 rounded-full group"
+                onClick={handleShare}
+              >
+                <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-muted-foreground hover:text-primary hover:bg-primary/10 px-1.5 rounded-full group">
+                <Bookmark className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              </Button>
+            </div>
+            <button
+              type="button"
+              onClick={onClick}
+              className="capitalize text-primary/60 inline-flex items-center gap-1 text-[11px] hover:text-primary cursor-pointer transition-colors"
+            >
+              details
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div>
-        <h3 
-          className="text-lg font-display font-semibold mb-2 cursor-pointer hover:text-primary transition-colors"
-          onClick={onClick}
-        >
-          {favorite.title}
-        </h3>
-        <p className="text-sm md:text-base text-foreground/90 mb-3 whitespace-pre-wrap leading-relaxed">
-          {favorite.whyILike}
-        </p>
-
-        {/* Media */}
-        <div className="relative rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/80 flex items-center justify-center group cursor-pointer">
-          <img
-            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
-            alt={favorite.title}
-            className="max-h-[420px] w-full object-contain z-10 transition-transform duration-700 group-hover:scale-105"
-            onError={(e) => {
-              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
-            }}
-          />
-          <img
-            src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
-            alt={favorite.title}
-            className="absolute inset-0 w-full h-full object-cover z-0 blur-2xl opacity-30"
-            onError={(e) => {
-              e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
-            }}
-          />
-        </div>
-
-        {/* Emotional journey (read-only) when present — collapsed by default */}
-        {((favorite.fields?.emotionalSegments?.length > 0 && favorite.categoryId !== 'series' && favorite.categoryId !== 'anime') ||
-          (favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
-          ((favorite.categoryId === 'series' || favorite.categoryId === 'anime') && Array.isArray(favorite.fields?.episodeSegments) && favorite.fields.episodeSegments.some((arr: unknown) => Array.isArray(arr) && arr.length > 0)) ||
-          (favorite.fields?.emotionalCurve?.length >= 2 && favorite.fields?.emotionalCurve?.some((p: { id?: string }) => p.id)) ||
-          (favorite.fields?.emotionalCurve?.length >= 5) ||
-          (favorite.fields?.momentPins?.length ?? 0) > 0) && (
-          <div>
+      {/* Emotional Journey — full width below the horizontal layout */}
+      {((favorite.fields?.emotionalSegments?.length > 0 && favorite.categoryId !== 'series' && favorite.categoryId !== 'anime') ||
+        (favorite.fields?.totalDurationSeconds && favorite.fields?.emotionalCurve?.length >= 2) ||
+        ((favorite.categoryId === 'series' || favorite.categoryId === 'anime') && Array.isArray(favorite.fields?.episodeSegments) && favorite.fields.episodeSegments.some((arr: unknown) => Array.isArray(arr) && arr.length > 0)) ||
+        (favorite.fields?.emotionalCurve?.length >= 2 && favorite.fields?.emotionalCurve?.some((p: { id?: string }) => p.id)) ||
+        (favorite.fields?.emotionalCurve?.length >= 5) ||
+        (favorite.fields?.momentPins?.length ?? 0) > 0) && (
+          <div className="border-t border-white/5">
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowEmotionalJourney(prev => !prev); }}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-sm group ${
-                showEmotionalJourney 
-                  ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgba(var(--primary),0.1)]' 
-                  : 'bg-card/30 border-white/5 hover:bg-card/50 hover:border-white/10 text-muted-foreground hover:text-foreground'
-              }`}
+              className={`w-full flex items-center justify-between px-4 py-2.5 transition-all text-xs group ${showEmotionalJourney
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-card/20 text-muted-foreground hover:bg-card/40 hover:text-foreground'
+                }`}
             >
-              <div className="flex items-center gap-2.5">
-                <Activity className={`w-4 h-4 ${showEmotionalJourney ? 'text-primary' : 'text-primary/60 group-hover:text-primary transition-colors'}`} />
+              <div className="flex items-center gap-2">
+                <Activity className={`w-3.5 h-3.5 ${showEmotionalJourney ? 'text-primary' : 'text-primary/60 group-hover:text-primary transition-colors'}`} />
                 <span className="font-medium">Emotional Journey</span>
               </div>
-              {showEmotionalJourney ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 group-hover:text-foreground transition-colors" />}
+              {showEmotionalJourney ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 group-hover:text-foreground transition-colors" />}
             </button>
             <AnimatePresence>
               {showEmotionalJourney && (
@@ -175,7 +234,7 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-                  <div className="p-4 rounded-b-xl bg-card/30 border border-t-0 border-white/5">
+                  <div className="p-4 bg-card/30 border-t border-white/5">
                     <EmotionalJourneyView
                       categoryId={favorite.categoryId}
                       totalDurationSeconds={favorite.fields?.totalDurationSeconds}
@@ -192,46 +251,6 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
             </AnimatePresence>
           </div>
         )}
-
-        {/* Tags/Moods */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {favorite.mood.map((m) => (
-            <span key={m} className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-              #{m}
-            </span>
-          ))}
-          {favorite.tags.map((t) => (
-            <span key={t} className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-              #{t}
-            </span>
-          ))}
-        </div>
-
-        {/* Action Bar */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 gap-1.5 text-muted-foreground hover:text-green-500 hover:bg-green-500/10 px-2 rounded-full group"
-              onClick={handleShare}
-            >
-              <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 px-2 rounded-full group">
-              <Bookmark className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            </Button>
-          </div>
-          <button
-            type="button"
-            onClick={onClick}
-            className="capitalize text-primary/60 inline-flex items-center gap-1.5 text-xs hover:text-primary cursor-pointer transition-colors"
-          >
-            show details
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
     </motion.div>
   );
 }
