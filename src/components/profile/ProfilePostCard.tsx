@@ -1,10 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
 import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Star } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toggleFavoriteLove } from "@/features/favorites/api";
+import { Star } from "lucide-react";
 import { PrivateBadge } from "@/components/common/PrivateBadge";
 import { DraftBadge } from "@/components/common/DraftBadge";
 import { getCategoryCardSubtitle } from "@/features/favorites/category-fields";
@@ -22,47 +19,6 @@ export function ProfilePostCard({
   variant = "list",
   onTitleClick,
 }: ProfilePostCardProps) {
-  const queryClient = useQueryClient();
-  const [loved, setLoved] = useState(favorite.lovedByMe ?? false);
-  const [loveCount, setLoveCount] = useState(favorite.loveCount ?? 0);
-
-  useEffect(() => {
-    setLoved(favorite.lovedByMe ?? false);
-    setLoveCount(favorite.loveCount ?? 0);
-  }, [favorite.lovedByMe, favorite.loveCount]);
-  const loveMutation = useMutation({
-    mutationFn: () => toggleFavoriteLove(favorite.id),
-    onMutate: () => {
-      setLoved((prev) => !prev);
-      setLoveCount((prev) => (loved ? Math.max(prev - 1, 0) : prev + 1));
-    },
-    onSuccess: ({ loved, count }) => {
-      setLoved(loved);
-      setLoveCount(count);
-      queryClient.setQueriesData<Favorite>(
-        { queryKey: ["favorite", favorite.id] },
-        (old) =>
-          old
-            ? {
-              ...old,
-              lovedByMe: loved,
-              loveCount: count,
-            }
-            : old,
-      );
-      queryClient.setQueriesData<Favorite[]>(
-        { queryKey: ["favorites"] },
-        (old) =>
-          old
-            ? old.map((f) =>
-              f.id === favorite.id
-                ? { ...f, lovedByMe: loved, loveCount: count }
-                : f,
-            )
-            : old,
-      );
-    },
-  });
 
   if (variant === "list") {
     return (
@@ -114,30 +70,6 @@ export function ProfilePostCard({
           {favorite.status === 'draft' && (
             <DraftBadge className="absolute top-2 left-2 w-fit mt-0.5 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-400 ring-gray-500/20" />
           )}
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground"
-          >
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                loveMutation.mutate();
-              }}
-            >
-              <Heart
-                className={`w-3.5 h-3.5 ${loved ? "fill-secondary text-secondary" : "fill-white/10"
-                  }`}
-              />
-              <span>{loveCount}</span>
-            </button>
-            <span className="flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" /> 0 Comments
-            </span>
-          </div>
         </div>
       </motion.div>
     );
@@ -192,35 +124,19 @@ export function ProfilePostCard({
               {favorite.title}
             </p>
           </div>
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="cursor-default p-3 md:p-5 pt-2 md:pt-2.5 flex items-center justify-between text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75"
-          >
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  loveMutation.mutate();
-                }}
-              >
-                <Heart
-                  className={`w-4 h-4 ${loved ? "fill-secondary text-secondary" : "fill-white/20"
-                    }`}
-                />{" "}
-                {loveCount}
-              </button>
-            </div>
-            {favorite.rating != null && (
+          {favorite.rating != null && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="cursor-default p-3 md:p-5 pt-2 md:pt-2.5 flex items-center justify-end text-white/80 text-sm opacity-90 group-hover:opacity-100 transition-opacity duration-300 delay-75"
+            >
               <span className="flex items-center gap-1 text-yellow-500 font-bold">
                 <Star className="w-3.5 h-3.5 fill-yellow-500" />
                 {favorite.rating}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

@@ -143,9 +143,6 @@ export interface Favorite {
   fields: Record<string, any>;
   /** The visibility and draft state of this item. */
   status?: FavoriteStatus;
-  /** Social love reaction metadata */
-  loveCount?: number;
-  lovedByMe?: boolean;
 }
 
 export interface MovieFavorite extends Favorite {
