@@ -13,7 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Bookmark, Loader2, Search } from "lucide-react";
 import { CATEGORY_TABS } from "@/features/albums/constants";
 import { getSavedFavoritesPage } from "@/features/saved/api";
+import { getSavedCapsulesPage } from "@/features/saved/capsule-api";
 import { useAuth } from "@/features/auth/AuthContext";
+import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
+import { cn } from "@/lib/utils";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -25,6 +28,9 @@ function SavedPageContent() {
 
   const initialCategory = searchParams?.get("category") ?? "all";
   const initialSearch = searchParams?.get("q") ?? "";
+  const initialType = (searchParams?.get("type") as "favorites" | "capsules") || "favorites";
+
+  const [activeType, setActiveType] = useState<"favorites" | "capsules">(initialType);
 
   const [activeTab, setActiveTab] =
     useState<(typeof CATEGORY_TABS)[number]["value"]>(
@@ -44,12 +50,17 @@ function SavedPageContent() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (activeTab === "all") url.searchParams.delete("category");
+    if (activeType === "favorites") {
+      url.searchParams.delete("type");
+    } else {
+      url.searchParams.set("type", activeType);
+    }
+    if (activeTab === "all" || activeType === "capsules") url.searchParams.delete("category");
     else url.searchParams.set("category", activeTab);
     if (debouncedSearch) url.searchParams.set("q", debouncedSearch);
     else url.searchParams.delete("q");
     window.history.replaceState({}, "", url.pathname + url.search);
-  }, [activeTab, debouncedSearch]);
+  }, [activeType, activeTab, debouncedSearch]);
 
   const categoryParam = activeTab === "all" ? undefined : activeTab;
 
@@ -60,20 +71,23 @@ function SavedPageContent() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["saved", "page", activeTab, debouncedSearch],
+    queryKey: ["saved", "page", activeType, activeTab, debouncedSearch],
     queryFn: ({ pageParam }) =>
-      getSavedFavoritesPage(
-        pageParam as number,
-        categoryParam,
-        debouncedSearch || undefined,
-      ),
+      activeType === "capsules"
+        ? getSavedCapsulesPage(pageParam as number, debouncedSearch || undefined)
+        : getSavedFavoritesPage(
+            pageParam as number,
+            categoryParam,
+            debouncedSearch || undefined,
+          ),
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextOffset : undefined,
     initialPageParam: 0,
     enabled: !!user,
   });
 
-  const savedItems = data?.pages.flatMap((p) => p.items) ?? [];
+  const savedItems = activeType === "favorites" ? (data?.pages.flatMap((p: any) => p.items) ?? []) : [];
+  const savedCapsules = activeType === "capsules" ? (data?.pages.flatMap((p: any) => p.items) ?? []) : [];
 
   useEffect(() => {
     const el = loadMoreRef.current;
@@ -151,36 +165,65 @@ function SavedPageContent() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex justify-center items-center gap-2 md:gap-3 overflow-x-auto py-1 md:mb-6 mb-4 scrollbar-hide px-1"
-        >
-          {CATEGORY_TABS.map((category) => {
-            const Icon = "icon" in category ? category.icon : undefined;
-            return (
-              <CategoryChip
-                key={category.value}
-                category={{
-                  id: category.value,
-                  name: category.label,
-                  icon: Icon ? <Icon className="w-4 h-4" /> : "✨",
-                  color: "primary",
-                  isDefault: true,
-                }}
-                isSelected={activeTab === category.value}
-                onClick={() => handleTabChange(category.value)}
-              />
-            );
-          })}
-        </motion.div>
+        <div className="flex justify-center mb-6">
+          <div className="bg-card/50 backdrop-blur-sm p-1 rounded-full border border-white/5 inline-flex">
+            <button
+              onClick={() => setActiveType("favorites")}
+              className={cn(
+                "px-6 py-2 rounded-full text-sm font-medium transition-colors",
+                activeType === "favorites"
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Favorites
+            </button>
+            <button
+              onClick={() => setActiveType("capsules")}
+              className={cn(
+                "px-6 py-2 rounded-full text-sm font-medium transition-colors",
+                activeType === "capsules"
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Capsules
+            </button>
+          </div>
+        </div>
+
+        {activeType === "favorites" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center items-center gap-2 md:gap-3 overflow-x-auto py-1 md:mb-6 mb-4 scrollbar-hide px-1"
+          >
+            {CATEGORY_TABS.map((category) => {
+              const Icon = "icon" in category ? category.icon : undefined;
+              return (
+                <CategoryChip
+                  key={category.value}
+                  category={{
+                    id: category.value,
+                    name: category.label,
+                    icon: Icon ? <Icon className="w-4 h-4" /> : "✨",
+                    color: "primary",
+                    isDefault: true,
+                  }}
+                  isSelected={activeTab === category.value}
+                  onClick={() => handleTabChange(category.value)}
+                />
+              );
+            })}
+          </motion.div>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
             <p>Loading saved items...</p>
           </div>
-        ) : savedItems.length > 0 ? (
+        ) : activeType === "favorites" && savedItems.length > 0 ? (
           <>
             <motion.div
               variants={containerVariants}
@@ -188,7 +231,7 @@ function SavedPageContent() {
               animate="visible"
               className="flex flex-col gap-6 max-w-2xl mx-auto"
             >
-              {savedItems.map((item) => (
+              {savedItems.map((item: any) => (
                 <motion.div key={item.favorite.id} variants={itemVariants}>
                   <FavoriteCard
                     favorite={item.favorite}
@@ -199,6 +242,35 @@ function SavedPageContent() {
                       username: item.author.username,
                       avatar: item.author.avatar,
                     }}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <div ref={loadMoreRef} className="flex justify-center py-8">
+              {isFetchingNextPage && (
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              )}
+            </div>
+          </>
+        ) : activeType === "capsules" && savedCapsules.length > 0 ? (
+          <>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-col max-w-2xl mx-auto"
+            >
+              {savedCapsules.map((item: any) => (
+                <motion.div key={item.capsule.id} variants={itemVariants}>
+                  <TimeCapsuleCard
+                    capsule={item.capsule}
+                    onClick={() => router.push(`/capsules/${item.capsule.id}`)}
+                    authorName={item.author.displayName || item.author.username}
+                    authorAvatar={item.author.avatar}
+                    authorID={item.author.id}
+                    showActions={false}
+                    variant="list"
                   />
                 </motion.div>
               ))}

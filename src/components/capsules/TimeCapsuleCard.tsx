@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { TimeCapsule } from "@/types/wishbook";
 import {
-  Calendar,
   Lock,
-  Film,
   MoreHorizontal,
   Heart,
   MessageCircle,
   ArrowRight,
+  BookmarkMinus,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleCapsuleLove } from "@/features/capsules/api";
@@ -22,6 +21,8 @@ import {
 import { cn, getOptimizedUrl } from "@/lib/utils";
 import { useNotifications } from "@/features/notifications/NotificationsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useCapsuleSave } from "@/hooks/useCapsuleSave";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { Wrapper } from "./Wrapper";
@@ -37,6 +38,7 @@ interface TimeCapsuleCardProps {
   authorSubtitle?: string;
   authorAvatar?: string | null;
   authorID?: string | null | undefined;
+  variant?: "grid" | "list";
 }
 
 export function TimeCapsuleCard({
@@ -50,6 +52,7 @@ export function TimeCapsuleCard({
   authorSubtitle,
   authorAvatar,
   authorID,
+  variant = "grid",
 }: TimeCapsuleCardProps) {
   const visibility = capsule.visibility ?? "public";
   const unlockLabel =
@@ -69,6 +72,13 @@ export function TimeCapsuleCard({
   const [commentCount, setCommentCount] = useState(capsule.commentCount ?? 0);
   const [showComments, setShowComments] = useState(false);
   const { joinCapsule, leaveCapsule } = useNotifications();
+
+  const { user } = useAuth();
+  const isOwner = user?.id === (authorID || capsule.userId);
+  const { saved, toggleSave, isToggling } = useCapsuleSave(
+    capsule.id,
+    isOwner,
+  );
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =
@@ -119,6 +129,158 @@ export function TimeCapsuleCard({
     },
   });
 
+  const saveDropdownMenu = !showActions && !isOwner && user ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-white/5 focus:outline-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenuItem
+          disabled={isToggling}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSave();
+          }}
+        >
+          {saved ? "Remove from saved" : "Save to collection"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
+
+  const actionsDropdownMenu = showActions ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-white/5 focus:outline-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {onEdit && (
+          <DropdownMenuItem onClick={onEdit}>
+            Edit capsule
+          </DropdownMenuItem>
+        )}
+        {onToggleVisibility && (
+          <DropdownMenuItem
+            onClick={() =>
+              onToggleVisibility(
+                visibility === "public" ? "private" : "public",
+              )
+            }
+          >
+            {visibility === "public" ? "Make private" : "Make public"}
+          </DropdownMenuItem>
+        )}
+        {onDelete && (
+          <DropdownMenuItem
+            className="text-red-500 focus:text-red-500"
+            onClick={onDelete}
+          >
+            Delete
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
+
+  if (variant === "list") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        onClick={onClick}
+        className="group relative flex rounded-2xl overflow-hidden bg-muted border border-white/5 hover:border-primary/20 transition-colors cursor-pointer mb-4"
+      >
+        {coverUrl && (
+          <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden bg-black/80 flex items-center justify-center">
+            {isVideoCover ? (
+              <VideoPlayer
+                src={coverUrl}
+                videoClassName="w-full h-full object-cover"
+              />
+            ) : (
+              <img
+                src={getOptimizedUrl(coverUrl, 800)}
+                alt={capsule.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            )}
+          </div>
+        )}
+        <div className="flex-1 flex flex-col justify-center px-3 py-2 sm:px-4 sm:py-3 relative">
+          <div className="absolute top-2 right-2 flex items-center gap-1">
+            {actionsDropdownMenu}
+            {!showActions && !isOwner && user && saved && (
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 focus:outline-none transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSave();
+                }}
+                disabled={isToggling}
+                title="Remove from saved"
+              >
+                <BookmarkMinus className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mb-1 pr-6">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+              Time Capsule
+            </span>
+            {visibility !== "public" && (
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Lock className="w-3 h-3" />
+                {visibility === "private" ? "Private" : unlockLabel}
+              </span>
+            )}
+          </div>
+          <h3 className="font-display text-sm sm:text-base font-semibold text-foreground truncate max-w-[200px] sm:max-w-[300px] group-hover:text-primary transition-colors">
+            {capsule.title}
+          </h3>
+          <div className="text-[11px] text-muted-foreground truncate max-w-[200px] sm:max-w-[300px] flex items-center gap-1.5">
+            By <span className="font-medium text-foreground/80">{displayAuthorName}</span>
+          </div>
+
+          {capsule.description && (
+            <div className="mt-1.5 hidden sm:block relative">
+              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {capsule.description}
+              </p>
+              {capsule.description.length > 90 && (
+                <span className="text-[10px] text-primary/70 font-medium inline-block mt-0.5">
+                  ...see more
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -151,49 +313,8 @@ export function TimeCapsuleCard({
             </span>
           </div>
         </Wrapper>
-        {showActions && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-white/5 focus:outline-none"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-40"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {onEdit && (
-                <DropdownMenuItem onClick={onEdit}>
-                  Edit capsule
-                </DropdownMenuItem>
-              )}
-              {onToggleVisibility && (
-                <DropdownMenuItem
-                  onClick={() =>
-                    onToggleVisibility(
-                      visibility === "public" ? "private" : "public",
-                    )
-                  }
-                >
-                  {visibility === "public" ? "Make private" : "Make public"}
-                </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <DropdownMenuItem
-                  className="text-red-500 focus:text-red-500"
-                  onClick={onDelete}
-                >
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        {actionsDropdownMenu}
+        {saveDropdownMenu}
       </div>
 
       {/* Meta row */}

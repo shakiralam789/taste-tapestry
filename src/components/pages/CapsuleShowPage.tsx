@@ -10,6 +10,8 @@ import { useWishbook } from "@/contexts/WishbookContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, TimeCapsule } from "@/types/wishbook";
 import { getCapsule, toggleCapsuleLove, updateCapsule } from "@/features/capsules/api";
+import { getPublicProfile } from "@/features/users/api";
+import { formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft,
   Clock,
@@ -22,6 +24,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VideoThumbnail } from "@/components/common/VideoThumbnail";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
@@ -60,6 +63,12 @@ export default function CapsuleShowPage() {
     queryKey: ["capsule", id],
     queryFn: () => getCapsule(id),
     enabled: !!id,
+  });
+
+  const { data: author } = useQuery({
+    queryKey: ["user", capsule?.userId],
+    queryFn: () => getPublicProfile(capsule!.userId),
+    enabled: !!capsule?.userId,
   });
 
   const capsuleFavorites = useMemo(
@@ -269,9 +278,29 @@ export default function CapsuleShowPage() {
               <Clock className="w-3.5 h-3.5" />
               {capsule.period || "Time period not set"}
             </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1">
               {capsule.title}
             </h1>
+            
+            {author && (
+              <div className="flex items-center gap-3 mt-3 mb-1">
+                <Link href={`/users/${author.id}`}>
+                  <Avatar className="w-10 h-10 ring-2 ring-primary/20 hover:ring-primary/50 transition-all cursor-pointer">
+                    <AvatarImage src={author.avatar ?? undefined} />
+                    <AvatarFallback>{author.displayName?.[0] ?? author.username?.[0] ?? "U"}</AvatarFallback>
+                  </Avatar>
+                </Link>
+                <div className="flex flex-col">
+                  <Link href={`/users/${author.id}`} className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer">
+                    {author.displayName || author.username}
+                  </Link>
+                  <span className="text-[11px] text-muted-foreground/80">
+                    Posted {capsule.createdAt ? formatDistanceToNow(new Date(capsule.createdAt)) : ""} ago
+                  </span>
+                </div>
+              </div>
+            )}
+
             {capsule.description && (
               <p className="text-sm text-muted-foreground max-w-xl">
                 {capsule.description}
