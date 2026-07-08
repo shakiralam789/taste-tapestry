@@ -13,7 +13,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useImpressionTracker } from '@/hooks/useImpressionTracker';
 import { useClickTracker } from '@/hooks/useClickTracker';
+import { useFavoriteSave } from '@/hooks/useFavoriteSave';
 import { useAuth } from '@/features/auth/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface FavoriteCardProps {
   favorite: Favorite;
@@ -24,13 +26,27 @@ interface FavoriteCardProps {
     avatar: string | null;
   };
   matchPercentage?: number | null;
+  /** Show save/unsave bookmark — enabled on saved page only */
+  showSaveButton?: boolean;
 }
 
-export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentage }: FavoriteCardProps) {
+export function FavoriteCard({
+  favorite,
+  onClick,
+  authorOverride,
+  matchPercentage,
+  showSaveButton = false,
+}: FavoriteCardProps) {
   const { allUsers, categories } = useWishbook();
   const { user } = useAuth();
   const router = useRouter();
   const [showEmotionalJourney, setShowEmotionalJourney] = useState(false);
+  const isOwner = user?.id === favorite.userId;
+  const { saved, toggleSave, isToggling } = useFavoriteSave(
+    favorite.id,
+    isOwner,
+    { enabled: showSaveButton },
+  );
 
   const category = categories.find(c => c.id === favorite.categoryId);
 
@@ -91,11 +107,16 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
       {/* Main horizontal layout */}
       <div className="flex">
         {/* Left: Poster Image */}
-        <div className="relative flex-shrink-0 w-28 md:w-36 bg-black/60 overflow-hidden">
+        <div
+          onClick={(e) => {
+            if (user?.id !== favorite.userId) trackClick(favorite.id);
+            if (onClick) onClick();
+          }}
+          className="group cursor-pointer relative flex-shrink-0 w-28 md:w-36 bg-black/60 overflow-hidden">
           <img
             src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
             alt={favorite.title}
-            className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-125"
+            className="duration-300 group-hover:scale-105 absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-125"
             onError={(e) => {
               e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
             }}
@@ -103,7 +124,7 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
           <img
             src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
             alt={favorite.title}
-            className="relative w-full h-full object-cover z-10"
+            className="duration-300 group-hover:scale-105 relative w-full h-full object-cover z-10"
             onError={(e) => {
               e.currentTarget.src = getFavoriteCoverImage("", favorite.categoryId);
             }}
@@ -207,11 +228,33 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
               >
                 <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-muted-foreground hover:text-primary hover:bg-primary/10 px-1.5 rounded-full group">
-                <Bookmark className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              </Button>
+              {!isOwner && showSaveButton && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 px-1.5 rounded-full group",
+                    saved
+                      ? "text-primary hover:text-primary hover:bg-primary/10"
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+                  )}
+                  disabled={isToggling}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSave();
+                  }}
+                  title={saved ? "Remove from saved" : "Save"}
+                >
+                  <Bookmark
+                    className={cn(
+                      "w-3.5 h-3.5 group-hover:scale-110 transition-transform",
+                      saved && "fill-current",
+                    )}
+                  />
+                </Button>
+              )}
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 text-[11px] text-muted-foreground mr-2">
                 {user?.id === favorite.userId && (
@@ -250,8 +293,8 @@ export function FavoriteCard({ favorite, onClick, authorOverride, matchPercentag
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowEmotionalJourney(prev => !prev); }}
               className={`w-full flex items-center justify-between px-4 py-2.5 transition-all text-xs group ${showEmotionalJourney
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-card/20 text-muted-foreground hover:bg-card/40 hover:text-foreground'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-card/20 text-muted-foreground hover:bg-card/40 hover:text-foreground'
                 }`}
             >
               <div className="flex items-center gap-2">

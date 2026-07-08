@@ -15,6 +15,7 @@ import {
   Search,
   Film,
   Users,
+  Bookmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ const navItems = [
   { path: "/discover", icon: Compass, label: "Discover" },
   { path: "/mood", icon: Sparkles, label: "Moods" },
   { path: "/matches", icon: Heart, label: "Matches" },
+  { path: "/saved", icon: Bookmark, label: "Saved" },
   // { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: "/profile", icon: User, label: "Profile" },
 ];

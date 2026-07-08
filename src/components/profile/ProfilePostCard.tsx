@@ -1,11 +1,14 @@
 "use client";
 import { Favorite } from "@/types/wishbook";
 import { motion } from "framer-motion";
-import { Star, Eye, MousePointerClick, Share2 } from "lucide-react";
+import { Star, Eye, MousePointerClick, Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import { useImpressionTracker } from "@/hooks/useImpressionTracker";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useClickTracker } from "@/hooks/useClickTracker";
+import { useFavoriteSave } from "@/hooks/useFavoriteSave";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { PrivateBadge } from "@/components/common/PrivateBadge";
 import { DraftBadge } from "@/components/common/DraftBadge";
 import { getCategoryCardSubtitle } from "@/features/favorites/category-fields";
@@ -25,6 +28,10 @@ export function ProfilePostCard({
 }: ProfilePostCardProps) {
   const { user } = useAuth();
   const isOwner = user?.id === favorite.userId;
+  const { saved, toggleSave, isToggling } = useFavoriteSave(
+    favorite.id,
+    isOwner,
+  );
 
   const { ref } = useImpressionTracker({
     itemId: favorite.id,
@@ -64,6 +71,30 @@ export function ProfilePostCard({
     }
   };
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSave();
+  };
+
+  const saveButton = !isOwner ? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      disabled={isToggling}
+      onClick={handleSave}
+      title={saved ? "Remove from saved" : "Save"}
+      className={cn(
+        "h-7 px-1.5 rounded-full group",
+        saved
+          ? "text-primary hover:text-primary hover:bg-primary/10"
+          : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+      )}
+    >
+      <Bookmark className={cn("w-4 h-4", saved && "fill-current")} />
+    </Button>
+  ) : null;
+
   if (variant === "list") {
     return (
       <motion.div
@@ -71,6 +102,7 @@ export function ProfilePostCard({
         whileHover={{ y: -3 }}
         className="group relative flex rounded-2xl overflow-hidden bg-muted border border-white/5"
       >
+        
         <div className="w-28 sm:w-32 h-24 sm:h-28 flex-shrink-0 overflow-hidden cursor-pointer" onClick={handleTitleClick}>
           <img
             src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
@@ -134,6 +166,9 @@ export function ProfilePostCard({
             >
               <Share2 className="w-3.5 h-3.5" />
             </button>
+            {saveButton && (
+          <>{saveButton}</>
+        )}
           </div>
         </div>
       </motion.div>
@@ -148,6 +183,9 @@ export function ProfilePostCard({
       whileHover={{ y: -5 }}
       className="group relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer bg-muted border border-white/5"
     >
+      {/* {saveButton && (
+        <div className="absolute top-3 right-3 z-20">{saveButton}</div>
+      )} */}
       {/* Background Image */}
       <img
         src={getFavoriteCoverImage(favorite.image, favorite.categoryId)}
