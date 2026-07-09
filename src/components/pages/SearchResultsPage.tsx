@@ -269,6 +269,7 @@ function SearchResultsContent() {
                     onClick={() => router.push(`/favorites/${favorite.id}`)}
                     authorOverride={meta.authorOverride}
                     matchPercentage={meta.matchPercentage}
+                    showSaveButton
                   />
                 </motion.div>
               ))}

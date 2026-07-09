@@ -15,9 +15,10 @@ import { useNotifications } from "@/features/notifications/NotificationsContext"
 interface CommentSectionProps {
     capsuleId: string;
     isInline?: boolean;
+    onCommentCountChange?: (delta: number) => void;
 }
 
-export function CommentSection({ capsuleId, isInline = false }: CommentSectionProps) {
+export function CommentSection({ capsuleId, isInline = false, onCommentCountChange }: CommentSectionProps) {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { joinCapsule, leaveCapsule } = useNotifications();
@@ -59,6 +60,10 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
             await queryClient.cancelQueries({ queryKey: ["comments", capsuleId] });
             const previousComments = queryClient.getQueryData<Comment[]>(["comments", capsuleId]);
 
+            if (!newCommentInput.parentId) {
+                onCommentCountChange?.(1);
+            }
+
             const tempComment: any = {
                 id: `temp-${Date.now()}`,
                 content: newCommentInput.content,
@@ -88,8 +93,11 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
 
             return { previousComments };
         },
-        onError: (_err, _newComment, context) => {
+        onError: (_err, newComment, context) => {
             queryClient.setQueryData(["comments", capsuleId], context?.previousComments);
+            if (!newComment.parentId) {
+                onCommentCountChange?.(-1);
+            }
             toast.error("Could not post comment");
         },
         onSuccess: () => {
@@ -99,6 +107,7 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
             void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
             void queryClient.invalidateQueries({ queryKey: ["capsules"] });
             void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
+            void queryClient.invalidateQueries({ queryKey: ["feed", "timeline"] });
         },
     });
 
@@ -178,6 +187,7 @@ export function CommentSection({ capsuleId, isInline = false }: CommentSectionPr
             void queryClient.invalidateQueries({ queryKey: ["comments", capsuleId] });
             void queryClient.invalidateQueries({ queryKey: ["capsules"] });
             void queryClient.invalidateQueries({ queryKey: ["capsule", capsuleId] });
+            void queryClient.invalidateQueries({ queryKey: ["feed", "timeline"] });
         },
     });
 

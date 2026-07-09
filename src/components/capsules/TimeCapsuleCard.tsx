@@ -423,7 +423,13 @@ export function TimeCapsuleCard({
         {/* Inline Comment Section */}
         {showComments && (
           <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-            <CommentSection capsuleId={capsule.id} isInline />
+            <CommentSection
+              capsuleId={capsule.id}
+              isInline
+              onCommentCountChange={(delta) =>
+                setCommentCount((prev) => Math.max(prev + delta, 0))
+              }
+            />
           </div>
         )}
       </div>

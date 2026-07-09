@@ -1077,7 +1077,7 @@ export default function FavoriteShowPage() {
             <section className={"mt-2"}>
               <div className={showRelatedSidebar ? "space-y-4" : ""}>
                 {/* Why it matters */}
-                <section className="rounded-xl border border-white/5 bg-card/40 p-4 2xl:mb-6 mb-4">
+               {favorite?.whyILike && <section className="rounded-xl border border-white/5 bg-card/40 p-4 2xl:mb-6 mb-4">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
                     <Heart className="w-3.5 h-3.5" />
                     Why it matters
@@ -1085,7 +1085,7 @@ export default function FavoriteShowPage() {
                   <p className="text-sm text-foreground leading-relaxed">
                     {favorite.whyILike}
                   </p>
-                </section>
+                </section>}
 
                 {/* Mood & tags */}
                 {showMoodTags && (
