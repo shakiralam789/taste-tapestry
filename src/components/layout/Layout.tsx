@@ -20,7 +20,7 @@ interface LayoutProps {
 export function Layout({ children, className }: LayoutProps) {
   const pathname = usePathname();
 
-  const isHomePage = pathname === "/";
+  const isHomePage = pathname === "/" || pathname.startsWith("/feed");
   const isProfilePage = false;
   const isMessagesPage = pathname.startsWith("/messages");
   const isClient = typeof window !== "undefined";

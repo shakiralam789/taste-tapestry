@@ -34,10 +34,11 @@ import { getTotalUnreadCount } from "@/features/messages/api";
 import { globalSearchItems, type GlobalSearchItemResult } from "@/features/users/api";
 
 const navItems = [
-  { path: "/", icon: Home, label: "Home" },
-  { path: "/discover", icon: Compass, label: "Collections" },
-  { path: "/capsules", icon: Clock, label: "Capsules" },
+  { path: "/", icon: Home, label: "All" },
+  { path: "/feed/capsules", icon: Compass, label: "Capsules" },
+  { path: "/feed/collections", icon: Clock, label: "Collections" },
 ];
+
 
 export function Navbar() {
   const pathname = usePathname();
