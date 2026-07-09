@@ -160,6 +160,7 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
                     key={`feed-${post.capsule.id}`}
                     favorite={fav}
                     onClick={() => router.push(`/favorites/${fav.id}`)}
+                    showSaveButton
                     authorOverride={{
                       name: post.author.displayName || post.author.username || "Unknown",
                       username: post.author.username || "Unknown",
