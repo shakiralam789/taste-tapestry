@@ -8,12 +8,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CATEGORY_TABS } from "@/features/albums/constants";
+import { FavoriteCard } from "@/components/favorites/FavoriteCard";
 import { ProfilePostCard } from "@/components/profile/ProfilePostCard";
 import { ProfilePostCardSkeleton } from "@/components/profile/ProfilePostCardSkeleton";
 import type { Favorite } from "@/types/wishbook";
 import { Button } from "@/components/ui/button";
 import { AddToAlbumDropdown } from "@/components/albums/AddToAlbumDropdown";
 import { getAlbums, updateAlbum } from "@/features/albums/api";
+import { createCapsule } from "@/features/capsules/api";
 
 import {
   Dialog,
@@ -33,6 +35,7 @@ import {
   Trash2,
   ChevronRight,
   PenIcon,
+  Send,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -67,6 +70,8 @@ export default function MyCollections() {
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [albumPickerFavorite, setAlbumPickerFavorite] =
     useState<Favorite | null>(null);
+  const [publishFavorite, setPublishFavorite] = useState<Favorite | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["favorites", selectedCategoryFilter],
@@ -113,6 +118,31 @@ export default function MyCollections() {
     },
     onError: () => toast.error("Could not update visibility"),
   });
+
+  const handlePublishAsPost = async () => {
+    if (!publishFavorite || !authUser) return;
+    setIsPublishing(true);
+    try {
+      const capsule = await createCapsule({
+        title: publishFavorite.title,
+        description: publishFavorite.whyILike,
+        period: publishFavorite.timePeriod || "My Collection",
+        image: publishFavorite.image,
+        favorites: [publishFavorite.id],
+        emotions: publishFavorite.mood,
+        visibility: "public",
+      });
+      toast.success("Posted as time capsule!");
+      void queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      void queryClient.invalidateQueries({ queryKey: ["feed", "timeline"] });
+      setPublishFavorite(null);
+      router.push(`/capsules/${capsule.id}`);
+    } catch {
+      toast.error("Could not publish as post");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -316,6 +346,16 @@ export default function MyCollections() {
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        className="flex items-center gap-2 cursor-pointer"
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          setPublishFavorite(favorite);
+                        }}
+                      >
+                        <Send className="w-4 h-4" />
+                        Publish as post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                         onSelect={(e) => {
                           e.preventDefault();
@@ -411,6 +451,50 @@ export default function MyCollections() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Publish as post dialog */}
+      <Dialog
+        open={!!publishFavorite}
+        onOpenChange={(open) => {
+          if (!open) setPublishFavorite(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-base">Publish as post</DialogTitle>
+          </DialogHeader>
+          {publishFavorite && (
+            <div className="space-y-4">
+              <FavoriteCard
+                favorite={publishFavorite}
+                onClick={() => router.push(`/favorites/${publishFavorite.id}`)}
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  className="rounded-full gap-1.5"
+                  disabled={isPublishing}
+                  onClick={handlePublishAsPost}
+                >
+                  {isPublishing ? (
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-background border-t-transparent animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  {isPublishing ? "Publishing..." : "Publish as post"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="rounded-full"
+                  onClick={() => setPublishFavorite(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={albumPickerOpen}

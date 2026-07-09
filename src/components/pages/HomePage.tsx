@@ -1,27 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { TimeCapsuleCardSkeleton } from "@/components/capsules/TimeCapsuleCardSkeleton";
+import { FavoriteCard } from "@/components/favorites/FavoriteCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTimeline } from "@/features/feed/useTimeline";
+import { getFavorite } from "@/features/favorites/api";
 import { useInView } from "react-intersection-observer";
-import { Clock, Star } from "lucide-react";
+import { Clock, Star, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { FeedPost } from "@/features/feed/api";
 
 type PostType = "capsule" | "collection-review";
+type FeedFilter = "all" | "stories" | "collections";
 
 const CREATE_POST_ROUTES: Record<PostType, string> = {
   capsule: "/create-capsule",
   "collection-review": "/add-favorite",
 };
 
+function isCollectionPost(post: FeedPost): boolean {
+  return post.type === 'capsule' && (post.capsule.favorites?.length ?? 0) > 0;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [postType, setPostType] = useState<PostType>("capsule");
+  const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const { posts, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useTimeline();
   const { ref, inView } = useInView();
 
@@ -30,6 +40,42 @@ export default function HomePage() {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const collectionPostIds = useMemo(
+    () => posts.filter(isCollectionPost).map((p) => p.capsule.favorites![0]),
+    [posts],
+  );
+
+  const collectionFavorites = useQueries({
+    queries: collectionPostIds.map((id) => ({
+      queryKey: ["favorite", id],
+      queryFn: () => getFavorite(id),
+      staleTime: 1000 * 60 * 5,
+      enabled: !!id,
+    })),
+  });
+
+  const favoriteMap = useMemo(() => {
+    const map = new Map<string, NonNullable<(typeof collectionFavorites)[number]["data"]>>();
+    collectionPostIds.forEach((id, i) => {
+      if (collectionFavorites[i]?.data) {
+        map.set(id, collectionFavorites[i].data!);
+      }
+    });
+    return map;
+  }, [collectionPostIds, collectionFavorites]);
+
+  const filteredPosts = useMemo(() => {
+    if (feedFilter === "all") return posts;
+    if (feedFilter === "stories") return posts.filter((p) => !isCollectionPost(p));
+    return posts.filter(isCollectionPost);
+  }, [posts, feedFilter]);
+
+  const emptyMessage = useMemo(() => {
+    if (feedFilter === "collections") return "No collection posts yet.";
+    if (feedFilter === "stories") return "No stories yet.";
+    return "Your timeline is quiet";
+  }, [feedFilter]);
 
   return (
     <Layout className="px-0 md:px-0 pt-0 md:pt-0">
@@ -85,9 +131,61 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Feed filter tabs */}
+          <div className="px-4 md:px-0 mb-4">
+            <div className="flex items-center gap-1 bg-muted/40 rounded-full p-1 w-fit">
+              {(["all", "stories", "collections"] as FeedFilter[]).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFeedFilter(f)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors capitalize",
+                    feedFilter === f
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {f === "collections" && <Layers className="w-3.5 h-3.5" />}
+                  {f === "stories" && <Clock className="w-3.5 h-3.5" />}
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Feed */}
           <div className="space-y-4 px-4 md:px-0">
-            {posts.map((post) => {
+            {filteredPosts.map((post) => {
+              if (isCollectionPost(post)) {
+                const fav = post.capsule.favorites![0] ? favoriteMap.get(post.capsule.favorites![0]) : undefined;
+                if (!fav) {
+                  return (
+                    <div key={`feed-${post.capsule.id}`} className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden mb-4 animate-pulse">
+                      <div className="flex">
+                        <div className="w-28 md:w-36 bg-muted" />
+                        <div className="flex-1 p-3 md:p-4 space-y-3">
+                          <div className="h-4 bg-muted rounded w-1/3" />
+                          <div className="h-5 bg-muted rounded w-2/3" />
+                          <div className="h-3 bg-muted rounded w-full" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <FavoriteCard
+                    key={`feed-${post.capsule.id}`}
+                    favorite={fav}
+                    onClick={() => router.push(`/favorites/${fav.id}`)}
+                    authorOverride={{
+                      name: post.author.displayName || post.author.username || "Unknown",
+                      username: post.author.username,
+                      avatar: post.author.avatar,
+                    }}
+                  />
+                );
+              }
               if (post.type === 'capsule') {
                 return (
                   <TimeCapsuleCard
@@ -98,11 +196,11 @@ export default function HomePage() {
                     authorAvatar={post.author.avatar}
                     authorID={post.author.id}
                     authorSubtitle={`Time capsule • ${post.capsule.period || 'A moment'}`}
-                    showActions={false} 
+                    showActions={false}
                   />
                 );
               }
-              return null; // For future extensibility (e.g., 'favorite' type)
+              return null;
             })}
 
             {/* Loading / Sentinel */}
@@ -115,21 +213,27 @@ export default function HomePage() {
             <div ref={ref} className="h-10 w-full" />
 
             {/* Empty State */}
-            {!isLoading && posts.length === 0 && (
+            {!isLoading && filteredPosts.length === 0 && (
               <div className="text-center py-20 text-muted-foreground">
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
                   <Clock className="w-10 h-10 text-muted-foreground/50" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-foreground">Your timeline is quiet</h3>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">{emptyMessage}</h3>
                 <p className="mb-6 max-w-sm mx-auto">
-                  Follow people to see their time capsules here, or create your own to get started.
+                  {feedFilter === "collections"
+                    ? "When someone publishes a collection as a post, it will appear here."
+                    : "Follow people to see their time capsules here, or create your own to get started."}
                 </p>
-                <Link href="/discover">
-                  <Button variant="outline" className="mr-3">Discover People</Button>
-                </Link>
-                <Link href="/create-capsule">
-                  <Button variant="gradient">Create Capsule</Button>
-                </Link>
+                {feedFilter === "all" && (
+                  <>
+                    <Link href="/discover">
+                      <Button variant="outline" className="mr-3">Discover People</Button>
+                    </Link>
+                    <Link href="/create-capsule">
+                      <Button variant="gradient">Create Capsule</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
