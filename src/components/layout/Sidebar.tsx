@@ -3,14 +3,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home,
-  Compass,
   Sparkles,
-  Clock,
   Heart,
-  MessageCircle,
   User,
-  LogOut,
   Settings,
   Search,
   Film,
@@ -26,11 +21,9 @@ import { useQuery } from "@tanstack/react-query";
 import { searchUsers, globalSearchItems, type UserSearchHit, type GlobalSearchItemResult } from "@/features/users/api";
 
 const navItems = [
-  { path: "/discover", icon: Compass, label: "Discover" },
   { path: "/mood", icon: Sparkles, label: "Moods" },
   { path: "/matches", icon: Heart, label: "Matches" },
   { path: "/saved", icon: Bookmark, label: "Saved" },
-  // { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
