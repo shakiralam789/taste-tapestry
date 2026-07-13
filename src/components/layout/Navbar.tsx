@@ -3,15 +3,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home,
-  Compass,
-  User,
   MessageCircle,
   Bell,
-  Sparkles,
-  Clock,
   Search,
   ArrowLeft,
+  Film,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,13 +29,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getTotalUnreadCount } from "@/features/messages/api";
 import { globalSearchItems, type GlobalSearchItemResult } from "@/features/users/api";
 
-const navItems = [
-  { path: "/", icon: Home, label: "All" },
-  { path: "/feed/capsules", icon: Compass, label: "Capsules" },
-  { path: "/feed/collections", icon: Clock, label: "Collections" },
-];
-
-
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -50,6 +39,60 @@ export function Navbar() {
   const [mobileSearching, setMobileSearching] = useState(false);
   const [mobileSearchDropdownOpen, setMobileSearchDropdownOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
+
+  const [desktopSearchQuery, setDesktopSearchQuery] = useState("");
+  const [desktopSearchResults, setDesktopSearchResults] = useState<GlobalSearchItemResult[]>([]);
+  const [desktopSearching, setDesktopSearching] = useState(false);
+  const [desktopSearchDropdownOpen, setDesktopSearchDropdownOpen] = useState(false);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+
+  const runDesktopSearch = useCallback(
+    async (q: string) => {
+      if (!q.trim()) {
+        setDesktopSearchResults([]);
+        return;
+      }
+      setDesktopSearching(true);
+      try {
+        const list = await globalSearchItems(q);
+        setDesktopSearchResults(list);
+        setDesktopSearchDropdownOpen(true);
+      } catch {
+        setDesktopSearchResults([]);
+      } finally {
+        setDesktopSearching(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => runDesktopSearch(desktopSearchQuery), 300);
+    return () => clearTimeout(t);
+  }, [desktopSearchQuery, runDesktopSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        setDesktopSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleDesktopSelectTitle = (title: string) => {
+    setDesktopSearchDropdownOpen(false);
+    setDesktopSearchQuery("");
+    setDesktopSearchResults([]);
+    router.push(`/search?q=${encodeURIComponent(title)}`);
+  };
+
+  const handleDesktopSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && desktopSearchQuery.trim()) {
+      handleDesktopSelectTitle(desktopSearchQuery.trim());
+    }
+  };
 
   const { notifications, unreadCount: notificationsUnreadCount, markAllRead, markAsRead } = useNotifications();
   const { displayName, displayAvatar } = useProfileInfo();
@@ -208,26 +251,50 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="col-span-8 hidden md:flex items-center justify-center gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActive ? "default" : "ghost"}
-                  size="sm"
-                  asChild
-                  className={`gap-2 ${isActive ? "bg-primary text-primary-foreground" : ""
-                    }`}
-                >
-                  <Link href={item.path}>
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </Link>
-                </Button>
-              );
-            })}
+          {/* Desktop Title Search */}
+          <div className="col-span-8 hidden md:flex items-center justify-center" ref={desktopSearchRef}>
+            <div className="relative w-full max-w-md">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <Input
+                value={desktopSearchQuery}
+                onChange={(e) => setDesktopSearchQuery(e.target.value)}
+                onFocus={() => desktopSearchResults.length > 0 && setDesktopSearchDropdownOpen(true)}
+                placeholder="Search anything..."
+                className="pl-10 h-9 bg-muted/50 border-border border rounded-full w-full"
+                onKeyDown={handleDesktopSearchSubmit}
+              />
+              {desktopSearchDropdownOpen && (desktopSearchQuery.trim() || desktopSearchResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 p-1 rounded-xl bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
+                  {desktopSearching ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">Searching...</p>
+                  ) : desktopSearchResults.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      {desktopSearchQuery.trim() ? "No titles found" : "Type to search titles"}
+                    </p>
+                  ) : (
+                    desktopSearchResults.map((res) => (
+                      <button
+                        key={`${res.categoryId}-${res.title}`}
+                        type="button"
+                        onClick={() => handleDesktopSelectTitle(res.title)}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Film className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-medium text-sm truncate">{res.title}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{res.categoryId}</p>
+                          </div>
+                        </div>
+                        <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Section */}

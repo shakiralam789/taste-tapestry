@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useTimeline } from "@/features/feed/useTimeline";
 import { getFavorite } from "@/features/favorites/api";
 import { useInView } from "react-intersection-observer";
-import { Clock, Layers, Star } from "lucide-react";
+import { Clock, Compass, Home, Layers, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedPost } from "@/features/feed/api";
 
@@ -130,6 +130,46 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
                     Post
                   </Button>
                 </div>
+              </div>
+
+              {/* Feed Navigation */}
+              <div className="flex items-center gap-1 px-4 md:px-0 mt-3">
+                <Link
+                  href="/"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                    filter === "all"
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <Home className="w-4 h-4" />
+                  All
+                </Link>
+                <Link
+                  href="/feed/capsules"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                    filter === "capsules"
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <Compass className="w-4 h-4" />
+                  Capsules
+                </Link>
+                <Link
+                  href="/feed/collections"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                    filter === "collections"
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <Clock className="w-4 h-4" />
+                  Collections
+                </Link>
               </div>
             </div>
           )}
