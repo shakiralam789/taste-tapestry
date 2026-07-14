@@ -22,7 +22,7 @@ import { cn, getOptimizedUrl } from "@/lib/utils";
 import { useNotifications } from "@/features/notifications/NotificationsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/AuthContext";
-import { useCapsuleSave } from "@/hooks/useCapsuleSave";
+import { useIsCapsuleSaved, useToggleCapsuleSave } from "@/hooks/useCapsuleSave";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { Wrapper } from "./Wrapper";
@@ -75,10 +75,9 @@ export function TimeCapsuleCard({
 
   const { user } = useAuth();
   const isOwner = user?.id === (authorID || capsule.userId);
-  const { saved, toggleSave, isToggling } = useCapsuleSave(
-    capsule.id,
-    isOwner,
-  );
+  // Read saved-state from the shared IDs cache — no per-card GET.
+  const saved = useIsCapsuleSaved(capsule.id);
+  const { toggle: toggleSave, isToggling } = useToggleCapsuleSave(capsule.id);
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =

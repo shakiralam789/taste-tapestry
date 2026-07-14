@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useImpressionTracker } from '@/hooks/useImpressionTracker';
 import { useClickTracker } from '@/hooks/useClickTracker';
-import { useFavoriteSave } from '@/hooks/useFavoriteSave';
+import { useIsFavoriteSaved, useToggleFavoriteSave } from '@/hooks/useFavoriteSave';
 import { useAuth } from '@/features/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -42,11 +42,9 @@ export function FavoriteCard({
   const router = useRouter();
   const [showEmotionalJourney, setShowEmotionalJourney] = useState(false);
   const isOwner = user?.id === favorite.userId;
-  const { saved, toggleSave, isToggling } = useFavoriteSave(
-    favorite.id,
-    isOwner,
-    { enabled: showSaveButton },
-  );
+  // Read saved-state from the shared IDs cache — no per-card GET.
+  const saved = useIsFavoriteSaved(favorite.id);
+  const { toggle: toggleSave, isToggling } = useToggleFavoriteSave(favorite.id);
 
   const category = categories.find(c => c.id === favorite.categoryId);
 
