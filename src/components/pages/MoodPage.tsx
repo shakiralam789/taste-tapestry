@@ -8,14 +8,11 @@ import { MoodSelector } from "@/components/mood/MoodSelector";
 import { FavoriteCard } from "@/components/favorites/FavoriteCard";
 import { Button } from "@/components/ui/button";
 import { moodOptions } from "@/data/mockData";
-import {
-  useMoodFavorites,
-  useMoodPrefetcher,
-  moodsToKey,
-} from "@/hooks/useMoodFavorites";
+import { useMoodFavorites, useMoodPrefetcher, useMoodMineCount, moodsToKey } from "@/hooks/useMoodFavorites";
 import { getRandomFavorite } from "@/features/favorites/api";
+import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, Mood } from "@/types/wishbook";
-import { Sparkles, RefreshCw, Shuffle, Eye, EyeOff } from "lucide-react";
+import { Sparkles, RefreshCw, Shuffle, Eye, EyeOff, User } from "lucide-react";
 
 // Whitelist of mood slugs accepted in ?moods=. Anything else is dropped.
 const MOOD_IDS = new Set<Mood>(moodOptions.map((m) => m.id as Mood));
@@ -41,6 +38,7 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const { user } = useAuth();
 
   // The URL is the single source of truth. No local `selectedMoods` state —
   // that previously caused a hydration race where the hook fired with an
@@ -50,6 +48,9 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
     () => parseMoodsParam(searchParams.get("moods")),
     [searchParams],
   );
+  // `?scope=mine` switches the result grid to the owner's own collection
+  // prepended with a "Yours" ribbon. Defaults to public discovery.
+  const scopeMine = searchParams.get("scope") === "mine";
 
   const effectiveMoods: Mood[] =
     urlMoods.length > 0
@@ -67,7 +68,15 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
     hasNextPage,
     refetch,
     moodsKey,
-  } = useMoodFavorites(effectiveMoods, { limit: 12 });
+  } = useMoodFavorites(effectiveMoods, {
+    limit: 12,
+    scope: scopeMine ? "mine" : "all",
+  });
+
+  // Cheap count of the caller's own favorites in this mood. Drives the
+  // "Include mine (N)" chip label and is suppressed when the viewer is
+  // anonymous (backend would ignore scope=mine anyway).
+  const { data: mineCount } = useMoodMineCount(effectiveMoods);
 
   // Hover-optimistic prefetch: when a user hovers a chip we warm the cache
   // for that mood's first page. The eventual click resolves from cache and
@@ -112,6 +121,19 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
   const handleReset = useCallback(() => {
     syncUrl([]);
   }, [syncUrl]);
+
+  // Toggle the owner's collection in/out of the discovery grid. We mutate
+  // the same URL params object so `moods` is preserved across toggles.
+  const toggleScopeMine = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (scopeMine) params.delete("scope");
+    else params.set("scope", "mine");
+    const qs = params.toString();
+    const target = qs ? `${pathname}?${qs}` : pathname;
+    startTransition(() => {
+      router.replace(target, { scroll: false });
+    });
+  }, [scopeMine, searchParams, pathname, router]);
 
   // Pick a random favorite from the *currently visible* mood-filtered set,
   // then scroll the page to that card so the user sees it. We re-pick from
@@ -255,11 +277,27 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap items-center">
                   <Button variant="outline" size="sm" onClick={handleReset}>
                     <RefreshCw className="w-4 h-4" />
                     Change Mood
                   </Button>
+                  {user && (mineCount ?? 0) > 0 && (
+                    <Button
+                      variant={scopeMine ? "default" : "outline"}
+                      size="sm"
+                      onClick={toggleScopeMine}
+                      className="gap-1.5"
+                      title={
+                        scopeMine
+                          ? "Hiding your collection from results"
+                          : "Prepend your own favorites with a 'Yours' ribbon"
+                      }
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      {scopeMine ? "Showing mine" : `Include mine (${mineCount})`}
+                    </Button>
+                  )}
                   <Button
                     variant="gradient"
                     size="sm"
@@ -296,6 +334,12 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                       variants={itemVariants}
                       className="rounded-2xl transition-all duration-300"
                     >
+                      {scopeMine && (
+                        <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-[11px] font-medium text-primary">
+                          <User className="w-3 h-3" />
+                          Yours
+                        </div>
+                      )}
                       <FavoriteCard favorite={favorite} />
                     </motion.div>
                   ))}

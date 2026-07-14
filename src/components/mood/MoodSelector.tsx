@@ -14,12 +14,12 @@ const moodGradients: Record<string, string> = {
   happy: 'from-amber-400 to-orange-400',
   sad: 'from-blue-400 to-indigo-500',
   nostalgic: 'from-orange-400 to-amber-600',
-  motivated: 'from-coral to-rose',
-  chill: 'from-teal to-cyan-500',
+  motivated: 'from-red-400 to-rose-500',
+  chill: 'from-teal-400 to-cyan-500',
   lonely: 'from-indigo-400 to-purple-500',
   heartbroken: 'from-rose-400 to-pink-500',
   excited: 'from-yellow-400 to-amber-500',
-  peaceful: 'from-emerald-400 to-teal',
+  peaceful: 'from-emerald-400 to-teal-500',
 };
 
 export function MoodSelector({ moods, selectedMood, onSelect, onHover }: MoodSelectorProps) {

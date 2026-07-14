@@ -95,6 +95,7 @@ export async function getFavoritesByMoods(
   moods: string[],
   limit: number = COLLECTION_PAGE_SIZE,
   sortBy: 'newest' | 'oldest' | 'rating_desc' | 'rating_asc' = 'newest',
+  scope?: 'all' | 'mine',
 ): Promise<FavoritesPageResponse> {
   const params: Record<string, string> = {
     limit: String(limit),
@@ -103,6 +104,7 @@ export async function getFavoritesByMoods(
   };
   const cleaned = moods.map((m) => m.trim()).filter(Boolean);
   if (cleaned.length > 0) params.moods = cleaned.join(',');
+  if (scope === 'mine') params.scope = 'mine';
   const { data } = await apiClient.get<FavoritesPageResponse>('/favorites', {
     params,
   });

@@ -162,7 +162,7 @@ export function FavoriteCard({
               </Avatar>
               <div className="min-w-0">
                 <span
-                  className="text-xs font-medium text-foreground/80 hover:underline cursor-pointer truncate block"
+                  className="capitalize text-xs font-medium text-foreground/80 hover:underline cursor-pointer truncate block"
                   onClick={handleAuthorClick}
                 >
                   {author.name}

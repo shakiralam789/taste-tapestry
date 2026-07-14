@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import {
   useInfiniteQuery,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import type { Favorite } from "@/types/wishbook";
@@ -32,6 +33,32 @@ export function moodsToKey(moods: readonly string[]): string {
     .join(",");
 }
 
+/**
+ * Single-shot count of the caller's own favorites in this mood. Used by the
+ * "Include mine (N)" chip on /mood so users can decide whether to toggle
+ * their collection into the discovery grid. Hits the same paginated
+ * endpoint with limit=1, so the round-trip is tiny.
+ */
+export function useMoodMineCount(moods: readonly string[]) {
+  const key = useMemo(() => moodsToKey(moods), [moods]);
+  return useQuery({
+    queryKey: ["mood-favorites-mine-count", key],
+    queryFn: () => getFavoritesByMoods(0, key.length > 0 ? key.split(",") : [], 1, "newest", "mine"),
+    enabled: key.length > 0,
+    staleTime: 1000 * 60,
+    select: (page) => {
+      // When `scope=mine` is used the endpoint only returns items where
+      // userId === caller. We need a count, not the page contents, but the
+      // backend doesn't expose a count-only route, so we treat
+      // `hasMore || items.length > 0` as ">= 1" and rely on `nextOffset`
+      // for an exact tally on the first page.
+      const base = page.items.length;
+      const extra = page.hasMore ? page.nextOffset - base : 0;
+      return base + extra;
+    },
+  });
+}
+
 // ── Prefetch helper ─────────────────────────────────────────────────────────
 // Hover over a chip → seed the cache so the eventual click resolves from
 // cache. The page must opt in via the `usePrefetchMood()` hook (which
@@ -44,9 +71,9 @@ export function useMoodPrefetcher(limit = 12) {
       const key = moodsToKey(moods);
       if (key.length === 0) return;
       void queryClient.prefetchInfiniteQuery({
-        queryKey: moodFavoritesKey(key),
+        queryKey: [...moodFavoritesKey(key), "all"],
         queryFn: ({ pageParam = 0 }) =>
-          getFavoritesByMoods(pageParam, key.split(","), limit, "newest"),
+          getFavoritesByMoods(pageParam, key.split(","), limit, "newest", "all"),
         initialPageParam: 0,
       });
     },
@@ -67,11 +94,13 @@ export function useMoodFavorites(
     limit?: number;
     sortBy?: "newest" | "oldest" | "rating_desc" | "rating_asc";
     enabled?: boolean;
+    scope?: "all" | "mine";
   },
 ) {
   const key = useMemo(() => moodsToKey(moods), [moods]);
   const limit = options?.limit ?? 12;
   const sortBy = options?.sortBy ?? "newest";
+  const scope = options?.scope ?? "all";
   // Caller must opt in to fetching without a mood. With no moods selected
   // we keep the page in its "pick a mood first" state instead of falling
   // back to the user's own favorites feed (which would be confusing).
@@ -84,10 +113,16 @@ export function useMoodFavorites(
     readonly unknown[],
     number
   >({
-    queryKey: moodFavoritesKey(key),
+    queryKey: [...moodFavoritesKey(key), scope],
     queryFn: ({ pageParam = 0 }) => {
       const moodsForFetch = key.length > 0 ? key.split(",") : [];
-      return getFavoritesByMoods(pageParam, moodsForFetch, limit, sortBy);
+      return getFavoritesByMoods(
+        pageParam,
+        moodsForFetch,
+        limit,
+        sortBy,
+        scope,
+      );
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>

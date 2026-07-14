@@ -196,7 +196,7 @@ function SavedPageContent() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center items-center gap-2 md:gap-3 overflow-x-auto py-1 md:mb-6 mb-4 scrollbar-hide px-1"
+            className="flex flex-wrap justify-center items-center gap-2 md:gap-3 py-1 md:mb-6 mb-4 scrollbar-hide px-1"
           >
             {CATEGORY_TABS.map((category) => {
               const Icon = "icon" in category ? category.icon : undefined;
