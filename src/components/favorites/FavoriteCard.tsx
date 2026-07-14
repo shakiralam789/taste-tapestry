@@ -67,7 +67,15 @@ export function FavoriteCard({
 
   const { trackClick } = useClickTracker("feed");
 
-  const author = authorOverride || allUsers.find(u => u.id === favorite.userId) || {
+  const author =
+    authorOverride ||
+    (favorite.author
+      ? {
+          name: favorite.author.name,
+          username: favorite.author.username,
+          avatar: favorite.author.avatar ?? '',
+        }
+      : allUsers.find(u => u.id === favorite.userId)) || {
     name: 'Unknown User',
     username: 'unknown',
     avatar: '',
@@ -111,7 +119,7 @@ export function FavoriteCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden mb-4 hover:border-primary/20 transition-colors"
+      className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden hover:border-primary/20 transition-colors"
     >
       {/* Main horizontal layout */}
       <div className="flex">

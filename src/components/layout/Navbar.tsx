@@ -261,7 +261,7 @@ export function Navbar() {
                 value={desktopSearchQuery}
                 onChange={(e) => setDesktopSearchQuery(e.target.value)}
                 onFocus={() => desktopSearchResults.length > 0 && setDesktopSearchDropdownOpen(true)}
-                placeholder="Search anything..."
+                placeholder="Search movie, song, book..."
                 className="pl-11 pr-4 h-11 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/40 border-2 ring-1 ring-primary/10 focus-visible:ring-primary/40 focus-visible:border-primary rounded-full w-full text-foreground placeholder:text-muted-foreground/80 shadow-sm transition-all"
                 onKeyDown={handleDesktopSearchSubmit}
               />

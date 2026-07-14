@@ -146,6 +146,17 @@ export interface Favorite {
   /** Number of views / impressions */
   viewCount?: number;
   clickCount?: number;
+  /**
+   * Author profile embedded by the backend on mood-filtered feeds and the
+   * blind-rec spin endpoint. Optional because not every endpoint joins users
+   * (e.g. a single favorite fetch without the user relation loaded).
+   */
+  author?: {
+    id: string;
+    name: string;
+    username: string;
+    avatar?: string | null;
+  } | null;
 }
 
 export interface MovieFavorite extends Favorite {

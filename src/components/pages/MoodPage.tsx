@@ -113,6 +113,28 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
     syncUrl([]);
   }, [syncUrl]);
 
+  // Pick a random favorite from the *currently visible* mood-filtered set,
+  // then scroll the page to that card so the user sees it. We re-pick from
+  // the client list (cheap, already in memory) instead of hitting the
+  // backend — this keeps the action instant and respects the user's mood
+  // selection. Falls back to refetch when the list is empty.
+  const handleSurpriseMe = useCallback(() => {
+    if (items.length === 0) {
+      refetch();
+      return;
+    }
+    const choice = items[Math.floor(Math.random() * items.length)];
+    const el = document.getElementById(`favorite-${choice.id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+      setTimeout(
+        () => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"),
+        1800,
+      );
+    }
+  }, [items, refetch]);
+
   // ── Blind-recommendation roulette ────────────────────────────────────────
   // `pick` is the current spin's favorite. `revealed` toggles whether the
   // card is face-up (true) or face-down (false). The "blind" experience:
@@ -241,8 +263,8 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                   <Button
                     variant="gradient"
                     size="sm"
-                    onClick={() => refetch()}
-                    disabled={isFetching}
+                    onClick={handleSurpriseMe}
+                    disabled={items.length === 0 || isFetching}
                   >
                     <Shuffle className="w-4 h-4" />
                     Surprise Me
@@ -268,7 +290,12 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                   className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 >
                   {items.map((favorite) => (
-                    <motion.div key={favorite.id} variants={itemVariants}>
+                    <motion.div
+                      key={favorite.id}
+                      id={`favorite-${favorite.id}`}
+                      variants={itemVariants}
+                      className="rounded-2xl transition-all duration-300"
+                    >
                       <FavoriteCard favorite={favorite} />
                     </motion.div>
                   ))}
