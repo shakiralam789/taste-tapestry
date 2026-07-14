@@ -6,6 +6,8 @@ interface MoodSelectorProps {
   moods: MoodOption[];
   selectedMood: string | null;
   onSelect: (moodId: string) => void;
+  /** Optional optimistic prefetch hook — fires when a chip is hovered. */
+  onHover?: (moodId: string) => void;
 }
 
 const moodGradients: Record<string, string> = {
@@ -20,9 +22,9 @@ const moodGradients: Record<string, string> = {
   peaceful: 'from-emerald-400 to-teal',
 };
 
-export function MoodSelector({ moods, selectedMood, onSelect }: MoodSelectorProps) {
+export function MoodSelector({ moods, selectedMood, onSelect, onHover }: MoodSelectorProps) {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+    <div className="flex flex-wrap justify-center gap-3">
       {moods.map((mood, index) => {
         const isSelected = selectedMood === mood.id;
         const gradient = moodGradients[mood.id] || 'from-primary to-secondary';
@@ -36,8 +38,10 @@ export function MoodSelector({ moods, selectedMood, onSelect }: MoodSelectorProp
             whileHover={{ scale: 1.05, y: -4 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onSelect(mood.id)}
+            onMouseEnter={() => onHover?.(mood.id)}
+            onFocus={() => onHover?.(mood.id)}
             className={cn(
-              "relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200",
+              "w-32 h-28 relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200",
               "border-2 group",
               isSelected 
                 ? "border-transparent shadow-elevated" 

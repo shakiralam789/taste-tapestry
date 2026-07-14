@@ -85,6 +85,55 @@ export async function getFavoritesPage(
 
 export { PROFILE_PREVIEW_LIMIT, COLLECTION_PAGE_SIZE };
 
+/**
+ * Mood-filtered public favorites for the /mood discovery pages.
+ * Backend uses `mood && ARRAY[:moods]` overlap (GIN-indexed). Empty moods
+ * returns the newest published favorites.
+ */
+export async function getFavoritesByMoods(
+  offset: number,
+  moods: string[],
+  limit: number = COLLECTION_PAGE_SIZE,
+  sortBy: 'newest' | 'oldest' | 'rating_desc' | 'rating_asc' = 'newest',
+): Promise<FavoritesPageResponse> {
+  const params: Record<string, string> = {
+    limit: String(limit),
+    offset: String(offset),
+    sortBy,
+  };
+  const cleaned = moods.map((m) => m.trim()).filter(Boolean);
+  if (cleaned.length > 0) params.moods = cleaned.join(',');
+  const { data } = await apiClient.get<FavoritesPageResponse>('/favorites', {
+    params,
+  });
+  return {
+    items: (data.items ?? []).map((fav) => ({
+      ...fav,
+      createdAt: new Date(fav.createdAt),
+    })),
+    hasMore: data.hasMore ?? false,
+    nextOffset: data.nextOffset ?? offset + (data.items?.length ?? 0),
+  };
+}
+
+/**
+ * Blind-recommendation roulette. Returns a single random PUBLISHED favorite
+ * from the public pool. Optional `exclude` keeps recent spins from
+ * resurfacing during rapid clicks.
+ */
+export async function getRandomFavorite(
+  exclude?: string[],
+): Promise<Favorite | null> {
+  const params: Record<string, string> = {};
+  const cleaned = (exclude ?? []).map((s) => s.trim()).filter(Boolean);
+  if (cleaned.length > 0) params.exclude = cleaned.join(",");
+  const { data } = await apiClient.get<Favorite | null>("/favorites/random", {
+    params,
+  });
+  if (!data) return null;
+  return { ...data, createdAt: new Date(data.createdAt) };
+}
+
 export async function getFavorite(id: string): Promise<Favorite> {
   const { data } = await apiClient.get<Favorite>(`/favorites/${id}`);
   return {
