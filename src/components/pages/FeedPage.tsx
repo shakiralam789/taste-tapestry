@@ -133,43 +133,51 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
               </div>
 
               {/* Feed Navigation */}
-              <div className="flex items-center gap-1 px-4 md:px-0 mt-3">
-                <Link
-                  href="/"
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                    filter === "all"
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:bg-muted/60",
-                  )}
+              <div className="px-4 md:px-0 mt-3 border-b border-white/10">
+                <nav
+                  aria-label="Feed filters"
+                  className="flex items-center gap-6 -mb-px"
                 >
-                  <Home className="w-4 h-4" />
-                  All
-                </Link>
-                <Link
-                  href="/feed/capsules"
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                    filter === "capsules"
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:bg-muted/60",
-                  )}
-                >
-                  <Compass className="w-4 h-4" />
-                  Capsules
-                </Link>
-                <Link
-                  href="/feed/collections"
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                    filter === "collections"
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:bg-muted/60",
-                  )}
-                >
-                  <Clock className="w-4 h-4" />
-                  Collections
-                </Link>
+                  <Link
+                    href="/"
+                    aria-current={filter === "all" ? "page" : undefined}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 py-2 text-sm font-medium border-b-2 transition-colors",
+                      filter === "all"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20",
+                    )}
+                  >
+                    <Home className="w-4 h-4" />
+                    All
+                  </Link>
+                  <Link
+                    href="/feed/capsules"
+                    aria-current={filter === "capsules" ? "page" : undefined}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 py-2 text-sm font-medium border-b-2 transition-colors",
+                      filter === "capsules"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20",
+                    )}
+                  >
+                    <Compass className="w-4 h-4" />
+                    Capsules
+                  </Link>
+                  <Link
+                    href="/feed/collections"
+                    aria-current={filter === "collections" ? "page" : undefined}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 py-2 text-sm font-medium border-b-2 transition-colors",
+                      filter === "collections"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20",
+                    )}
+                  >
+                    <Clock className="w-4 h-4" />
+                    Collections
+                  </Link>
+                </nav>
               </div>
             </div>
           )}

@@ -194,15 +194,15 @@ export function Navbar() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="relative flex-1 min-w-0">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+                <Search className="w-4 h-4 text-primary" />
               </div>
               <Input
                 value={mobileSearchQuery}
                 onChange={(e) => setMobileSearchQuery(e.target.value)}
                 onFocus={() => mobileSearchResults.length > 0 && setMobileSearchDropdownOpen(true)}
                 placeholder="Search favorites..."
-                className="pl-10 h-8 bg-muted/50 border-border rounded-full w-full"
+                className="pl-11 h-10 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/40 border-2 rounded-full w-full shadow-sm transition-all"
                 onKeyDown={handleSearchSubmit}
                 autoFocus
               />
@@ -253,16 +253,16 @@ export function Navbar() {
 
           {/* Desktop Title Search */}
           <div className="col-span-8 hidden md:flex items-center justify-center" ref={desktopSearchRef}>
-            <div className="relative w-full max-w-md">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
-                <Search className="w-4 h-4 text-muted-foreground" />
+            <div className="relative w-full max-w-xl">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+                <Search className="w-4 h-4 text-primary" />
               </div>
               <Input
                 value={desktopSearchQuery}
                 onChange={(e) => setDesktopSearchQuery(e.target.value)}
                 onFocus={() => desktopSearchResults.length > 0 && setDesktopSearchDropdownOpen(true)}
                 placeholder="Search anything..."
-                className="pl-10 h-9 bg-muted/50 border-border border rounded-full w-full"
+                className="pl-11 pr-4 h-11 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/40 border-2 ring-1 ring-primary/10 focus-visible:ring-primary/40 focus-visible:border-primary rounded-full w-full text-foreground placeholder:text-muted-foreground/80 shadow-sm transition-all"
                 onKeyDown={handleDesktopSearchSubmit}
               />
               {desktopSearchDropdownOpen && (desktopSearchQuery.trim() || desktopSearchResults.length > 0) && (
