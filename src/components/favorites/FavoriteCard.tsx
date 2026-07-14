@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useImpressionTracker } from '@/hooks/useImpressionTracker';
 import { useClickTracker } from '@/hooks/useClickTracker';
-import { useIsFavoriteSaved, useToggleFavoriteSave } from '@/hooks/useFavoriteSave';
+import { useToggleFavoriteSave, useIsFavoriteSaved, useSavedFavoriteIdsReady } from '@/hooks/useFavoriteSave';
 import { useAuth } from '@/features/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,11 @@ interface FavoriteCardProps {
     avatar: string | null;
   };
   matchPercentage?: number | null;
+  /**
+   * Whether the viewer has saved this favorite. Pass from the parent —
+   * the card itself never fetches. This is what makes the timeline fast.
+   */
+  saved?: boolean | null;
   /** Show save/unsave bookmark — enabled on saved page only */
   showSaveButton?: boolean;
 }
@@ -35,6 +40,7 @@ export function FavoriteCard({
   onClick,
   authorOverride,
   matchPercentage,
+  saved = false,
   showSaveButton = false,
 }: FavoriteCardProps) {
   const { allUsers, categories } = useWishbook();
@@ -42,9 +48,14 @@ export function FavoriteCard({
   const router = useRouter();
   const [showEmotionalJourney, setShowEmotionalJourney] = useState(false);
   const isOwner = user?.id === favorite.userId;
-  // Read saved-state from the shared IDs cache — no per-card GET.
-  const saved = useIsFavoriteSaved(favorite.id);
   const { toggle: toggleSave, isToggling } = useToggleFavoriteSave(favorite.id);
+  // The mutation patches the shared SAVED_FAVORITE_IDS_KEY on click, so the
+  // cache is the source of truth once it's loaded. Until then we fall back
+  // to the prop (server truth at render time) so the icon paints correctly
+  // on first render.
+  const isSavedFromCache = useIsFavoriteSaved(favorite.id);
+  const cacheLoaded = useSavedFavoriteIdsReady();
+  const isSaved = cacheLoaded ? isSavedFromCache : saved === true;
 
   const category = categories.find(c => c.id === favorite.categoryId);
 
@@ -232,7 +243,7 @@ export function FavoriteCard({
                   size="sm"
                   className={cn(
                     "h-7 px-1.5 rounded-full group",
-                    saved
+                    isSaved
                       ? "text-primary hover:text-primary hover:bg-primary/10"
                       : "text-muted-foreground hover:text-primary hover:bg-primary/10",
                   )}
@@ -241,12 +252,12 @@ export function FavoriteCard({
                     e.stopPropagation();
                     toggleSave();
                   }}
-                  title={saved ? "Remove from saved" : "Save"}
+                  title={isSaved ? "Saved to collection" : "Save to collection"}
                 >
                   <Bookmark
                     className={cn(
                       "w-3.5 h-3.5 group-hover:scale-110 transition-transform",
-                      saved && "fill-current",
+                      isSaved && "fill-current",
                     )}
                   />
                 </Button>

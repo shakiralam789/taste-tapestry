@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { TimeCapsuleCard } from "@/components/capsules/TimeCapsuleCard";
 import { TimeCapsuleCardSkeleton } from "@/components/capsules/TimeCapsuleCardSkeleton";
@@ -10,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTimeline } from "@/features/feed/useTimeline";
-import { getFavorite } from "@/features/favorites/api";
 import { useInView } from "react-intersection-observer";
 import { Clock, Compass, Home, Layers, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,30 +38,8 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const collectionPostIds = useMemo(
-    () => posts.filter(isCollectionPost).map((p) => p.capsule.favorites![0]),
-    [posts],
-  );
-
-  const collectionFavorites = useQueries({
-    queries: collectionPostIds.map((id) => ({
-      queryKey: ["favorite", id],
-      queryFn: () => getFavorite(id),
-      staleTime: 1000 * 60 * 5,
-      enabled: !!id,
-    })),
-  });
-
-  const favoriteMap = useMemo(() => {
-    const map = new Map<string, NonNullable<(typeof collectionFavorites)[number]["data"]>>();
-    collectionPostIds.forEach((id, i) => {
-      if (collectionFavorites[i]?.data) {
-        map.set(id, collectionFavorites[i].data!);
-      }
-    });
-    return map;
-  }, [collectionPostIds, collectionFavorites]);
-
+  // Collection posts already ship their linked Favorite inside the
+  // timeline payload (`post.capsule.favorite`) — no `useQueries` waterfall.
   const filteredPosts = useMemo(() => {
     if (filter === "all") return posts;
     if (filter === "capsules") return posts.filter((p) => !isCollectionPost(p));
@@ -188,7 +164,8 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
           <div className="space-y-4 px-4 md:px-0">
             {filteredPosts.map((post) => {
               if (isCollectionPost(post)) {
-                const fav = post.capsule.favorites![0] ? favoriteMap.get(post.capsule.favorites![0]) : undefined;
+                // Favorite is inlined in the timeline payload; render directly.
+                const fav = post.capsule.favorite ?? null;
                 if (!fav) {
                   return (
                     <div key={`feed-${post.capsule.id}`} className="bg-card/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden mb-4 animate-pulse">
@@ -209,6 +186,7 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
                     favorite={fav}
                     onClick={() => router.push(`/favorites/${fav.id}`)}
                     showSaveButton
+                    saved={post.favoriteSavedByMe ?? false}
                     authorOverride={{
                       name: post.author.displayName || post.author.username || "Unknown",
                       username: post.author.username || "Unknown",

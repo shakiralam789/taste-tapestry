@@ -22,7 +22,7 @@ import { cn, getOptimizedUrl } from "@/lib/utils";
 import { useNotifications } from "@/features/notifications/NotificationsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/AuthContext";
-import { useIsCapsuleSaved, useToggleCapsuleSave } from "@/hooks/useCapsuleSave";
+import { useToggleCapsuleSave, useIsCapsuleSaved, useSavedCapsuleIdsReady } from "@/hooks/useCapsuleSave";
 import { VideoPlayer } from "@/components/common/VideoPlayer";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { Wrapper } from "./Wrapper";
@@ -75,9 +75,17 @@ export function TimeCapsuleCard({
 
   const { user } = useAuth();
   const isOwner = user?.id === (authorID || capsule.userId);
-  // Read saved-state from the shared IDs cache — no per-card GET.
-  const saved = useIsCapsuleSaved(capsule.id);
+  // Saved state travels with the timeline payload (capsule.savedByMe) so
+  // this card never triggers a fetch. /saved page passes `saved` directly
+  // via the same hook result; for capsules, capsule.savedByMe is the truth.
+  const saved = capsule.savedByMe ?? false;
   const { toggle: toggleSave, isToggling } = useToggleCapsuleSave(capsule.id);
+  // Authoritative saved state lives in the shared IDs cache — patched
+  // optimistically by the mutation, so the icon flips the instant the
+  // user clicks. Until the cache resolves we seed from the prop.
+  const isSavedFromCache = useIsCapsuleSaved(capsule.id);
+  const cacheLoaded = useSavedCapsuleIdsReady();
+  const isSaved = cacheLoaded ? isSavedFromCache : saved;
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =
@@ -151,7 +159,7 @@ export function TimeCapsuleCard({
             toggleSave();
           }}
         >
-          {saved ? "Remove from saved" : "Save to collection"}
+          {isSaved ? "Remove from saved" : "Save to collection"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -229,7 +237,7 @@ export function TimeCapsuleCard({
         <div className="flex-1 flex flex-col justify-center px-3 py-2 sm:px-4 sm:py-3 relative">
           <div className="absolute top-2 right-2 flex items-center gap-1">
             {actionsDropdownMenu}
-            {!showActions && !isOwner && user && saved && (
+            {!showActions && !isOwner && user && isSaved && (
               <button
                 type="button"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 focus:outline-none transition-colors"

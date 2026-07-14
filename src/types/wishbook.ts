@@ -196,6 +196,8 @@ export interface TimeCapsule {
   /** Social love reaction metadata */
   loveCount?: number;
   lovedByMe?: boolean;
+  /** Embedded by the feed when the viewer is authenticated. */
+  savedByMe?: boolean | null;
   commentCount?: number;
   createdAt: Date;
 }

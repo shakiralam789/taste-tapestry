@@ -35,6 +35,15 @@ export function useSavedFavoriteIds() {
   });
 }
 
+// True once the shared IDs query has resolved at least once. Lets cards
+// distinguish "cache is empty because nothing is saved" from "cache hasn't
+// loaded yet" — the prop should only seed the icon during the latter.
+export function useSavedFavoriteIdsReady(): boolean {
+  const { user } = useAuth();
+  const { data, isFetched } = useSavedFavoriteIds();
+  return !!user && isFetched && Array.isArray(data);
+}
+
 // O(1) lookup against the shared IDs list. Safe to call from every card
 // in a list — no extra requests.
 export function useIsFavoriteSaved(favoriteId: string): boolean {
@@ -43,14 +52,20 @@ export function useIsFavoriteSaved(favoriteId: string): boolean {
 }
 
 // ── Mutation-only toggle ───────────────────────────────────────────────────
-// Used inside list cards. Reads + patches the shared IDs cache; never
-// issues a per-card GET.
+// Used inside list cards. Mirrors the love-react shape:
+//   onMutate  → patch the shared IDs cache so every subscribed card flips
+//   onSuccess → sync the per-page ["saved"] lists via setQueriesData (no
+//               refetch, no reorder — saves don't affect ranking)
+//   onError   → roll the cache back to the snapshot taken in onMutate
+// Cards read state via `useIsFavoriteSaved`, which subscribes to the
+// shared cache and re-renders on every patch.
 export function useToggleFavoriteSave(favoriteId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: () => toggleFavoriteSave(favoriteId),
+
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: SAVED_FAVORITE_IDS_KEY });
       const previous =
@@ -60,25 +75,42 @@ export function useToggleFavoriteSave(favoriteId: string) {
         ? previous.filter((id) => id !== favoriteId)
         : [...previous, favoriteId];
       queryClient.setQueryData<string[]>(SAVED_FAVORITE_IDS_KEY, next);
-      // Mirror the optimistic state into the per-favorite key too, in case
-      // the detail page has it cached.
+      // Mirror into the per-favorite key in case the detail page is mounted.
       queryClient.setQueryData(favoriteSaveKey(favoriteId), {
         saved: !isSaved,
       });
       return { previous, isSaved };
     },
+
     onError: (_err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(SAVED_FAVORITE_IDS_KEY, context.previous);
       }
+      queryClient.setQueryData(favoriteSaveKey(favoriteId), {
+        saved: context?.isSaved ?? false,
+      });
       toast.error("Could not update saved item");
     },
+
     onSuccess: ({ saved }) => {
-      // Refetch the canonical list once on success — keeps the cache honest
-      // in case the server applies business rules we don't know about.
-      void queryClient.invalidateQueries({ queryKey: SAVED_FAVORITE_IDS_KEY });
-      void queryClient.invalidateQueries({ queryKey: ["saved"] });
-      toast.success(saved ? "Saved to your list" : "Removed from saved");
+      // Patch any mounted /saved pages so the list shrinks/grows without
+      // a refetch (which would blank the screen and re-rank).
+      queryClient.setQueriesData<any>(
+        { queryKey: ["saved"] },
+        (old: any) => {
+          if (!old || !old.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: (page.items ?? []).filter(
+                (it: any) => it?.favorite?.id !== favoriteId,
+              ),
+            })),
+          };
+        },
+      );
+      toast.success(saved ? "Saved to collection" : "Removed from saved");
     },
   });
 
@@ -140,7 +172,7 @@ export function useFavoriteSave(
       queryClient.setQueryData(favoriteSaveKey(favoriteId), { saved });
       void queryClient.invalidateQueries({ queryKey: ["saved"] });
       void queryClient.invalidateQueries({ queryKey: SAVED_FAVORITE_IDS_KEY });
-      toast.success(saved ? "Saved to your list" : "Removed from saved");
+      toast.success(saved ? "Saved to collection" : "Removed from saved");
     },
   });
 

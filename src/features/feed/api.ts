@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { TimeCapsule } from "@/types/wishbook";
+import type { Favorite, TimeCapsule } from "@/types/wishbook";
 
 export interface FeedAuthor {
   id: string;
@@ -10,7 +10,25 @@ export interface FeedAuthor {
 
 export interface FeedPost {
   type: 'capsule';
-  capsule: TimeCapsule & { loveCount: number; lovedByMe: boolean; commentCount: number };
+  capsule: TimeCapsule & {
+    loveCount: number;
+    lovedByMe: boolean;
+    commentCount: number;
+    /** Whether the viewer has saved this capsule as a time capsule. Null when anonymous. */
+    savedByMe: boolean | null;
+    /**
+     * For collection posts, the linked Favorite payload is inlined by the
+     * backend so the card renders without issuing a per-card GET
+     * `/favorites/:id`. Null when this post is a pure time capsule.
+     */
+    favorite?: Favorite | null;
+  };
+  /**
+   * For collection posts (capsule.favorites non-empty), whether the
+   * viewer has bookmarked the linked Favorite itself. Null when anonymous
+   * or when this post doesn't link a favorite.
+   */
+  favoriteSavedByMe: boolean | null;
   author: FeedAuthor;
   score: number;
 }
@@ -38,6 +56,9 @@ export async function getTimeline(cursor?: string): Promise<FeedResponse> {
         ...p.capsule,
         createdAt: new Date(p.capsule.createdAt),
         unlockAt: p.capsule.unlockAt ? new Date(p.capsule.unlockAt) : undefined,
+        favorite: p.capsule.favorite
+          ? { ...p.capsule.favorite, createdAt: new Date(p.capsule.favorite.createdAt) }
+          : null,
       }
     }))
   };
