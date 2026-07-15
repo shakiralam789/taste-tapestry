@@ -8,6 +8,8 @@ import {
   Search,
   ArrowLeft,
   Film,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +30,10 @@ import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import { useQuery } from "@tanstack/react-query";
 import { getTotalUnreadCount } from "@/features/messages/api";
 import { globalSearchItems, type GlobalSearchItemResult } from "@/features/users/api";
+import {
+  getSystemRecommendations,
+  type RecommendationItem,
+} from "@/features/favorites/api";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -154,6 +160,17 @@ export function Navbar() {
     staleTime: Infinity,
     // Real-time updates handled via Socket.io
   });
+
+  // System-recommendation feed for the Sparkles dropdown. Auto-refreshes every
+  // 60s; React Query handles dedup + cache across mounts.
+  const { data: recFeed, isLoading: recLoading } = useQuery({
+    queryKey: ["recommendations", "system-feed"],
+    queryFn: () => getSystemRecommendations({ limit: 8 }),
+    enabled: !!user,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const recItems: RecommendationItem[] = recFeed?.items ?? [];
 
   const handleNotificationClick = (n: any) => {
     markAsRead(n.id);
@@ -309,6 +326,100 @@ export function Navbar() {
             >
               <Search className="w-5 h-5" />
             </Button>
+            {/* Suggested for you (system recommendations from followed users) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  aria-label="Suggested for you"
+                >
+                  <Sparkles className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-80 p-0 overflow-hidden"
+                align="end"
+                sideOffset={8}
+              >
+                <div
+                  className="overflow-y-auto overflow-x-hidden"
+                  style={{ maxHeight: "calc(100vh - 70px)" }}
+                >
+                  <DropdownMenuLabel className="sticky top-0 bg-card z-10 flex items-center justify-between px-3 py-2">
+                    <span className="text-sm font-semibold">Suggested for you</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      From your network
+                    </span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {recLoading && recItems.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <Sparkles className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">
+                        Finding suggestions…
+                      </p>
+                    </div>
+                  ) : recItems.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <Sparkles className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">
+                        Follow more people to get personalized suggestions.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {recItems.map((item) => (
+                        <DropdownMenuItem
+                          key={`${item.source}:${item.id}`}
+                          onClick={() => router.push(`/favorites/${item.item.id}`)}
+                          className="flex items-center gap-3 p-3 cursor-pointer transition-colors focus:bg-primary/5"
+                        >
+                          {item.item.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.item.image}
+                              alt={item.item.title}
+                              className="w-10 h-10 rounded-md object-cover ring-1 ring-border shrink-0 bg-muted"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-primary/10 ring-1 ring-border shrink-0 flex items-center justify-center text-primary text-sm font-semibold">
+                              {item.item.title[0]?.toUpperCase() ?? "?"}
+                            </div>
+                          )}
+                          <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 w-full">
+                              <span className="font-semibold text-sm truncate">
+                                {item.item.title}
+                              </span>
+                              {item.item.rating != null && (
+                                <span className="text-[10px] text-amber-500 shrink-0 inline-flex items-center gap-0.5">
+                                  <Star className="w-3 h-3 fill-amber-500 stroke-amber-500" />
+                                  {item.item.rating.toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground truncate w-full">
+                              {item.owner.displayName} · @{item.owner.username}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                      <div className="px-3 py-2 flex justify-center bg-muted/30">
+                        <Link
+                          href="/recommendations"
+                          className="text-[11px] font-medium text-primary hover:underline"
+                        >
+                          See all suggestions
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {/* Notifications */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

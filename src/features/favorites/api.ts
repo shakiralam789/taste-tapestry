@@ -203,3 +203,184 @@ export async function trackAnalyticsBatch(
   // Fire and forget
   await apiClient.post("/analytics/batch", { events });
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Recommendation system — ITEMS, not users.
+ *
+ * The "Sparkles" feed surfaces PUBLISHED favorites owned by people the
+ * viewer follows. Each row pairs the item card with a denormalized owner
+ * chip so the dropdown can render at a glance.
+ *
+ * Two flows:
+ *   - System feed: weighted scoring across category match, owner mutuals,
+ *     item rating, engagement, etc. (server-cached, 5-min buckets).
+ *   - Manual: a viewer explicitly recommends a specific favorite (with
+ *     an optional note). Composite UNIQUE prevents duplicates.
+ *
+ * The server is the source of truth for ranking; the client only renders.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+
+export type RecommendationSource = "system" | "manual";
+
+/** Owner chip — the user who published the favorite. */
+export interface RecommendedOwnerCard {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar?: string | null;
+}
+
+/** The favorite itself, shaped for the dropdown card. */
+export interface RecommendedItemCard {
+  id: string;
+  title: string;
+  image: string | null;
+  categoryId: string;
+  rating: number | null;
+  whyILike?: string | null;
+  createdAt: string;
+}
+
+export interface RecommendationItem {
+  id: string;            // favoriteId
+  score: number;
+  rank: number;
+  source: RecommendationSource;
+  item: RecommendedItemCard;
+  owner: RecommendedOwnerCard;
+  manual: boolean;
+  /** Most recent note left by any recommender (manual only). */
+  recentNote?: string | null;
+}
+
+export interface RecommendationFeedResult {
+  items: RecommendationItem[];
+  cached?: boolean;
+  debug?: Record<string, number>;
+}
+
+export async function getSystemRecommendations(
+  params: { limit?: number; debug?: boolean; bust?: boolean } = {},
+): Promise<RecommendationFeedResult> {
+  const { data } = await apiClient.get<RecommendationFeedResult>(
+    "/recommendations/feed",
+    {
+      params: {
+        limit: params.limit,
+        debug: params.debug ? 1 : undefined,
+        fresh: params.bust ? 1 : undefined,
+      },
+    },
+  );
+  return data ?? { items: [] };
+}
+
+export interface PaginatedRecommendedItems {
+  items: RecommendationItem[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
+/** Items recommended BY a given user (paginated). */
+export async function getRecommendedByUser(
+  userId: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<PaginatedRecommendedItems> {
+  const { data } = await apiClient.get<{
+    items: RecommendationItem[];
+    hasMore?: boolean;
+    nextOffset?: number;
+  }>(`/recommendations/recommended-by/${userId}`, {
+    params: { limit: params.limit, offset: params.offset },
+  });
+  const items = data?.items ?? [];
+  return {
+    items,
+    hasMore: data?.hasMore ?? false,
+    nextOffset: data?.nextOffset ?? (params.offset ?? 0) + items.length,
+  };
+}
+
+/** Items the caller has recommended (paginated). */
+export async function getRecommendationsByMe(
+  params: { limit?: number; offset?: number } = {},
+): Promise<PaginatedRecommendedItems> {
+  const { data } = await apiClient.get<{
+    items: RecommendationItem[];
+    hasMore?: boolean;
+    nextOffset?: number;
+  }>(`/recommendations/given`, {
+    params: { limit: params.limit, offset: params.offset },
+  });
+  const items = data?.items ?? [];
+  return {
+    items,
+    hasMore: data?.hasMore ?? false,
+    nextOffset: data?.nextOffset ?? (params.offset ?? 0) + items.length,
+  };
+}
+
+export interface ItemRecommenderRow {
+  user: RecommendedOwnerCard;
+  createdAt: string;
+  note: string | null;
+}
+
+export async function getRecommendersForItem(
+  favoriteId: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<{ items: ItemRecommenderRow[]; hasMore: boolean; nextOffset: number }> {
+  const { data } = await apiClient.get<{
+    items: ItemRecommenderRow[];
+    hasMore?: boolean;
+    nextOffset?: number;
+  }>(`/recommendations/for-item/${favoriteId}`, {
+    params: { limit: params.limit, offset: params.offset },
+  });
+  const items = data?.items ?? [];
+  return {
+    items,
+    hasMore: data?.hasMore ?? false,
+    nextOffset: data?.nextOffset ?? (params.offset ?? 0) + items.length,
+  };
+}
+
+/** Manually recommend an item. */
+export async function manualRecommendFavorite(
+  favoriteId: string,
+  note?: string,
+): Promise<{ id: string; recommenderId: string; favoriteId: string; note: string | null; createdAt: string }> {
+  const { data } = await apiClient.post<{
+    id: string;
+    recommenderId: string;
+    favoriteId: string;
+    note: string | null;
+    createdAt: string;
+  }>("/recommendations/manual", { favoriteId, note });
+  return data;
+}
+
+/** Remove my manual recommendation for an item. */
+export async function unmanualRecommendFavorite(
+  favoriteId: string,
+): Promise<void> {
+  await apiClient.delete(`/recommendations/manual/${favoriteId}`);
+}
+
+export interface ItemRecommendationStats {
+  favoriteId: string;
+  count: number;
+  topRecommenders: RecommendedOwnerCard[];
+}
+
+export async function getItemRecommendationStats(
+  favoriteId: string,
+  topLimit: number = 5,
+): Promise<ItemRecommendationStats> {
+  const { data } = await apiClient.get<ItemRecommendationStats>(
+    `/recommendations/stats/${favoriteId}`,
+    { params: { topLimit } },
+  );
+  return data;
+}
