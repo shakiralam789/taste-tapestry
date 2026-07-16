@@ -340,7 +340,7 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                           Yours
                         </div>
                       )}
-                      <FavoriteCard favorite={favorite} />
+                      <FavoriteCard favorite={favorite} showSaveButton />
                     </motion.div>
                   ))}
                 </motion.div>
@@ -482,7 +482,7 @@ export default function MoodPage({ initialMood }: MoodPageProps = {}) {
                       transition={{ duration: 0.4 }}
                       className="mt-8 text-left"
                     >
-                      <FavoriteCard favorite={pick} />
+                      <FavoriteCard favorite={pick} showSaveButton />
                       <div className="flex justify-center mt-4 gap-2">
                         <Button variant="glow" size="sm" onClick={handleSpin}>
                           Spin again

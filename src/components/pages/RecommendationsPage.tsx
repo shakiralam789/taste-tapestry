@@ -196,6 +196,7 @@ export default function RecommendationsPage() {
                     <FavoriteCard
                       favorite={favorite}
                       onClick={() => router.push(`/favorites/${rec.item.id}`)}
+                      showSaveButton
                     />
                   </motion.div>
                 );
