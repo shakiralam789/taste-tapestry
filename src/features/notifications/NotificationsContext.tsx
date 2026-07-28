@@ -20,6 +20,7 @@ type NotificationsContextValue = {
   isLoading: boolean;
   markAsRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
+  /** Re-fetch the notifications list. Call when the bell dropdown opens. */
   refresh: () => void;
   joinCapsule: (id: string) => void;
   leaveCapsule: (id: string) => void;
@@ -32,10 +33,18 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { socket, joinCapsule, leaveCapsule } = useNotificationsSocket();
 
-  const { data: notifications = [], isLoading, refetch } = useQuery({
+  // The list query is lazy: it never fetches on mount. The navbar bell
+  // calls `refresh()` when it opens the dropdown. The query stays enabled
+  // afterwards so socket-driven invalidations still refresh the visible list.
+  const [listEnabled, setListEnabled] = useState(false);
+  const {
+    data: notifications = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => getNotifications(50),
-    enabled: !!user,
+    enabled: !!user && listEnabled,
   });
 
   const { data: unreadData } = useQuery({
@@ -120,6 +129,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       await markAllReadMutation.mutateAsync();
     },
     refresh: () => {
+      setListEnabled(true);
       void refetch();
     },
     joinCapsule,

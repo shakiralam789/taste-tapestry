@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ import {
   updateFavorite,
   uploadFavoriteMusic,
 } from "@/features/favorites/api";
+import { getCapsule } from "@/features/capsules/api";
+import { capsuleToFavorite } from "@/features/capsules/adapters";
 import { useAnalytics } from "@/contexts/AnalyticsContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
@@ -146,6 +148,7 @@ function hasEmotionalJourney(favorite: Favorite): boolean {
   return !!(hasMovieSegments || hasSeriesSegments || hasCurve || hasPins);
 }
 
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function FavoriteShowPage() {
@@ -190,26 +193,69 @@ export default function FavoriteShowPage() {
 
   // ── Query ─────────────────────────────────────────────────────────────────
   const {
-    data: favorite,
-    isLoading,
-    isError,
+    data: favoriteFromApi,
+    isLoading: favoriteLoading,
+    isError: favoriteErrored,
   } = useQuery({
     queryKey: ["favorite", id],
     queryFn: async (): Promise<Favorite> =>
       getFavorite(typeof id === "string" ? id : ""),
     enabled: typeof id === "string",
+    retry: false,
   });
+
+  // ── Capsule fallback ──────────────────────────────────────────────────
+  // When the id isn't a Favorite record (e.g. it was navigated to from a
+  // collection card on the profile), the favorites endpoint 404s. Try the
+  // capsules endpoint and synthesize a Favorite from the capsule so the
+  // same details layout renders.
+  const {
+    data: capsule,
+    isLoading: capsuleLoading,
+  } = useQuery({
+    queryKey: ["capsule-as-favorite", id],
+    queryFn: () => getCapsule(typeof id === "string" ? id : ""),
+    enabled:
+      typeof id === "string" &&
+      favoriteErrored &&
+      !favoriteFromApi,
+    retry: false,
+  });
+
+  const isCapsuleContext = !favoriteFromApi && !!capsule;
+  const favorite: Favorite | undefined =
+    favoriteFromApi ??
+    (capsule
+      ? capsuleToFavorite(capsule, {
+          // Capsule fallback: render the capsule owner as the author so the
+          // "by ..." chip on the details page matches the capsule author.
+          id: capsule.userId,
+          name: authUser?.id === capsule.userId
+            ? authUser?.displayName ?? "You"
+            : "Capsule author",
+          username: authUser?.id === capsule.userId
+            ? authUser?.username ?? "you"
+            : "user",
+          avatar: null,
+        })
+      : undefined);
+
+  const isLoading = favoriteLoading || (favoriteErrored && capsuleLoading);
+  const isError = favoriteErrored && !capsule;
 
   const isOwner = favorite ? authUser?.id === favorite.userId : false;
 
   // ── Track view on page load ─────────────────────────────────────────────
   const viewTracked = useRef(false);
   useEffect(() => {
+    // Skip analytics for the capsule fallback — `favorite.id` is the
+    // capsule UUID, not a Favorite the analytics service recognizes.
+    if (isCapsuleContext) return;
     if (favorite?.id && !viewTracked.current && !isOwner) {
       viewTracked.current = true;
       trackEvent({ itemId: favorite.id, eventType: "impression", source: "details" });
     }
-  }, [favorite?.id, trackEvent, isOwner]);
+  }, [favorite?.id, trackEvent, isOwner, isCapsuleContext]);
 
   const { data: ownerFavorites = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
     queryKey: [
@@ -219,6 +265,8 @@ export default function FavoriteShowPage() {
       authUser?.id,
     ],
     queryFn: async () => {
+      // Capsule fallback has no real categoryId — skip the backend lookup.
+      if (isCapsuleContext) return [];
       if (!favorite?.userId || !favorite?.categoryId) return [];
       if (isOwner) {
         // Owner should see their private items too; backend filters by categoryId
@@ -232,7 +280,31 @@ export default function FavoriteShowPage() {
       );
       return page.items;
     },
-    enabled: !!favorite?.userId && !!favorite?.categoryId,
+    enabled:
+      !!favorite?.userId &&
+      !!favorite?.categoryId &&
+      !isCapsuleContext,
+  });
+
+  // ── Capsule-mode linked favorites sidebar ─────────────────────────────
+  // When we fell back to a capsule, fetch each linked favorite by id so the
+  // sidebar can show "Linked favorites" instead of the "Other collections"
+  // panel (which has no meaningful categoryId here).
+  const linkedFavoriteIds = useMemo(
+    () => (isCapsuleContext && capsule ? capsule.favorites ?? [] : []),
+    [isCapsuleContext, capsule],
+  );
+  const { data: linkedFavorites = [], isPending: isLinkedLoading } = useQuery<
+    Favorite[]
+  >({
+    queryKey: ["capsule-linked-favorites", linkedFavoriteIds.join(",")],
+    queryFn: async () => {
+      const results = await Promise.all(
+        linkedFavoriteIds.map((fid) => getFavorite(fid).catch(() => null)),
+      );
+      return results.filter((f): f is Favorite => !!f);
+    },
+    enabled: isCapsuleContext && linkedFavoriteIds.length > 0,
   });
 
   const { data: ownerProfile } = useQuery({
@@ -252,7 +324,10 @@ export default function FavoriteShowPage() {
     (favorite?.tags?.length ?? 0) > 0;
   const showJourney = favorite ? hasEmotionalJourney(favorite) : false;
   const musicUrl = fields.musicUrl;
-  const showThemeMusicSection = isOwner || !!musicUrl;
+  // Capsule fallback doesn't carry theme music or per-item edit state;
+  // editing is handled on the capsule page.
+  const showThemeMusicSection = !isCapsuleContext && (isOwner || !!musicUrl);
+  const showEditButton = !isCapsuleContext && isOwner;
 
   // Derived URL info
   const urlType = musicUrl ? detectUrlType(musicUrl) : null;
@@ -515,7 +590,7 @@ export default function FavoriteShowPage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          {isOwner && (
+          {showEditButton && (
             <Button
               variant="outline"
               size="icon"
@@ -545,7 +620,7 @@ export default function FavoriteShowPage() {
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </Button>
-                  {isOwner && (
+                  {showEditButton && (
                     <Button
                       variant="default"
                       size="sm"
@@ -1168,19 +1243,81 @@ export default function FavoriteShowPage() {
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <Music2 className="w-3.5 h-3.5" />
-                    Other {favorite.categoryId} collections
+                    {isCapsuleContext
+                      ? "Linked favorites"
+                      : `Other ${favorite.categoryId} collections`}
                   </h2>
-                  {/* see all */}
-                  <Link
-                    href={`${isOwner ? `/profile/collection?category=${favorite.categoryId}` : `/users/${favorite.userId}/collection?category=${favorite.categoryId}`}`}
-                    className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
-                  >
-                    <span>See all</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  {!isCapsuleContext && (
+                    <Link
+                      href={`${isOwner ? `/profile/collection?category=${favorite.categoryId}` : `/users/${favorite.userId}/collection?category=${favorite.categoryId}`}`}
+                      className=" text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                    >
+                      <span>See all</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  {isRelatedLoading ? (
+                  {isCapsuleContext ? (
+                    isLinkedLoading ? (
+                      <>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-full flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 p-2"
+                          >
+                            <Skeleton className="h-12 w-12 rounded-md flex-shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <Skeleton className="h-3 w-3/4 rounded" />
+                              <Skeleton className="h-2.5 w-1/2 rounded" />
+                            </div>
+                            <Skeleton className="h-3 w-8 rounded flex-shrink-0" />
+                          </div>
+                        ))}
+                      </>
+                    ) : linkedFavorites.length > 0 ? (
+                      linkedFavorites.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => router.push(`/favorites/${item.id}`)}
+                          className="w-full flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 hover:bg-background/70 transition-colors p-2 text-left"
+                        >
+                          <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={getFavoriteCoverImage(
+                                item.image,
+                                item.categoryId,
+                              )}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = getFavoriteCoverImage(
+                                  "",
+                                  item.categoryId,
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">
+                              {item.title}
+                            </p>
+                          </div>
+                          {typeof item.rating === "number" && (
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                              {item.rating.toFixed(1)}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="py-12 text-xs text-muted-foreground text-center">
+                        No favorites linked to this collection yet.
+                      </div>
+                    )
+                  ) : isRelatedLoading ? (
                     <>
                       {Array.from({ length: 4 }).map((_, i) => (
                         <div

@@ -210,10 +210,12 @@ export function FavoriteCard({
 
           {/* Rating + Tags row */}
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary/90 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              <Star className="w-3 h-3 fill-current" />
-              {favorite.rating}/10
-            </span>
+            {favorite.rating > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary/90 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                <Star className="w-3 h-3 fill-current" />
+                {favorite.rating}/10
+              </span>
+            )}
             {favorite.timePeriod && (
               <span className="text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
                 {favorite.timePeriod}
@@ -274,12 +276,12 @@ export function FavoriteCard({
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 text-[11px] text-muted-foreground mr-2">
-                {user?.id === favorite.userId && (
+                {isOwner && (
                   <>
-                    <span className="flex items-center gap-1" title="Views">
+                    <span className="flex items-center gap-1.5" title="Views">
                       <Eye className="w-3.5 h-3.5" /> {favorite.viewCount ?? 0}
                     </span>
-                    <span className="flex items-center gap-1" title="Clicks">
+                    <span className="flex items-center gap-1.5" title="Clicks">
                       <MousePointerClick className="w-3.5 h-3.5" /> {favorite.clickCount ?? 0}
                     </span>
                   </>

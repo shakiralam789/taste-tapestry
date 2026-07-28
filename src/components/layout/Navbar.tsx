@@ -100,9 +100,31 @@ export function Navbar() {
     }
   };
 
-  const { notifications, unreadCount: notificationsUnreadCount, markAllRead, markAsRead } = useNotifications();
+  const {
+    notifications,
+    unreadCount: notificationsUnreadCount,
+    isLoading: notificationsLoading,
+    markAllRead,
+    markAsRead,
+    refresh: refreshNotifications,
+  } = useNotifications();
   const { displayName, displayAvatar } = useProfileInfo();
   const { user } = useAuth();
+
+  // Lazy-load dropdown contents. We keep the queries declared up here (instead
+  // of mounting/unmounting per open) so the cached data stays warm between
+  // opens, but we gate the initial fetch on the dropdown being opened.
+  const [recommendationsOpen, setRecommendationsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const handleRecommendationsOpenChange = (open: boolean) => {
+    setRecommendationsOpen(open);
+  };
+  const handleNotificationsOpenChange = (open: boolean) => {
+    setNotificationsOpen(open);
+    if (open) {
+      refreshNotifications();
+    }
+  };
 
   const runMobileSearch = useCallback(
     async (q: string) => {
@@ -161,13 +183,14 @@ export function Navbar() {
     // Real-time updates handled via Socket.io
   });
 
-  // System-recommendation feed for the Sparkles dropdown. Auto-refreshes every
-  // 60s; React Query handles dedup + cache across mounts.
+  // System-recommendation feed for the Sparkles dropdown. Lazy: the first
+  // fetch only happens when the user opens the dropdown. The 60s refresh
+  // only runs while the dropdown is open.
   const { data: recFeed, isLoading: recLoading } = useQuery({
     queryKey: ["recommendations", "system-feed"],
     queryFn: () => getSystemRecommendations({ limit: 8 }),
-    enabled: !!user,
-    refetchInterval: 60_000,
+    enabled: !!user && recommendationsOpen,
+    refetchInterval: recommendationsOpen ? 60_000 : false,
     staleTime: 30_000,
   });
   const recItems: RecommendationItem[] = recFeed?.items ?? [];
@@ -189,6 +212,36 @@ export function Navbar() {
       router.push(path);
     }
   };
+
+  // Skeleton row for the recommendations dropdown
+  const RecsSkeleton = (
+    <div className="flex flex-col">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 border-b border-border/40 last:border-b-0">
+          <div className="w-10 h-10 rounded-md bg-muted animate-pulse shrink-0" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
+            <div className="h-2.5 w-1/2 rounded bg-muted/70 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Skeleton row for the notifications dropdown
+  const NotifsSkeleton = (
+    <div className="flex flex-col">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-start gap-3 p-3 border-b border-border/40 last:border-b-0">
+          <div className="w-8 h-8 rounded-full bg-muted animate-pulse shrink-0" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="h-3 w-5/6 rounded bg-muted animate-pulse" />
+            <div className="h-2.5 w-2/3 rounded bg-muted/70 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -327,7 +380,10 @@ export function Navbar() {
               <Search className="w-5 h-5" />
             </Button>
             {/* Suggested for you (system recommendations from followed users) */}
-            <DropdownMenu>
+            <DropdownMenu
+              open={recommendationsOpen}
+              onOpenChange={handleRecommendationsOpenChange}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -355,12 +411,7 @@ export function Navbar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {recLoading && recItems.length === 0 ? (
-                    <div className="px-4 py-8 text-center">
-                      <Sparkles className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground">
-                        Finding suggestions…
-                      </p>
-                    </div>
+                    RecsSkeleton
                   ) : recItems.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <Sparkles className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
@@ -421,7 +472,10 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
             {/* Notifications */}
-            <DropdownMenu>
+            <DropdownMenu
+              open={notificationsOpen}
+              onOpenChange={handleNotificationsOpenChange}
+            >
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
@@ -443,7 +497,7 @@ export function Navbar() {
                 >
                   <DropdownMenuLabel className="sticky top-0 bg-card z-10 flex items-center justify-between px-3 py-2">
                     <span className="text-sm font-semibold">Notifications</span>
-                    {notifications.length > 0 && (
+                    {!notificationsLoading && notifications.length > 0 && (
                       <button
                         type="button"
                         onClick={() => markAllRead()}
@@ -454,7 +508,9 @@ export function Navbar() {
                     )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {notifications.length === 0 ? (
+                  {notificationsLoading && notifications.length === 0 ? (
+                    NotifsSkeleton
+                  ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <Bell className="w-10 h-10 text-muted-foreground/20 mx-auto mb-2" />
                       <p className="text-xs text-muted-foreground">No notifications yet.</p>

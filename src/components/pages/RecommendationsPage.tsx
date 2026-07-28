@@ -238,8 +238,9 @@ function recToFavorite(rec: RecommendationItem): Favorite {
     categoryId: item.categoryId,
     title: item.title,
     image: item.image ?? undefined,
-    // Fall back to 0 when missing — FavoriteCard renders the star chip only
-    // for positive ratings, so an absent value cleanly hides the row.
+    // Recommendation payload only carries a single rating (1-5). The card
+    // displays it on the same 10-point chip used elsewhere, so we keep the
+    // raw value — the star chip is hidden when rating is 0.
     rating: item.rating ?? 0,
     mood: [],
     whyILike: item.whyILike ?? "",

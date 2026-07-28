@@ -1,11 +1,23 @@
 import { useRouter } from "nextjs-toploader/app";
 import { Rocket } from "lucide-react";
-import { TimeCapsuleCard } from "../capsules/TimeCapsuleCard";
-import { getUserCapsules } from "@/features/capsules/api";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
+import { TimeCapsuleCard } from "../capsules/TimeCapsuleCard";
 import { TimeCapsuleCardSkeleton } from "../capsules/TimeCapsuleCardSkeleton";
+import { FavoriteCard } from "../favorites/FavoriteCard";
+import { getUserCapsules } from "@/features/capsules/api";
+import { capsuleToFavorite } from "@/features/capsules/adapters";
+import { usePublicProfileInfo } from "@/features/users/usePublicProfileInfo";
+import type { TimeCapsule } from "@/types/wishbook";
+
+/**
+ * Same dispatch as the home feed and the logged-in profile: a capsule with
+ * at least one linked favorite is rendered via `FavoriteCard` (collection
+ * post look). Plain capsules fall back to the original TimeCapsuleCard.
+ */
+function isCollectionCapsule(capsule: TimeCapsule): boolean {
+  return (capsule.favorites?.length ?? 0) > 0;
+}
 
 export default function Capsules() {
   const { id } = useParams<{ id: string | undefined }>();
@@ -54,17 +66,45 @@ export default function Capsules() {
         </div>
       ) : (
         <div className="flex flex-col gap-4 mx-auto">
-          {capsules.map((capsule) => (
-            <div key={capsule.id}>
-              <TimeCapsuleCard
-                capsule={capsule}
-                authorName={displayName}
-                authorSubtitle={displayUsername || "Time capsule"}
-                authorAvatar={profile.avatar}
-                onClick={() => router.push(`/capsules/${capsule.id}`)}
-              />
-            </div>
-          ))}
+          {capsules.map((capsule) => {
+            if (isCollectionCapsule(capsule)) {
+              const fav = capsuleToFavorite(capsule, {
+                id: profile.id,
+                name: profile.displayName?.trim() || profile.username?.trim() || "User",
+                username: (profile.username ?? "user").replace(/^@/, ""),
+                avatar: profile.avatar ?? null,
+              });
+              // For collections, route to the FIRST linked favorite's details
+              // page (not the capsule id) so the user lands on a real Favorite
+              // record with the same edit/theme-music UI as MyCollections.
+              const firstLinkedFavoriteId = capsule.favorites?.[0];
+              const targetId = firstLinkedFavoriteId ?? capsule.id;
+              return (
+                <FavoriteCard
+                  key={capsule.id}
+                  favorite={fav}
+                  onClick={() => router.push(`/favorites/${targetId}`)}
+                  showSaveButton
+                  authorOverride={{
+                    name: displayName,
+                    username: displayUsername || "user",
+                    avatar: profile.avatar,
+                  }}
+                />
+              );
+            }
+            return (
+              <div key={capsule.id}>
+                <TimeCapsuleCard
+                  capsule={capsule}
+                  authorName={displayName}
+                  authorSubtitle={displayUsername || "Time capsule"}
+                  authorAvatar={profile.avatar}
+                  onClick={() => router.push(`/capsules/${capsule.id}`)}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </>

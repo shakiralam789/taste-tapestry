@@ -210,6 +210,12 @@ export interface TimeCapsule {
   /** Embedded by the feed when the viewer is authenticated. */
   savedByMe?: boolean | null;
   commentCount?: number;
+  /** Backend-aggregated average rating (0–10) across linked favorites. */
+  avgRating?: number | null;
+  /** Sum of linked favorites' viewCount — surfaced on the owner profile only. */
+  viewCount?: number;
+  /** Sum of linked favorites' clickCount — surfaced on the owner profile only. */
+  clickCount?: number;
   createdAt: Date;
 }
 
