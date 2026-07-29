@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTimeline } from "@/features/feed/useTimeline";
 import { useInView } from "react-intersection-observer";
-import { Clock, Compass, Home, Layers, Star } from "lucide-react";
+import { Clock, Compass, Home, Layers, List, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedPost } from "@/features/feed/api";
 
@@ -124,7 +124,7 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20",
                     )}
                   >
-                    <Home className="w-4 h-4" />
+                    <List className="w-4 h-4"/>
                     All
                   </Link>
                   <Link
