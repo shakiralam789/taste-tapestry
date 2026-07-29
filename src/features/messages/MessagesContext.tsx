@@ -7,6 +7,7 @@ import {
     useRef,
     useState,
     useMemo,
+    useCallback,
     type ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
@@ -14,11 +15,25 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/api-client";
 
+export type PartnerInfo = {
+    id: string;
+    displayName: string;
+    username: string;
+    avatar: string | null;
+};
+
+export type ChatBoxState = {
+    partner: PartnerInfo;
+};
+
 type MessagesContextValue = {
     socket: Socket | null;
     connected: boolean;
     isChatOpen: boolean;
     setIsChatOpen: (isOpen: boolean) => void;
+    openChatBoxes: ChatBoxState[];
+    openChatBox: (partner: PartnerInfo) => void;
+    closeChatBox: (partnerId: string) => void;
 };
 
 const MessagesContext = createContext<MessagesContextValue | undefined>(undefined);
@@ -28,9 +43,11 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
     const [connected, setConnected] = useState(false);
     const socketRef = useRef<Socket | null>(null);
+    const [openChatBoxes, setOpenChatBoxes] = useState<ChatBoxState[]>([]);
 
     useEffect(() => {
         if (!user) {
+            setOpenChatBoxes([]);
             if (socketRef.current) {
                 socketRef.current.disconnect();
                 socketRef.current = null;
@@ -90,12 +107,34 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
     const [isChatOpen, setIsChatOpen] = useState(false);
 
+    const openChatBox = useCallback((partner: PartnerInfo) => {
+        setOpenChatBoxes((prev) => {
+            if (prev.some((box) => box.partner.id === partner.id)) {
+                // Move existing box to the end (most recent)
+                const filtered = prev.filter((box) => box.partner.id !== partner.id);
+                return [...filtered, prev.find((box) => box.partner.id === partner.id)!];
+            }
+            const next = [...prev, { partner }];
+            if (next.length > 3) {
+                return next.slice(next.length - 3);
+            }
+            return next;
+        });
+    }, []);
+
+    const closeChatBox = useCallback((partnerId: string) => {
+        setOpenChatBoxes((prev) => prev.filter((box) => box.partner.id !== partnerId));
+    }, []);
+
     const value = useMemo(() => ({
         socket: socketRef.current,
         connected,
         isChatOpen,
-        setIsChatOpen
-    }), [connected, isChatOpen]);
+        setIsChatOpen,
+        openChatBoxes,
+        openChatBox,
+        closeChatBox
+    }), [connected, isChatOpen, openChatBoxes, openChatBox, closeChatBox]);
 
     return (
         <MessagesContext.Provider value={value}>

@@ -55,6 +55,7 @@ import {
   Image as ImageIcon,
   Film,
   File as FileIconLucide,
+  SearchIcon,
 } from "lucide-react";
 
 // ── Types & Helpers ────────────────────────────────────────────────────────────
@@ -89,12 +90,14 @@ function ConversationItem({
   myId,
   isActive,
   onClick,
+  onClear,
   isOnline,
 }: {
   convo: Conversation;
   myId: string;
   isActive: boolean;
   onClick: () => void;
+  onClear?: () => void;
   isOnline: boolean;
 }) {
   const partnerId = getPartnerId(convo, myId);
@@ -126,7 +129,7 @@ function ConversationItem({
       void qc.invalidateQueries({ queryKey: ["conversations"], exact: true });
       void qc.invalidateQueries({ queryKey: ["messages", "unread-count"], exact: true });
       if (isActive) {
-        onClick(); // Deselect if clearing active
+        onClear?.(); // Clear selection and messages if clearing active
       }
       toast.success("Conversation history cleared");
     },
@@ -551,7 +554,7 @@ function MessagesPageInner() {
             {showNewChat ? (
               <X className="w-4 h-4" />
             ) : (
-              <PenSquare className="w-4 h-4" />
+              <SearchIcon className="w-4 h-4" />
             )}
           </Button>
         </div>
@@ -570,7 +573,7 @@ function MessagesPageInner() {
                   placeholder="Search users…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 rounded-full bg-muted/30 border-white/10"
+                  className="pl-9 border rounded-full bg-muted/30 border-white/10"
                   autoFocus
                 />
               </div>
@@ -579,7 +582,7 @@ function MessagesPageInner() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 </div>
               )}
-              <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
+              <div className="mt-0 space-y-1 max-h-60 overflow-y-auto">
                 {searchResults.map((u) => (
                   <button
                     key={u.id}
@@ -628,6 +631,11 @@ function MessagesPageInner() {
                   onClick={() => {
                     setActiveConvoId(c.id);
                     setPendingPartner(null);
+                  }}
+                  onClear={() => {
+                    setActiveConvoId(null);
+                    setPendingPartner(null);
+                    setMessages([]);
                   }}
                   isOnline={onlineUsers.has(getPartnerId(c, user?.id || ""))}
                 />

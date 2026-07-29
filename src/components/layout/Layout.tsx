@@ -7,6 +7,7 @@ import { Sidebar } from "./Sidebar";
 import { RightSidebar } from "./RightSidebar";
 import { MobileNav } from "./MobileNav";
 import { Navbar } from "./Navbar";
+import { FloatingChatBoxesContainer } from "@/components/messages/FloatingChatBoxesContainer";
 
 import { cn } from "@/lib/utils";
 import { NotificationsProvider } from "@/features/notifications/NotificationsContext";
@@ -64,6 +65,9 @@ export function Layout({ children, className }: LayoutProps) {
 
           {/* Mobile bottom navigation */}
           <MobileNav />
+
+          {/* Floating chat boxes */}
+          <FloatingChatBoxesContainer />
         </div>
       </MessagesProvider>
     </NotificationsProvider>

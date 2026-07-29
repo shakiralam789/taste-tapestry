@@ -10,6 +10,7 @@ import {
   Film,
   Sparkles,
   Star,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,12 +29,78 @@ import { useNotifications } from "@/features/notifications/NotificationsContext"
 import { useAuth } from "@/features/auth/AuthContext";
 import { useProfileInfo } from "@/features/profile/useProfileInfo";
 import { useQuery } from "@tanstack/react-query";
-import { getTotalUnreadCount } from "@/features/messages/api";
-import { globalSearchItems, type GlobalSearchItemResult } from "@/features/users/api";
+import { getTotalUnreadCount, getConversations } from "@/features/messages/api";
+import { globalSearchItems, searchUsers, getPublicProfile, type GlobalSearchItemResult } from "@/features/users/api";
+import { useMessages, type PartnerInfo } from "@/features/messages/MessagesContext";
+import type { Conversation } from "@/types/messages";
 import {
   getSystemRecommendations,
   type RecommendationItem,
 } from "@/features/favorites/api";
+
+function NavbarConversationItem({
+  convo,
+  myUserId,
+  onClick,
+}: {
+  convo: Conversation;
+  myUserId: string;
+  onClick: (partner: PartnerInfo) => void;
+}) {
+  const partnerId = convo.participantIds.find((id) => id !== myUserId) || "";
+
+  const { data: partner } = useQuery({
+    queryKey: ["user-profile", partnerId],
+    queryFn: () => getPublicProfile(partnerId).catch(() => null),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!partnerId,
+  });
+
+  const name = partner?.displayName || partner?.username || "Loading...";
+  const lastMsg = convo.lastMessage?.content || "No messages yet";
+  const initials = (name || "?").slice(0, 2).toUpperCase();
+
+  const partnerInfo: PartnerInfo = {
+    id: partnerId,
+    displayName: partner?.displayName || partner?.username || name,
+    username: partner?.username || "",
+    avatar: partner?.avatar || null,
+  };
+
+  return (
+    <DropdownMenuItem
+      onClick={() => onClick(partnerInfo)}
+      className="flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors focus:bg-primary/5"
+    >
+      <div className="relative shrink-0">
+        <Avatar className="w-8 h-8">
+          {partner?.avatar && <AvatarImage src={partner.avatar} />}
+          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-xs font-semibold truncate text-foreground">{name}</p>
+          {convo.lastMessage && (
+            <span className="text-[9px] text-muted-foreground shrink-0">
+              {formatDistanceToNow(new Date(convo.lastMessage.createdAt), { addSuffix: false })} ago
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <p className="text-[10px] text-muted-foreground truncate flex-1">
+            {lastMsg}
+          </p>
+          {convo.unreadCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center shrink-0">
+              {convo.unreadCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </DropdownMenuItem>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -125,6 +192,43 @@ export function Navbar() {
       refreshNotifications();
     }
   };
+
+  const { openChatBox } = useMessages();
+  const [messagesDropdownOpen, setMessagesDropdownOpen] = useState(false);
+  const [messagesSearchQuery, setMessagesSearchQuery] = useState("");
+  const [messagesSearchResults, setMessagesSearchResults] = useState<any[]>([]);
+  const [messagesSearching, setMessagesSearching] = useState(false);
+
+  const runMessagesSearch = useCallback(
+    async (q: string) => {
+      if (!q.trim()) {
+        setMessagesSearchResults([]);
+        return;
+      }
+      setMessagesSearching(true);
+      try {
+        const list = await searchUsers(q, { excludeUserId: user?.id });
+        setMessagesSearchResults(list);
+      } catch {
+        setMessagesSearchResults([]);
+      } finally {
+        setMessagesSearching(false);
+      }
+    },
+    [user?.id]
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => runMessagesSearch(messagesSearchQuery), 300);
+    return () => clearTimeout(t);
+  }, [messagesSearchQuery, runMessagesSearch]);
+
+  const { data: conversations = [], isLoading: convosLoading } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: getConversations,
+    staleTime: 60_000,
+    enabled: !!user,
+  });
 
   const runMobileSearch = useCallback(
     async (q: string) => {
@@ -591,17 +695,142 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Messages */}
-            <Link href="/messages">
-              <Button variant="ghost" size="icon" className="relative">
-                <MessageCircle className="w-5 h-5" />
-                {messagesUnreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center">
-                    {messagesUnreadCount > 9 ? "9+" : messagesUnreadCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            {/* Messages Dropdown */}
+            <DropdownMenu
+              open={messagesDropdownOpen}
+              onOpenChange={(open) => {
+                setMessagesDropdownOpen(open);
+                if (!open) {
+                  setMessagesSearchQuery("");
+                  setMessagesSearchResults([]);
+                }
+              }}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <MessageCircle className="w-5 h-5" />
+                  {messagesUnreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-[10px] font-semibold flex items-center justify-center border-2 border-background">
+                      {messagesUnreadCount > 9 ? "9+" : messagesUnreadCount}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-80 p-0 overflow-hidden"
+                align="end"
+                sideOffset={8}
+              >
+                <div
+                  className="overflow-hidden flex flex-col h-[calc(100vh-70px)] sm:h-[calc(100vh-80px)]"
+                >
+                  <DropdownMenuLabel className="sticky top-0 bg-card z-10 flex items-center justify-between px-3 py-2 border-b border-border/40">
+                    <span className="text-sm font-semibold">Messages</span>
+                  </DropdownMenuLabel>
+
+                  {/* Dropdown Search */}
+                  <div className="p-2 border-b border-border/40 bg-muted/10 sticky top-[37px] z-10">
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input
+                        value={messagesSearchQuery}
+                        onChange={(e) => setMessagesSearchQuery(e.target.value)}
+                        placeholder="Search conversations or users..."
+                        className="pl-8 h-8 text-xs bg-muted/40 border border-border rounded-full w-full focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dropdown Chat List / Search Results */}
+                  <div className="flex-1 overflow-y-auto">
+                    {messagesSearchQuery.trim() ? (
+                      messagesSearching ? (
+                        <div className="p-4 flex justify-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : messagesSearchResults.length === 0 ? (
+                        <p className="p-4 text-xs text-muted-foreground text-center">No users found</p>
+                      ) : (
+                        messagesSearchResults.map((u) => {
+                          const partnerInfo: PartnerInfo = {
+                            id: u.id,
+                            displayName: u.displayName || u.username,
+                            username: u.username,
+                            avatar: u.avatar,
+                          };
+                          return (
+                            <DropdownMenuItem
+                              key={u.id}
+                              onClick={() => {
+                                openChatBox(partnerInfo);
+                                setMessagesDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors focus:bg-primary/5"
+                            >
+                              <Avatar className="w-8 h-8">
+                                {u.avatar && <AvatarImage src={u.avatar} />}
+                                <AvatarFallback className="text-[10px]">
+                                  {(u.displayName || u.username).slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold truncate text-foreground">
+                                  {u.displayName || u.username}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">@{u.username}</p>
+                              </div>
+                            </DropdownMenuItem>
+                          );
+                        })
+                      )
+                    ) : (
+                      convosLoading ? (
+                        <div className="p-4 flex justify-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : conversations.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                          <p className="text-xs">No active conversations</p>
+                        </div>
+                      ) : (
+                        conversations.map((convo: any) => (
+                          <NavbarConversationItem
+                            key={convo.id}
+                            convo={convo}
+                            myUserId={user?.id || ""}
+                            onClick={(partnerInfo) => {
+                              openChatBox(partnerInfo);
+                              setMessagesDropdownOpen(false);
+                            }}
+                          />
+                        ))
+                      )
+                    )}
+                  </div>
+
+                  <DropdownMenuSeparator />
+                  <div className="px-3 py-2 flex justify-center bg-muted/30">
+                    <Link
+                      href="/messages"
+                      className="text-[11px] font-medium text-primary hover:underline"
+                      onClick={() => setMessagesDropdownOpen(false)}
+                    >
+                      See all in Messages
+                    </Link>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Profile */}
             <Link href="/profile">
