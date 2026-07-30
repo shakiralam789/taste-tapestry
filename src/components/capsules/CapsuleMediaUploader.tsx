@@ -146,11 +146,11 @@ export function CapsuleMediaUploader({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 h-8"
               onClick={() => imageInputRef.current?.click()}
             >
               <Upload className="w-4 h-4" />
-              Upload images
+              Upload
             </Button>
             <span className="text-xs text-muted-foreground">or paste URL</span>
             <Input
@@ -163,9 +163,9 @@ export function CapsuleMediaUploader({
                 }
               }}
               placeholder="https://…"
-              className="max-w-xs h-8 text-xs"
+              className="flex-1 h-8 text-xs"
             />
-            <Button type="button" size="sm" variant="outline" onClick={addImageUrl}>
+            <Button type="button" size="sm" className="h-8" variant="outline" onClick={addImageUrl}>
               Add
             </Button>
             {uploading && (
@@ -257,11 +257,11 @@ export function CapsuleMediaUploader({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 h-8"
               onClick={() => videoInputRef.current?.click()}
             >
               <Upload className="w-4 h-4" />
-              Upload videos
+              Upload
             </Button>
             <span className="text-xs text-muted-foreground">or paste URL</span>
             <Input
@@ -274,9 +274,9 @@ export function CapsuleMediaUploader({
                 }
               }}
               placeholder="https://…"
-              className="max-w-xs h-8 text-xs"
+              className="flex-1 h-8 text-xs"
             />
-            <Button type="button" size="sm" variant="outline" onClick={addVideoUrl}>
+            <Button type="button" className="h-8" size="sm" variant="outline" onClick={addVideoUrl}>
               Add
             </Button>
             {uploading && (

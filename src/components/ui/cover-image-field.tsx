@@ -58,7 +58,7 @@ export function CoverImageField({
   return (
     <div
       className={cn(
-        "border-2 border-dashed border-border rounded-xl p-6 hover:border-primary/50 transition-colors flex flex-wrap justify-center gap-6",
+        "border-2 border-dashed border-border bg-card/50 rounded-xl p-6 hover:border-primary/50 transition-colors flex flex-wrap justify-center gap-6",
         className,
       )}
     >

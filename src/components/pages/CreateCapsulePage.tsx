@@ -313,7 +313,7 @@ export default function CreateCapsulePage() {
                 </div>
               )}
 
-              <div className="shadow-glow elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-300 ease-out hover:shadow-elevated">
+              <div className="shadow-glow bg-card/20 elevated-card p-4 md:p-6 border-2 border-primary/5 rounded-2xl transition-[filter,opacity] duration-300 ease-out hover:shadow-elevated">
                 <AnimatePresence mode="wait">
                   {step === 1 && (
                     <motion.section
@@ -362,15 +362,9 @@ export default function CreateCapsulePage() {
                             </div>
 
                             <div>
-                              <Label
-                                htmlFor="description"
-                                className="mb-1"
-                              >
-                                Describe this era
-                              </Label>
                               <Textarea
                                 id="description"
-                                placeholder=""
+                                placeholder="Describe this era"
                                 value={formData.description}
                                 onChange={(e) =>
                                   setFormData((prev) => ({

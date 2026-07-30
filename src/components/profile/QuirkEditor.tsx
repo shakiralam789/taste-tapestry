@@ -210,7 +210,7 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
               e.currentTarget.classList.remove("border-primary/40", "bg-white/[0.06]");
               handleUpload(e.dataTransfer.files);
             }}
-            className="relative flex min-h-[120px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] px-4 py-6 transition-colors hover:border-primary/30 hover:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="relative flex min-h-[120px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-card/50 px-4 py-6 transition-colors hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
             <input
               ref={mainInputRef}

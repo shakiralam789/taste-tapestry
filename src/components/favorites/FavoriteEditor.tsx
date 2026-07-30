@@ -1605,7 +1605,7 @@ export function FavoriteEditor({
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-black/20 relative group cursor-pointer w-full block text-left focus:outline-none hover:ring-2 hover:ring-primary/20 transition-shadow"
+                      className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-card/50 relative group cursor-pointer w-full block text-left focus:outline-none hover:ring-2 hover:ring-primary/20 transition-shadow"
                       aria-label="Go to cover & title section"
                     >
                       {formData.image ? (
