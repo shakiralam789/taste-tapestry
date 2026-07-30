@@ -175,9 +175,11 @@ export function CapsuleMediaUploader({
               placeholder="https://…"
               className="flex-1 h-8 text-xs"
             />
-            <Button type="button" size="sm" className="h-8" variant="outline" onClick={addImageUrl}>
-              Add
-            </Button>
+            {imageUrl.trim() && (
+              <Button type="button" size="sm" className="h-8" variant="outline" onClick={addImageUrl}>
+                Add
+              </Button>
+            )}
             {uploadingImage && (
               <span className="text-[10px] text-muted-foreground">
                 Uploading…
@@ -286,9 +288,11 @@ export function CapsuleMediaUploader({
               placeholder="https://…"
               className="flex-1 h-8 text-xs"
             />
-            <Button type="button" className="h-8" size="sm" variant="outline" onClick={addVideoUrl}>
-              Add
-            </Button>
+            {videoUrl.trim() && (
+              <Button type="button" className="h-8" size="sm" variant="outline" onClick={addVideoUrl}>
+                Add
+              </Button>
+            )}
             {uploadingVideo && (
               <span className="text-[10px] text-muted-foreground">
                 Uploading…
