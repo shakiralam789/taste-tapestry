@@ -30,13 +30,22 @@ export function CoverImageField({
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !file.type.startsWith("image/")) return;
+
+      const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(`Image exceeds the maximum allowed size of 10MB.`);
+        e.target.value = "";
+        return;
+      }
+
       e.target.value = "";
       setUploading(true);
       try {
         const media = await uploadToCloudinary(file, "image");
         onImageChange(media.original_url);
-      } catch {
-        toast.error("Failed to upload image. Please try again.");
+      } catch (err: any) {
+        console.error("Cover image upload failed:", err);
+        toast.error(err?.message || "Failed to upload image. Please try again.");
       } finally {
         setUploading(false);
       }

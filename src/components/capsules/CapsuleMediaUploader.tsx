@@ -44,6 +44,15 @@ export function CapsuleMediaUploader({
         file.type.startsWith("image/"),
       );
       if (!files.length) return;
+
+      const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+      const tooLarge = files.filter(f => f.size > MAX_IMAGE_SIZE);
+      if (tooLarge.length > 0) {
+        toast.error(`Some files exceed the 10MB image limit: ${tooLarge.map(f => f.name).join(", ")}`);
+        e.target.value = "";
+        return;
+      }
+
       setUploading(true);
       try {
         const uploaded: string[] = [];
@@ -51,8 +60,9 @@ export function CapsuleMediaUploader({
           try {
             const url = await uploadCapsuleMedia(file);
             uploaded.push(url);
-          } catch {
-            toast.error("Failed to upload image");
+          } catch (err: any) {
+            console.error("Image upload failed:", err);
+            toast.error(err?.message || "Failed to upload image");
           }
         }
         if (uploaded.length) {
@@ -72,6 +82,15 @@ export function CapsuleMediaUploader({
         file.type.startsWith("video/"),
       );
       if (!files.length) return;
+
+      const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+      const tooLarge = files.filter(f => f.size > MAX_VIDEO_SIZE);
+      if (tooLarge.length > 0) {
+        toast.error(`Some videos exceed the 100MB limit: ${tooLarge.map(f => f.name).join(", ")}`);
+        e.target.value = "";
+        return;
+      }
+
       setUploading(true);
       try {
         const uploaded: string[] = [];

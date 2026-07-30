@@ -109,6 +109,18 @@ export function QuirkEditor({ quirk, onCreated, onUpdated, onCancel }: QuirkEdit
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+    for (const file of Array.from(files)) {
+      const isVideo = file.type.startsWith("video/");
+      const limit = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      if (file.size > limit) {
+        toast.error(`"${file.name}" exceeds the maximum allowed size of ${isVideo ? "100MB" : "10MB"}.`);
+        return;
+      }
+    }
+
     setUploadingMain(true);
     try {
       const urls: string[] = [];
