@@ -89,7 +89,7 @@ export function TimeCapsuleCard({
 
   const displayAuthorName = authorName ?? "Time capsule";
   const displayAuthorSubtitle =
-    authorSubtitle ?? `Chapter from ${capsule.period || "a moment"}`;
+    authorSubtitle ?? "Time capsule";
 
   useEffect(() => {
     setLoved(capsule.lovedByMe ?? false);

@@ -255,7 +255,7 @@ function TrendingRow({
   onClick: () => void;
 }) {
   const title = item.title || 'Untitled capsule';
-  const subtitle = item.period || 'Time capsule';
+  const subtitle = 'Time capsule';
   return (
     <button
       type="button"

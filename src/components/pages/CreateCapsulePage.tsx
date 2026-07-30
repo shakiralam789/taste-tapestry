@@ -29,7 +29,6 @@ export default function CreateCapsulePage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    period: "",
     story: "",
   });
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -81,7 +80,6 @@ export default function CreateCapsulePage() {
     setFormData({
       title: existingCapsule.title,
       description: existingCapsule.description ?? "",
-      period: existingCapsule.period ?? "",
       story: existingCapsule.story ?? "",
     });
     const defaultMedia = safeImage ?? safeImages[0] ?? safeVideos[0] ?? null;
@@ -176,15 +174,10 @@ export default function CreateCapsulePage() {
         ? bannerImage
         : cleanPoster;
 
-    const effectivePeriod =
-      formData.period && formData.period.trim().length > 0
-        ? formData.period
-        : getDefaultPeriod();
-
     mutation.mutate({
       title: formData.title,
       description: formData.description || undefined,
-      period: effectivePeriod,
+      period: getDefaultPeriod(),
       image: cleanPoster || undefined,
       bannerImage: cleanBanner || undefined,
       images: filteredImages.length ? filteredImages : undefined,
@@ -206,10 +199,7 @@ export default function CreateCapsulePage() {
     userId: existingCapsule?.userId ?? "preview-user",
     title: formData.title || "Untitled capsule",
     description: formData.description || "",
-    period:
-      formData.period && formData.period.trim().length > 0
-        ? formData.period
-        : getDefaultPeriod(),
+    period: getDefaultPeriod(),
     image: posterPreview || undefined,
     images: media.images,
     videos: media.videos,
@@ -326,7 +316,7 @@ export default function CreateCapsulePage() {
                       {/* Basic Info */}
                       <div className="space-y-4">
                         <div>
-                         
+
                           <Input
                             id="title"
                             autoComplete="off"
@@ -344,23 +334,6 @@ export default function CreateCapsulePage() {
 
                         {!isQuickPost && (
                           <>
-                            <div>
-                            
-                              <Input
-                                id="period"
-                                autoComplete="off"
-                                placeholder="When did this era take place?"
-                                value={formData.period}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    period: e.target.value,
-                                  }))
-                                }
-                                className="mt-1"
-                              />
-                            </div>
-
                             <div>
                               <Textarea
                                 id="description"
@@ -457,10 +430,6 @@ export default function CreateCapsulePage() {
                     >
                       {/* Extra media */}
                       <div className="space-y-4 mt-4">
-                        <Label className="text-base font-medium flex items-center gap-2">
-                          <Plus className="w-5 h-5 text-primary" />
-                          {isQuickPost ? "Primary Media *" : "Era Media & Clips"}
-                        </Label>
                         <CapsuleMediaUploader
                           images={media.images}
                           videos={media.videos}
@@ -528,11 +497,7 @@ export default function CreateCapsulePage() {
                     capsule={previewCapsule}
                     showActions={false}
                     authorName="You"
-                    authorSubtitle={
-                      formData.period
-                        ? `Chapter from ${formData.period}`
-                        : "Your time capsule"
-                    }
+                    authorSubtitle="Your time capsule"
                     authorAvatar={null}
                   />
                 </div>

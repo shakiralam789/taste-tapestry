@@ -204,7 +204,7 @@ export default function FeedPage({ filter = "all", children, showComposer = fals
                     authorName={post.author.displayName || post.author.username || "Unknown"}
                     authorAvatar={post.author.avatar}
                     authorID={post.author.id}
-                    authorSubtitle={`Time capsule • ${post.capsule.period || 'A moment'}`}
+                    authorSubtitle="Time capsule"
                     showActions={false}
                   />
                 );

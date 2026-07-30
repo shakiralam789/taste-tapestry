@@ -14,7 +14,6 @@ import { getPublicProfile } from "@/features/users/api";
 import { formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft,
-  Clock,
   Globe2,
   Lock,
   ImageIcon,
@@ -274,10 +273,6 @@ export default function CapsuleShowPage() {
             )}
           </div>
           <div className="absolute inset-x-0 bottom-0 px-4 md:px-8 pb-6 flex flex-col gap-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {capsule.period || "Time period not set"}
-            </p>
             <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1">
               {capsule.title}
             </h1>

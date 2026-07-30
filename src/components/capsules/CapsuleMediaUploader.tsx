@@ -116,16 +116,6 @@ export function CapsuleMediaUploader({
 
   return (
     <div className="elevated-card space-y-6">
-      <div>
-        <Label className="text-base font-medium mb-1 block">
-          Photos & video for this chapter
-        </Label>
-        <p className="text-xs text-muted-foreground">
-          Add visuals that capture this phase — screenshots, photos, or short
-          clips. You can pick any media here to be the capsule poster and banner.
-        </p>
-      </div>
-
       {/* Images */}
       <div className="space-y-3">
         <Label className="text-xs font-medium flex items-center gap-2">
