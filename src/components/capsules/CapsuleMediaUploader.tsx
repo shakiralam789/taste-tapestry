@@ -36,7 +36,8 @@ export function CapsuleMediaUploader({
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   const handleImageFiles = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +54,7 @@ export function CapsuleMediaUploader({
         return;
       }
 
-      setUploading(true);
+      setUploadingImage(true);
       try {
         const uploaded: string[] = [];
         for (const file of files) {
@@ -69,7 +70,7 @@ export function CapsuleMediaUploader({
           onChange({ images: [...images, ...uploaded], videos });
         }
       } finally {
-        setUploading(false);
+        setUploadingImage(false);
         e.target.value = "";
       }
     },
@@ -91,7 +92,7 @@ export function CapsuleMediaUploader({
         return;
       }
 
-      setUploading(true);
+      setUploadingVideo(true);
       try {
         const uploaded: string[] = [];
         for (const file of files) {
@@ -106,7 +107,7 @@ export function CapsuleMediaUploader({
           onChange({ images, videos: [...videos, ...uploaded] });
         }
       } finally {
-        setUploading(false);
+        setUploadingVideo(false);
         e.target.value = "";
       }
     },
@@ -177,7 +178,7 @@ export function CapsuleMediaUploader({
             <Button type="button" size="sm" className="h-8" variant="outline" onClick={addImageUrl}>
               Add
             </Button>
-            {uploading && (
+            {uploadingImage && (
               <span className="text-[10px] text-muted-foreground">
                 Uploading…
               </span>
@@ -288,7 +289,7 @@ export function CapsuleMediaUploader({
             <Button type="button" className="h-8" size="sm" variant="outline" onClick={addVideoUrl}>
               Add
             </Button>
-            {uploading && (
+            {uploadingVideo && (
               <span className="text-[10px] text-muted-foreground">
                 Uploading…
               </span>

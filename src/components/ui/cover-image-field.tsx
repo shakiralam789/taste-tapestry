@@ -132,7 +132,7 @@ export function CoverImageField({
           </button>
         </div>
       ) : (
-        <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted flex flex-col items-center justify-center">
+        <div className="w-32 h-40 rounded-lg border border-border overflow-hidden bg-muted/50 flex flex-col items-center justify-center">
           {uploading ? (
             <Loader2 className="w-5 h-5 text-primary animate-spin" />
           ) : (
