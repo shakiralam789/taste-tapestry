@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadCapsuleMedia } from "@/features/capsules/api";
-import { getOptimizedUrl } from "@/lib/utils";
+import { getOptimizedUrl, isValidHttpUrl } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface CapsuleMediaUploaderProps {
@@ -115,14 +115,24 @@ export function CapsuleMediaUploader({
   );
 
   const addImageUrl = () => {
-    if (!imageUrl.trim()) return;
-    onChange({ images: [...images, imageUrl.trim()], videos });
+    const url = imageUrl.trim();
+    if (!url) return;
+    if (!isValidHttpUrl(url)) {
+      toast.error("Please enter a valid image URL (starting with http:// or https://)");
+      return;
+    }
+    onChange({ images: [...images, url], videos });
     setImageUrl("");
   };
 
   const addVideoUrl = () => {
-    if (!videoUrl.trim()) return;
-    onChange({ images, videos: [...videos, videoUrl.trim()] });
+    const url = videoUrl.trim();
+    if (!url) return;
+    if (!isValidHttpUrl(url)) {
+      toast.error("Please enter a valid video URL (starting with http:// or https://)");
+      return;
+    }
+    onChange({ images, videos: [...videos, url] });
     setVideoUrl("");
   };
 
