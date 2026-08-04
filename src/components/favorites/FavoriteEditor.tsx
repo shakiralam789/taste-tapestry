@@ -232,6 +232,7 @@ export function FavoriteEditor({
 
   const [dropdownClosed, setDropdownClosed] = useState(!!initialFavorite);
   const [tmdbTvId, setTmdbTvId] = useState<number | null>(null);
+  const [imdbRating, setImdbRating] = useState<number | null>(null);
   const [debouncedSearchTitle, setDebouncedSearchTitle] = useState("");
   const titleDropdownRef = useRef<HTMLDivElement>(null);
   /** When true, next debounce effect must not reopen dropdown (title was set by TMDb selection). */
@@ -566,6 +567,14 @@ export function FavoriteEditor({
         plotSummary: overview || prev.plotSummary,
         image: posterPath || prev.image,
       }));
+      if (typeof data.vote_average === "number" && data.vote_average > 0) {
+        const rating = Math.min(
+          10,
+          Math.max(1, Math.round(data.vote_average * 10) / 10),
+        );
+        setImdbRating(rating);
+        setFormData((prev) => ({ ...prev, rating }));
+      }
       if (isMovie) {
         setTmdbTvId(null);
         if (typeof data.runtime === "number" && data.runtime > 0) {
@@ -1106,9 +1115,16 @@ export function FavoriteEditor({
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label>Your Rating</Label>
-                        <span className="text-xl font-display font-bold gradient-text">
-                          {formData.rating}/10
-                        </span>
+                        <div className="flex items-center gap-3">
+                          {imdbRating != null && (
+                            <span className="text-xs text-muted-foreground">
+                              IMDB {imdbRating.toFixed(1)}
+                            </span>
+                          )}
+                          <span className="text-xl font-display font-bold gradient-text">
+                            {formData.rating}/10
+                          </span>
+                        </div>
                       </div>
                       <Slider
                         value={[formData.rating]}
