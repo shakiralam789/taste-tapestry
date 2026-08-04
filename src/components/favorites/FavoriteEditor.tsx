@@ -1605,7 +1605,7 @@ export function FavoriteEditor({
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="rounded-xl overflow-hidden mb-3 border border-white/5 bg-card/50 relative group cursor-pointer w-full block text-left focus:outline-none hover:ring-2 hover:ring-primary/20 transition-shadow"
+                      className="rounded-xl overflow-hidden border border-white/5 bg-card/50 relative group cursor-pointer w-full block text-left focus:outline-none hover:ring-2 hover:ring-primary/20 transition-shadow"
                       aria-label="Go to cover & title section"
                     >
                       {formData.image ? (
@@ -1735,26 +1735,6 @@ export function FavoriteEditor({
                         ))}
                       </button>
                     )}
-
-                    {/* Action Bar */}
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-                      <div className="flex items-center gap-6">
-                        <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground px-2 rounded-full pointer-events-none">
-                          <Heart className="w-4 h-4" />
-                          <span className="text-xs">0</span>
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground px-2 rounded-full pointer-events-none">
-                          <MessageCircle className="w-4 h-4" />
-                          <span className="text-xs">0</span>
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground px-2 rounded-full pointer-events-none">
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-8 text-muted-foreground px-2 pointer-events-none">
-                        <Bookmark className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
