@@ -137,7 +137,7 @@ export function CommentItem({ comment, onReply, onReact, onEdit, onDelete, depth
                         </div>
                     )}
 
-                    <div className="flex items-center gap-4 text-muted-foreground w-full">
+                    <div className="flex items-center gap-4 text-muted-foreground w-full mt-1">
                         <button
                             onClick={() => onReact(comment.id, "❤️")}
                             className={cn(
