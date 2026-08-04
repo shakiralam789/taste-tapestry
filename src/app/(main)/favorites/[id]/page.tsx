@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import {
   getFavorite,
-  getFavorites,
+  getRelatedFavorites,
   updateFavorite,
   uploadFavoriteMusic,
 } from "@/features/favorites/api";
@@ -18,7 +18,7 @@ import { capsuleToFavorite } from "@/features/capsules/adapters";
 import { useAnalytics } from "@/contexts/AnalyticsContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import type { Favorite, EmotionalSegment } from "@/types/wishbook";
-import { getPublicFavoritesPage, getPublicProfile } from "@/features/users/api";
+import { getPublicProfile } from "@/features/users/api";
 import { EmotionalJourneyView } from "@/components/favorites/EmotionalJourneyView";
 import { CATEGORY_EXTRA_FIELDS } from "@/features/favorites/category-fields";
 import { getFavoriteCoverImage } from "@/features/favorites/default-covers";
@@ -257,33 +257,15 @@ export default function FavoriteShowPage() {
     }
   }, [favorite?.id, trackEvent, isOwner, isCapsuleContext]);
 
-  const { data: ownerFavorites = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
-    queryKey: [
-      "favorite-owner-favorites",
-      favorite?.userId,
-      favorite?.categoryId,
-      authUser?.id,
-    ],
+  const { data: relatedItems = [], isPending: isRelatedLoading } = useQuery<Favorite[]>({
+    queryKey: ["favorite-related", id],
     queryFn: async () => {
       // Capsule fallback has no real categoryId — skip the backend lookup.
       if (isCapsuleContext) return [];
-      if (!favorite?.userId || !favorite?.categoryId) return [];
-      if (isOwner) {
-        // Owner should see their private items too; backend filters by categoryId
-        return getFavorites(favorite.categoryId);
-      }
-      // Visitors see only public items; ask backend for same-category favorites
-      const page = await getPublicFavoritesPage(
-        favorite.userId,
-        0,
-        favorite.categoryId,
-      );
-      return page.items;
+      if (typeof id !== "string") return [];
+      return getRelatedFavorites(id);
     },
-    enabled:
-      !!favorite?.userId &&
-      !!favorite?.categoryId &&
-      !isCapsuleContext,
+    enabled: typeof id === "string" && !isCapsuleContext,
   });
 
   // ── Capsule-mode linked favorites sidebar ─────────────────────────────
@@ -551,10 +533,7 @@ export default function FavoriteShowPage() {
         ? audioCurrentTime / audioDuration
         : 0;
 
-  const relatedFavorites = ownerFavorites
-    .filter((f) => f.id !== favorite.id)
-    .slice(0, 6);
-
+  const relatedFavorites = isCapsuleContext ? [] : relatedItems;
   const showRelatedSidebar = relatedFavorites.length > 0;
 
   // ── Render ────────────────────────────────────────────────────────────────

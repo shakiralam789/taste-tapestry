@@ -48,6 +48,21 @@ export async function getFavorites(
   }));
 }
 
+/** Related favorites for the details sidebar: same owner + category, excluding the current one. */
+export async function getRelatedFavorites(
+  favoriteId: string,
+  limit = 6,
+): Promise<Favorite[]> {
+  const { data } = await apiClient.get<Favorite[]>(
+    `/favorites/${favoriteId}/related`,
+    { params: { limit: String(limit) } },
+  );
+  return (data ?? []).map((fav) => ({
+    ...fav,
+    createdAt: new Date(fav.createdAt),
+  }));
+}
+
 export type FavoritesPageResponse = {
   items: Favorite[];
   hasMore: boolean;
